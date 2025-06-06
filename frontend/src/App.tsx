@@ -18,13 +18,13 @@ function App() {
     const response = await fetch('http://localhost:8000/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input })
-    });
+      body: JSON.stringify({ prompt: input })
+    })
     const data = await response.json()
-    const botMessage = { sender: 'bot', text: data.response }
+    const botMessage = { sender: 'bot', text: data.reply }
     setMessages(prev => [...prev, botMessage])
     setInput('')
-  };
+  }
 
   //   try {
   //     const response = await axios.post('http://localhost:8000/api/chat', {prompt})
@@ -55,7 +55,7 @@ function App() {
         <button onClick={handleSend} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
       </div>
     </div>
-  );
+  )
 }
 
 export default App
