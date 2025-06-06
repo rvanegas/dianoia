@@ -7,43 +7,53 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 
 function App() {
-  const [message, setMessage] = useState('')
-  const [prompt, setPrompt] = useState('')
-  const [reply, setReply] = useState('')
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState([])
 
-  useEffect(() => {
-    axios.get('http://localhost:8000/api/hello')
-      .then(response => {
-        setMessage(response.data.message)
-      })
-      .catch(error => {
-        console.error('Error fetching message:', error)
-      })
-  }, [])
+  const handleSend = async () => {
+    if (!input.trim()) return
+    const userMessage = { sender: 'user', text: input }
+    setMessages(prev => [...prev, userMessage])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await axios.post('http://localhost:8000/api/chat', {prompt})
-      setReply(response.data.reply)
-    } catch (error) {
-      console.log('Error: ', error)
-    }
-  }
+    const response = await fetch('http://localhost:8000/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input })
+    });
+    const data = await response.json()
+    const botMessage = { sender: 'bot', text: data.response }
+    setMessages(prev => [...prev, botMessage])
+    setInput('')
+  };
+
+  //   try {
+  //     const response = await axios.post('http://localhost:8000/api/chat', {prompt})
+  //     setReply(response.data.reply)
+  //   } catch (error) {
+  //     console.log('Error: ', error)
+  //   }
+  // }
 
   return (
-    <div>
-      <h1>{message}</h1>
-      <form onSubmit={handleSubmit}>
+    <div className="p-4 max-w-lg mx-auto">
+      <div className="border rounded p-4 h-96 overflow-y-scroll bg-white shadow">
+        {messages.map((m, i) => (
+          <div key={i} className={`my-2 ${m.sender === 'user' ? 'text-right' : 'text-left'}`}>
+            <span className={`inline-block px-3 py-1 rounded ${m.sender === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+              {m.text}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="flex mt-4">
         <input
-          type="text"
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="Ask the LLM"
+          className="flex-1 border rounded p-2 mr-2"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message..."
         />
-        <button type="submit">Send</button>
-      </form>
-      <p>Reply: {reply}</p>
+        <button onClick={handleSend} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
+      </div>
     </div>
   );
 }
