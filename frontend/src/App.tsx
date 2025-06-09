@@ -29,10 +29,10 @@ function App() {
       <div className="border border-zinc-600 rounded p-4 h-96 overflow-y-scroll bg-white dark:bg-zinc-800 shadow">
         {messages.map((m, i) => (
           <div key={i} className={`my-2 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <p className={`${m.role == 'user' ? 'text-indigo-400' : 'text-gray-400'}`}>
+            <p className={`${m.role == 'user' ? 'text-indigo-400' : 'text-slate-500 dark:text-gray-400'}`}>
               {m.role === 'user'? 'You' : 'Dianioia'}
             </p>
-            <p className={`inline-block px-3 py-1 rounded-md ${m.role === 'user' ? 'bg-indigo-400' : 'bg-gray-100 dark:bg-gray-600'}`}>
+            <p className={`inline-block px-3 py-1 rounded-md ${m.role === 'user' ? 'bg-indigo-400' : 'bg-slate-200 text-slate-700 dark:bg-gray-600 dark:text-slate-100'}`}>
               {m.content}
             </p>
           </div>
@@ -40,7 +40,7 @@ function App() {
       </div>
       <div className="flex mt-4">
         <input
-          className="flex-1 border border-zinc-600 rounded-md p-2 mr-2"
+          className="flex-1 border border-zinc-600 rounded-md p-2 mr-2 text-gray-700 dark:text-gray-200"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Type your message..."
