@@ -26,23 +26,26 @@ function App() {
 
   return (
     <div className="p-4 max-w-lg mx-auto">
-      <div className="border rounded p-4 h-96 overflow-y-scroll bg-white shadow">
+      <div className="border border-zinc-600 rounded p-4 h-96 overflow-y-scroll bg-white dark:bg-zinc-800 shadow">
         {messages.map((m, i) => (
           <div key={i} className={`my-2 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block px-3 py-1 rounded ${m.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+            <p className={`${m.role == 'user' ? 'text-indigo-400' : 'text-gray-400'}`}>
+              {m.role === 'user'? 'You' : 'Dianioia'}
+            </p>
+            <p className={`inline-block px-3 py-1 rounded-md ${m.role === 'user' ? 'bg-indigo-400' : 'bg-gray-100 dark:bg-gray-600'}`}>
               {m.content}
-            </span>
+            </p>
           </div>
         ))}
       </div>
       <div className="flex mt-4">
         <input
-          className="flex-1 border rounded p-2 mr-2"
+          className="flex-1 border border-zinc-600 rounded-md p-2 mr-2"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Type your message..."
         />
-        <button onClick={handleSend} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
+        <button onClick={handleSend} className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-md hover:bg-indigo-500">Send</button>
       </div>
     </div>
   )
