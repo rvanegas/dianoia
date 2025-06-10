@@ -1,2 +1,5 @@
 Python 3.13.3
 NodeJS 22.16.0
+
+alias rbe='uvicorn main:app --reload --port 8000'
+alias rfe='npm run dev'
