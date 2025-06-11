@@ -23,12 +23,11 @@ engine = create_engine(os.getenv("DATABASE_URL"), echo=True)
 Base = declarative_base()
 
 class Conversation(Base):
-    __tablename__ = "conversations"
+    __tablename__ = "conversation"
     id = Column(Integer, primary_key=True)
     # col1 = Column(String, nullable=False)
     # col2 = Column(String, unique=True, nullable=False)
 
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
