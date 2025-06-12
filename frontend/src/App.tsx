@@ -72,7 +72,9 @@ function App() {
             {m.role === "assistant" ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
+                  {/* let's maybe fix image and codeblock */}
                   <ReactMarkdown>{m.content}</ReactMarkdown>
+                  }
                 </div>
               </div>
             ) : (
