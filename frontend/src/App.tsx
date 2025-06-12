@@ -25,7 +25,7 @@ function App() {
     setMessages((prev) => newMessages);
     setLoading(true);
     try {
-      const response = await axios.post(`${VITE_API_BASE_URL}/api/chat`, {
+      const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
         prompt,
         history: newMessages,
       });
