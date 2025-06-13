@@ -6,23 +6,23 @@ import ChatInput from "./components/ChatInput";
 import MessageBubble from "./components/MessageBubble";
 
 type Message = {
-  role: "user" | "assistant";
-  content: string;
+  role: "user" | "assistant"
+  content: string
 };
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleSend = async (prompt: string) => {
-    if (!prompt.trim()) return;
-    const userMessage: Message = { role: "user", content: prompt };
-    const newMessages = [...messages, userMessage];
-    setLoading(true);
-    setMessages(newMessages);
+    if (!prompt.trim()) return
+    const userMessage: Message = { role: "user", content: prompt }
+    const newMessages = [...messages, userMessage]
+    setLoading(true)
+    setMessages(newMessages)
 
     try {
       const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
@@ -34,32 +34,32 @@ function App() {
         role: "assistant",
         content: response.data.reply,
       };
-      setMessages([...newMessages, botMessage]);
+      setMessages([...newMessages, botMessage])
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   useEffect(() => {
     const handleFocus = () => {
       setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 100)
     };
 
-    const textarea = document.querySelector("textarea");
-    textarea?.addEventListener("focus", handleFocus);
+    const textarea = document.querySelector("textarea")
+    textarea?.addEventListener("focus", handleFocus)
 
     return () => {
-      textarea?.removeEventListener("focus", handleFocus);
+      textarea?.removeEventListener("focus", handleFocus)
     };
-  }, []);
+  }, [])
 
   return (
     <div className="flex h-screen bg-ivory">
@@ -98,7 +98,7 @@ function App() {
         <div className="h-full">{/* Your canvas content goes here */}</div>
       </div>
     </div>
-  );
+  )
 }
 
 export default App;
