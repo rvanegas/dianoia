@@ -1,8 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -12,4 +13,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@theme {
+  --color-ivory: #FDFBF7; /* bg */
+  --color-charcoal: #2E2E2E; /* fg */
+  --color-sagegreen: #7E8D65; /* user msg bubbles */
+  --color-ivorysand: #F1E7D7; /* dianoia msg bubbles */
+  --color-softsand: #D6C7B0; /* border */
+  --color-graphite: #494949; /* border dark*/
+  --color-bronze-400: #D3893F; /* accent */
+  --color-bronze-500: #CD7F32; /* accent */
+  --color-umber: #8C5E3C; /* dianoia msg bubbles */
 }

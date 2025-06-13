@@ -1,12 +1,8 @@
-#root {
-  width: 100dvw;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin: 0 auto;
-  text-align: center;
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
 
 .typing-indicator {
@@ -14,13 +10,13 @@
   gap: 2px;
   font-weight: 500;
   font-style: italic;
-  color: #a1a1aa; /* zinc-400 */
+  color: var(--color-softsand);
 }
 
 .typing-dot {
   width: 4px;
   height: 4px;
-  background-color: #a1a1aa;
+  background-color: var(--color-softsand);
   border-radius: 50%;
   animation: typing 1.2s infinite ease-in-out;
 }
