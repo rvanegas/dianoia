@@ -4,6 +4,8 @@ from openai import OpenAI
 from config import OPENAI_API_KEY
 from core.utils import logger
 
+from .system_prompt import system_prompt
+
 router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -55,9 +57,6 @@ response_format = {
     }
   }
 }
-
-with open('api/v1/system_prompt.txt', 'r') as file:
-    system_prompt = file.read()
 
 @router.post("/chat")
 async def chat(prompt: Prompt):
