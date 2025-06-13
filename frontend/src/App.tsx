@@ -123,8 +123,6 @@ function App() {
     if (!content.trim()) return
     const userMessage: Message = {role: 'user', content}
     const newMessages = [...messages, userMessage]
-
-    setPrompt('')
     setMessages(prev => newMessages)
     setLoading(true)
 
