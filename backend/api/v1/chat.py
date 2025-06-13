@@ -8,7 +8,6 @@ router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 class Prompt(BaseModel):
-    prompt: str
     history: object = {}
 
 class Step(BaseModel):
