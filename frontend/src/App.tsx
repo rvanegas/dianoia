@@ -42,7 +42,6 @@ function App() {
     if (!prompt.trim()) return
     const userMessage: Message = { role: "user", content: prompt }
     const newMessages = [...messages, userMessage]
-    setPrompt('')
     setMessages(prev => newMessages)
     setLoading(true)
 
@@ -56,7 +55,6 @@ function App() {
         content: response.data.reply,
       };
       setMessages([...newMessages, botMessage])
-      }
     } catch (error) {
       console.error("Error:", error)
     } finally {
@@ -90,7 +88,11 @@ function App() {
         {/* Chat messages */}
         <div className="flex-1 overflow-y-scroll px-4 py-6">
           {messages.map((msg, i) => (
-            <MessageBubble key={i} message={responseMarkdown(msg.content)} />
+            msg.role == "assistant" ? (
+              <MessageBubble key={i} message={ { role: msg.role, content: responseMarkdown(msg.content) }} />
+            ) : (
+              <MessageBubble key={i} message={msg} />
+            )
           ))}
           {loading && (
             <div className="mt-2 flex items-center space-x-2">

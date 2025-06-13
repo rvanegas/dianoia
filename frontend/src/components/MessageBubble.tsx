@@ -25,7 +25,7 @@ function MessageBubble({ message }: { message: Message }) {
             ? "bg-sagegreen text-ivory rounded-2xl rounded-tr-none text-right"
             : "text-umber border-umber rounded-2xl rounded-tl-none text-left"
         }`}>
-        <div className={`prose prose-sm prose-p:my-1 prose-pre:my-2 prose-pre:rounded-md prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 dark:prose-invert ${
+        <div className={`font-serif prose prose-sm prose-p:my-1 prose-pre:my-2 prose-pre:rounded-md dark:prose-invert ${
           isUser ? "text-ivory" : "text-umber"
         }`}>
           <ReactMarkdown>{message.content}</ReactMarkdown>
