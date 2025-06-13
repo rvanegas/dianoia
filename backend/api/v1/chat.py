@@ -19,6 +19,7 @@ class Step(BaseModel):
 
 class Response(BaseModel):
     argument: list[Step]
+    counter_argument: list[Step]
     explanation: str
 
 response_format = {
@@ -48,11 +49,30 @@ response_format = {
             "additionalProperties": False
           }
         },
+        "counter_argument": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer"
+              },
+              "proposition": {
+                "type": "string"
+              },
+              "justifier": {
+                "type": "string"
+              }
+            },
+            "required": ["index", "proposition", "justifier"],
+            "additionalProperties": False
+          }
+        },
         "explanation": {
           "type": "string"
         }
       },
-      "required": ["argument", "explanation"],
+      "required": ["argument", "counter_argument", "explanation"],
       "additionalProperties": False
     }
   }
