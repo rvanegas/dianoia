@@ -12,6 +12,27 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+function responseMarkdown(response) {
+  const responseObject = JSON.parse(response)
+  let md = '**Argument:**\n\n'
+
+  const argumentMarkdown = argument => {
+    argument.forEach(item => {
+      md += `${item.index}. `
+      md += `${item.proposition} `
+      md += `_[${item.justifier}]_\n\n`
+    })
+  }
+
+  argumentMarkdown(responseObject.argument)
+  if (responseObject.counter_argument.length != 0) {
+    md += '**Counter-Argument:**\n\n'
+    argumentMarkdown(responseObject.counter_argument)
+  }
+  md += `**Explanation:**\n${responseObject.explanation}\n`
+  return md
+}
+
 function App() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState<boolean>(false)
@@ -21,12 +42,12 @@ function App() {
     if (!prompt.trim()) return
     const userMessage: Message = { role: "user", content: prompt }
     const newMessages = [...messages, userMessage]
+    setPrompt('')
+    setMessages(prev => newMessages)
     setLoading(true)
-    setMessages(newMessages)
 
     try {
       const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
-        prompt,
         history: newMessages,
       });
 
@@ -35,6 +56,7 @@ function App() {
         content: response.data.reply,
       };
       setMessages([...newMessages, botMessage])
+      }
     } catch (error) {
       console.error("Error:", error)
     } finally {
@@ -68,7 +90,7 @@ function App() {
         {/* Chat messages */}
         <div className="flex-1 overflow-y-scroll px-4 py-6">
           {messages.map((msg, i) => (
-            <MessageBubble key={i} message={msg} />
+            <MessageBubble key={i} message={responseMarkdown(msg.content)} />
           ))}
           {loading && (
             <div className="mt-2 flex items-center space-x-2">

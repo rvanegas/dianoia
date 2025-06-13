@@ -4,19 +4,22 @@ from openai import OpenAI
 from config import OPENAI_API_KEY
 from core.utils import logger
 
+from .system_prompt import system_prompt
+
 router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 class Prompt(BaseModel):
-    prompt: str
     history: object = {}
 
 class Step(BaseModel):
+    index: int
     proposition: str
     justifier: str
 
 class Response(BaseModel):
     argument: list[Step]
+    counter_argument: list[Step]
     explanation: str
 
 response_format = {
@@ -32,6 +35,9 @@ response_format = {
           "items": {
             "type": "object",
             "properties": {
+              "index": {
+                "type": "integer"
+              },
               "proposition": {
                 "type": "string"
               },
@@ -39,7 +45,26 @@ response_format = {
                 "type": "string"
               }
             },
-            "required": ["proposition", "justifier"],
+            "required": ["index", "proposition", "justifier"],
+            "additionalProperties": False
+          }
+        },
+        "counter_argument": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer"
+              },
+              "proposition": {
+                "type": "string"
+              },
+              "justifier": {
+                "type": "string"
+              }
+            },
+            "required": ["index", "proposition", "justifier"],
             "additionalProperties": False
           }
         },
@@ -47,7 +72,7 @@ response_format = {
           "type": "string"
         }
       },
-      "required": ["argument", "explanation"],
+      "required": ["argument", "counter_argument", "explanation"],
       "additionalProperties": False
     }
   }
@@ -57,7 +82,7 @@ response_format = {
 async def chat(prompt: Prompt):
     messages = [{
         "role": "system",
-        "content": "You are a helpful assistant. Respond with JSON."
+        "content": system_prompt
     }] + prompt.history
     logger.debug(f"messages {len(messages)}")
     response = client.chat.completions.create(
