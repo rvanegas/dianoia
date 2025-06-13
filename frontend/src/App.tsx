@@ -11,17 +11,26 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+var md
+
 function responseMarkdown(response) {
   const responseObject = JSON.parse(response)
-  let md = '**Argument:**\n\n'
+  md = '**Argument:**\n\n'
 
-  responseObject.argument.forEach(item => {
-    md += `${item.index}. `
-    md += `${item.proposition} `
-    md += `_[${item.justifier}]_\n\n`
-  })
+  const argumentMarkdown = argument => {
+    argument.forEach(item => {
+      md += `${item.index}. `
+      md += `${item.proposition} `
+      md += `_[${item.justifier}]_\n\n`
+    })
+  }
+
+  argumentMarkdown(responseObject.argument)
+  if (responseObject.counter_argument.length != 0) {
+    md += '**Counter-Argument:**\n\n'
+    argumentMarkdown(responseObject.counter_argument)
+  }
   md += `**Explanation:**  \n${responseObject.explanation}\n`
-  console.log('md', md)
   return md
 }
 
@@ -36,7 +45,7 @@ function App() {
     const userMessage: Message = { role: 'user', content: prompt }
     const newMessages = [...messages, userMessage]
     setPrompt('')
-    setMessages((prev) => newMessages)
+    setMessages(prev => newMessages)
     setLoading(true)
     try {
       const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
@@ -46,7 +55,7 @@ function App() {
         role: 'assistant',
         content: response.data.reply,
       }
-      setMessages((prev) => [...newMessages, botMessage])
+      setMessages(prev => [...newMessages, botMessage])
       setPrompt('')
     } catch (error) {
       console.log('Error: ', error)
@@ -58,6 +67,8 @@ function App() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  window.xmessages = messages
 
   return (
     <div className="px-4  pt-4 max-w-[720px] size-full max-h-[90vh] flex flex-col">
@@ -115,7 +126,7 @@ function App() {
         <input
           className="flex-1 border border-zinc-600 rounded-md p-2 mr-2 text-gray-700 dark:text-gray-200"
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={e => setPrompt(e.target.value)}
           onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key == "Enter") {
               handleSend();
