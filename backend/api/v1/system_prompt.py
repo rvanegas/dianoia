@@ -15,11 +15,10 @@ transition qualifiers such as "therefore". Propositions must be unique.
 
 The "justifier" should be identified either as a premise or as following from
 specific previous propositions and how. If premise, begin "justifier" with
-"premise". If not a premise, begin "justifier" with "from 1 and 2", if, for
-example, proposition follows from propositions 1 and 2. Justifier should be
-brief, relative to proposition. The justifiers should begin with "premise"
-or "from 1 and 2", for example, when language selected by user is English.
-Translate into user's language as appropriate.
+"premise", in the user's language. If not a premise, begin "justifier"
+ with "from 1 and 2" in the user's language, if, for example, proposition
+ follows from propositions 1 and 2. Justifier should be brief, relative to
+ proposition.
 
 The final proposition must not be a premise, and instead must follow from the
 previous premises. All other propositions must inferentially contribute to
@@ -48,6 +47,5 @@ The argument and the counter-argument should be in their corresponding
 JSON properties, separately. If there is a counter-argument, its propositions
 should be in the "counter_argument" property. If not, leave it as an empty
 list.
-
 
 """
