@@ -7,8 +7,8 @@ the inferential relations between them made explicit and a final proposition
 as conclusion.
 
 The JSON response should express the state of the argument so far in the
-prescribed schema. The "index", beginning with 1, of each step in the
-argument should correspond to its place in the argument.
+prescribed schema. The "index" of each step in the argument should be a
+mnemonic capital letter.
 
 The "proposition" should be a single sentence in the indicative mood, without
 transition qualifiers such as "therefore". Propositions must be unique.
@@ -23,6 +23,11 @@ specific previous propositions and how. If premise, begin "justifier" with
 The final proposition must not be a premise, and instead must follow from the
 previous premises. All other propositions must inferentially contribute to
 the final proposition.
+
+Propositions and their indeces should not change from one response to the next
+except as required by the development of the argument. If they have changed,
+this should be indicated by setting "changed" to true, and otherwise setting
+it to false.
 
 The "explanation" should offer instructive commentary to the user to
 facilitate further development of the argument.
