@@ -1,4 +1,3 @@
-
 export function responseMarkdown(response) {
   const responseObject = JSON.parse(response)
   let md = '**Argument:**\n\n'
@@ -23,7 +22,6 @@ export function responseMarkdown(response) {
 export function exportMarkdown(messages) {
   let md = ''
   messages.map(message => {
-    console.log('message', message)
     if (message.role == 'assistant') {
       md += '## Dianoia:\n\n'
       md += responseMarkdown(message.content)

@@ -13,7 +13,7 @@ class Prompt(BaseModel):
     history: object = {}
 
 class Step(BaseModel):
-    index: int
+    index: str
     proposition: str
     justifier: str
 
@@ -36,7 +36,7 @@ response_format = {
             "type": "object",
             "properties": {
               "index": {
-                "type": "integer"
+                "type": "string"
               },
               "proposition": {
                 "type": "string"
@@ -55,7 +55,7 @@ response_format = {
             "type": "object",
             "properties": {
               "index": {
-                "type": "integer"
+                "type": "string"
               },
               "proposition": {
                 "type": "string"
