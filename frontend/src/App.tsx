@@ -62,6 +62,10 @@ function App() {
     }
   }
 
+  const handleBack = () => {
+    setMessages(messages.slice(0, -2))
+  }
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -125,8 +129,15 @@ function App() {
         />
         <button
           onClick={handleSend}
-          className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-md hover:bg-indigo-500">
+          className="bg-indigo-600 text-white font-bold
+            px-4 py-2 rounded-md hover:bg-indigo-500">
           Send
+        </button>
+        <button
+          onClick={handleBack}
+          className="bg-indigo-600 text-white font-bold
+            px-4 py-2 rounded-md hover:bg-indigo-500">
+          Back
         </button>
         <ExportButton textCallback={() => exportMarkdown(messages)}/>
       </div>
