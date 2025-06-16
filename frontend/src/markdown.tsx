@@ -1,11 +1,18 @@
 export function responseMarkdown(response) {
   const responseObject = JSON.parse(response)
   let md = '**Argument:**\n\n'
+  let justifier = ''
 
   const argumentMarkdown = argument => {
     argument.forEach(item => {
       md += `(${item.index}${item.changed ? '*' : ''}) `
-      md += `${item.proposition} _[${item.justifier}]_\n\n`
+      md += `${item.proposition} `
+      if (item.justifiers.length == 0) {
+        justifier = 'premise'
+      } else {
+        justifier = `from ${item.justifiers.join(', ')}`
+      }
+      md += `_[${justifier}]_\n\n`
     })
   }
 
