@@ -4,9 +4,8 @@ export function responseMarkdown(response) {
 
   const argumentMarkdown = argument => {
     argument.forEach(item => {
-      md += `${item.index}. `
-      md += `${item.proposition} `
-      md += `_[${item.justifier}]_\n\n`
+      md += `(${item.index}${item.changed ? '*' : ''}) `
+      md += `${item.proposition} _[${item.justifier}]_\n\n`
     })
   }
 
