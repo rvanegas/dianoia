@@ -6,7 +6,7 @@ from core.utils import logger
 
 from .system_prompt import system_welcome_prompt, system_development_prompt
 from core.utils import logger
-from models.thesis import thesis_response_format, ThesisResponse, ThesisHistory
+from models.thesis import thesis_response_format, ThesisResponse
 from models.argument import argument_response_format, ArgumentResponse, proofreadResponse
 
 router = APIRouter()
@@ -39,18 +39,9 @@ async def chat(prompt: Prompt):
     )
     content = response.choices[0].message.content
 
-    if welcome:
-        thesis_response = ThesisResponse.parse_raw(content)
-    else:
-        theses = ThesisResponse.parse_raw(prompt.history[1]['content'])
-        argument_response = ArgumentResponse.parse_raw(content)
-        prev_responses = [m for m in messages if m["role"] == "assistant"]
-        prev_response = prev_responses[-1] if prev_responses else None
-        if prev_response:
-            errors = proofreadResponse(prev_response, argument_response, 
-                theses.thesis, theses.counter_thesis)
-            if errors:
-                logger.debug("errors:")
-                logger.debug(errors)
+    if not welcome:
+        errors = proofreadResponse(messages, prompt, content)
+        if errors:
+            logger.debug(f"errors: {errors}")
 
     return {"reply": content}

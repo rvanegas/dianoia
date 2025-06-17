@@ -46,7 +46,7 @@ class ArgumentResponse(BaseModel):
     counter_argument: list[Step]
     explanation: str
 
-def proofreadResponse(prevResponse, response, thesis, counter_thesis):
+def proofreadResponse(messages, prompt, content):
     def verify_uniqueness(steps):
         seen = set()
         duplicates = []
@@ -99,6 +99,11 @@ def proofreadResponse(prevResponse, response, thesis, counter_thesis):
 
         unused = [step.index for step in steps[:-1] if step.index not in reachable]
         return unused
+
+    theses = ThesisResponse.parse_raw(prompt.history[1]['content'])
+    response = ArgumentResponse.parse_raw(content)
+    prevResponses = [m for m in messages if m["role"] == "assistant"]
+    prevResponse = prevResponses[-1] if prevResponses else None
 
     errors = {
         "argument": [],
