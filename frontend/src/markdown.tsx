@@ -38,10 +38,14 @@ export function developmentMarkdown(response) {
 
 export function exportMarkdown(messages) {
   let md = ''
-  messages.map(message => {
-    if (message.role == 'assistant') {
+  messages.map((message, i) => {
+    if (i == 1) {
       md += '## Dianoia:\n\n'
-      md += responseMarkdown(message.content)
+      md += thesisMarkdown(message.content)
+      md += '\n\n'
+    } else if (message.role == 'assistant') {
+      md += '## Dianoia:\n\n'
+      md += developmentMarkdown(message.content)
       md += '\n\n'
     } else {
       md += '## You:\n\n'

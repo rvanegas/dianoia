@@ -6,8 +6,7 @@ from core.utils import logger
 
 from .system_prompt import system_welcome_prompt, system_development_prompt
 from core.utils import logger
-from models.thesis import thesis_response_format, ThesisResponse
-from models.argument import argument_response_format, ArgumentResponse, proofreadResponse
+from models.argument import argument_response_format, thesis_response_format, proofreadResponse
 
 router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
