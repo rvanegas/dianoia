@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 
-import { responseMarkdown, exportMarkdown } from './markdown.tsx'
+import { thesisMarkdown, developmentMarkdown, exportMarkdown } from './markdown.tsx'
 
 type Message = {
   role: 'user' | 'assistant';
@@ -70,6 +70,8 @@ function App() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  // window.xmessages = messages
+
   return (
     <div className="px-4  pt-4 max-w-[720px] size-full max-h-[90vh] flex flex-col">
       <div className="rounded px-4 h-screen overflow-y-scroll bg-white dark:bg-zinc-800">
@@ -90,7 +92,9 @@ function App() {
             {m.role === "assistant" ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
-                  <ReactMarkdown>{responseMarkdown(m.content)}</ReactMarkdown>
+                  <ReactMarkdown>{
+                    i == 1 ? thesisMarkdown(m.content) : developmentMarkdown(m.content)
+                  }</ReactMarkdown>
                 </div>
               </div>
             ) : (

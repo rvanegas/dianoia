@@ -1,4 +1,15 @@
-export function responseMarkdown(response) {
+export function thesisMarkdown(response) {
+  const responseObject = JSON.parse(response)
+  let md = '**Thesis:**\n\n'
+  md += responseObject.thesis + '\n\n'
+  md += '**Counter-Thesis:**\n\n'
+  md += responseObject.counter_thesis + '\n\n'
+  md += '**Explanation:**\n\n'
+  md += responseObject.explanation
+  return md
+}
+
+export function developmentMarkdown(response) {
   const responseObject = JSON.parse(response)
   let md = '**Argument:**\n\n'
   let justifier = ''
