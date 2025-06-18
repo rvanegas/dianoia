@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 
-import { thesisMarkdown, developmentMarkdown, exportMarkdown } from './markdown.tsx'
+import { exportMarkdown } from './markdown.tsx'
 
 type Message = {
   role: 'user' | 'assistant';
@@ -13,9 +13,55 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+function Theses({content}) {
+  const theses = JSON.parse(content)
+  return (
+    <div>
+      <div>Thesis:</div>
+      <div>{theses.thesis}</div>
+      <div>Counter-Thesis:</div>
+      <div>{theses.counter_thesis}</div>
+      <div>Explanation:</div>
+      <div>{theses.explanation}</div>
+    </div>
+  )
+}
+
+function Arguments({content}) {
+  const arguments_ = JSON.parse(content)
+
+  const argumentNode = argument => {
+    const argumentSteps = argument.map((step, key) => {
+      const justifier = step.justifiers.length == 0 ?
+        'premise' : 'from ' + step.justifiers.join(', ')
+      return (
+        <div key={key}>
+          ({step.index}) {step.proposition} [{justifier}]
+        </div>
+      )
+    })
+    return <div>{argumentSteps}</div>
+  }
+
+  return (
+    <div>
+      <div>Argument:</div>
+      <div>{argumentNode(arguments_.argument)}</div>
+      {
+        arguments_.counter_argument.length == 0 ? undefined :
+        <div>
+          <div>Counter-Argument:</div>
+          <div>{argumentNode(arguments_.counter_argument)}</div>
+        </div>
+      }
+      <div>Explanation:</div>
+      <div>{arguments_.explanation}</div>
+    </div>
+  )
+}
+
 function ExportButton({textCallback}) {
   const [copied, setCopied] = useState<boolean>(false)
-
   const handleCopy = async () => {
     await navigator.clipboard.writeText(textCallback())
     setCopied(true)
@@ -93,9 +139,11 @@ function App() {
             {m.role === "assistant" ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
-                  <ReactMarkdown>{
-                    i == 1 ? thesisMarkdown(m.content) : developmentMarkdown(m.content)
-                  }</ReactMarkdown>
+                  {
+                    i == 1
+                      ? <Theses content={m.content}></Theses>
+                      : <Arguments content={m.content}></Arguments>
+                  }
                 </div>
               </div>
             ) : (
@@ -126,8 +174,8 @@ function App() {
           onChange={e => setPrompt(e.target.value)}
           onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key == "Enter") {
-              handleSend();
-              e.preventDefault();
+              handleSend()
+              e.preventDefault()
             }
           }}
           placeholder="Type your message..."
