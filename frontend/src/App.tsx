@@ -13,6 +13,17 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+function ExpandPremiseButton({handleExpandPremise}) {
+  return (
+    <button
+      onClick={handleExpandPremise}
+      className="inline text-xs px-1 py-0.5 text-transparent
+        hover:text-black focus:outline-none">
+      Expand
+    </button>
+  )
+}
+
 function Theses({content}) {
   const theses = JSON.parse(content)
   return (
@@ -30,6 +41,10 @@ function Theses({content}) {
 function Arguments({content}) {
   const arguments_ = JSON.parse(content)
 
+  const handleExpandPremise = async () => {
+    console.log('click')
+  }
+
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
       const justifier = step.justifiers.length == 0 ?
@@ -37,6 +52,8 @@ function Arguments({content}) {
       return (
         <div key={key}>
           ({step.index}) {step.proposition} [{justifier}]
+          <ExpandPremiseButton handleExpandPremise={handleExpandPremise}>
+          </ExpandPremiseButton>
         </div>
       )
     })
