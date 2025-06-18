@@ -26,14 +26,13 @@ two these and their opposition to the user.
 system_development_prompt = """
 
 The JSON response should express the state of the argument so far in the
-prescribed schema. The "index" of each step in the argument should, if
-possible, be a mnemonic single capital letter -- not merely the next letter
-in the alphabet, but one that signifies the content of the proposition in
-some way. Do not use 'P' for proposition and 'C' for conclusion. The letters
-may be used but should be mnemonics for the content of the proposition and
-not their role in the inference. If a single capital letter is unavailable or
-not mnemonic, use a letter followed by a number. It should always
-match "[A-Z][0-9]*".
+prescribed schema. The "index" of each step in the argument must be a unique
+single capital letter. It should be a mnemonic letter that signifies the
+content of the proposition in some way. Avoid using 'P' for proposition
+and 'C' for conclusion. The letters may be used but should be mnemonics for
+the content of the proposition and not their role in the inference. Only if
+all 26 letters of the alphabet have been used, use two letter combinations
+for additional propositions.
 
 The "proposition" should be a single sentence in the indicative mood. It
 should not begin with transition qualifiers such as "therefore". Every
