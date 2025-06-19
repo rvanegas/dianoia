@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import MessageBubble from "./components/MessageBubble.tsx";
 import { FiSend, FiDelete, FiClipboard, FiCheck } from 'react-icons/fi';
 
-import { thesisMarkdown, developmentMarkdown, exportMarkdown } from './markdown.tsx'
+import { exportMarkdown } from './markdown.tsx'
 
 type Message = {
   role: "user" | "assistant"
@@ -15,9 +15,88 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+function ExpandPremiseButton({handleExpandPremise}) {
+  return (
+    <button
+      onClick={handleExpandPremise}
+      className="inline text-xs px-1 py-0.5 text-transparent
+        hover:text-black focus:outline-none">
+      Expand
+    </button>
+  )
+}
+
+function ExpandInferenceButton({handleExpandInference}) {
+  return (
+    <button
+      onClick={handleExpandInference}
+      className="inline text-xs px-1 py-0.5 text-transparent
+        hover:text-black focus:outline-none">
+      Explicit
+    </button>
+  )
+}
+
+function Theses({content}) {
+  const theses = JSON.parse(content)
+  return (
+    <div>
+      <div className="text-lg font-bold">Thesis:</div>
+      <div>{theses.thesis}</div>
+      <div className="text-lg font-bold">Counter-Thesis:</div>
+      <div>{theses.counter_thesis}</div>
+      <div className="text-lg font-bold">Explanation:</div>
+      <div>{theses.explanation}</div>
+    </div>
+  )
+}
+
+function Arguments({content, handleExpandPremise, handleExpandInference}) {
+  const arguments_ = JSON.parse(content)
+
+  const argumentNode = argument => {
+    const argumentSteps = argument.map((step, key) => {
+      const justifier = step.justifiers.length == 0 ?
+        'premise' : 'from ' + step.justifiers.join(', ')
+      return (
+        <div key={key}>
+          ({step.index}) {step.proposition} [{justifier}; {step.truth}]
+          {
+            step.justifiers.length == 0 ?
+              <ExpandPremiseButton
+                handleExpandPremise={() => handleExpandPremise(step.index)}>
+              </ExpandPremiseButton> :
+              <ExpandInferenceButton
+                handleExpandInference={() => handleExpandInference(step.index)}>
+              </ExpandInferenceButton>
+          }
+        </div>
+      )
+    })
+    return <div>{argumentSteps}</div>
+  }
+
+  return (
+    <div>
+      <div>
+        <div className="text-lg font-bold">Argument:</div>
+        <div>{argumentNode(arguments_.argument)}</div>
+      </div>
+      {
+        arguments_.counter_argument.length == 0 ? undefined :
+        <div>
+          <div className="text-lg font-bold">Counter-Argument:</div>
+          <div>{argumentNode(arguments_.counter_argument)}</div>
+        </div>
+      }
+      <div className="text-lg font-bold">Explanation:</div>
+      <div>{arguments_.explanation}</div>
+    </div>
+  )
+}
+
 function ExportButton({textCallback}) {
   const [copied, setCopied] = useState<boolean>(false)
-
   const handleCopy = async () => {
     await navigator.clipboard.writeText(textCallback())
     setCopied(true)
@@ -39,8 +118,12 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async () => {
-    if (!prompt.trim()) return
+  const handleSend = async ({internalPrompt}) => {
+    const content = internalPrompt ? internalPrompt : prompt
+    if (!content.trim()) return
+    const userMessage: Message = {role: 'user', content}
+    const newMessages = [...messages, userMessage]
+
     setPrompt('')
     const userMessage: Message = { role: "user", content: prompt }
     const newMessages = [...messages, userMessage]
@@ -48,9 +131,8 @@ function App() {
     setLoading(true)
 
     try {
-      const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
-        history: newMessages,
-      });
+      const url = `${VITE_API_BASE_URL}/api/v1/chat`
+      const response = await axios.post(url, {history: newMessages})
 
       const botMessage: Message = {
         role: "assistant",
@@ -64,13 +146,28 @@ function App() {
     }
   }
 
+  const handleExpandPremise = async (index) => {
+    handleSend({
+      internalPrompt: `Introduce one or two premises from ` +
+        `which proposition (${index}) is inferred.`
+    })
+  }
+
+  const handleExpandInference = async (index) => {
+    handleSend({
+      internalPrompt: `If the inference from which proposition ` +
+        `(${index}) is inferred is not strictly deductive, introduce ` +
+        `one or two premises to make the inference more explicit.`
+    })
+  }
+
   const handleBack = () => {
     const lastUserMessageIndex = messages.findLastIndex(m => m.role == 'user')
     setMessages(messages.slice(0, lastUserMessageIndex))
   }
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({behavior: 'smooth'})
   }, [messages, loading])
 
   // window.xmessages = messages
@@ -90,12 +187,39 @@ function App() {
         {/* Message bubbles area */}
         <div className="flex flex-1 overflow-y-auto p-20 flex-col gap-10 w-[100%]">
           {/* Example message bubbles - you would map through actual messages here */}
-          {messages.map((msg, i) => (
-            msg.role == 'user' ? 
-              <MessageBubble role={msg.role} content={msg.content} key={i} />
-              :
-              <MessageBubble role={msg.role} content={i == 1 ? thesisMarkdown(msg.content) : developmentMarkdown(msg.content)} key={i} />
-          ))}
+          {messages.map((m, i) => (
+          <div
+            key={i}
+            className={m.role === 'user' ? 'my-2 text-right' : 'my-2 text-left'}>
+            <p
+              className={`${
+                m.role == "user"
+                  ? "text-indigo-600"
+                  : "text-slate-500 dark:text-gray-400"
+              }`}>
+              {m.role === "user" ? "You" : "Dianoia"}
+            </p>
+            {m.role == 'assistant' ? (
+              <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
+                <div className="prose dark:prose-invert max-w-none">
+                  {
+                    i == 1
+                      ? <Theses content={m.content}></Theses>
+                      : <Arguments
+                          content={m.content}
+                          handleExpandPremise={handleExpandPremise}
+                          handleExpandInference={handleExpandInference}
+                        >
+                        </Arguments>
+                  }
+                </div>
+              </div>
+            ) : (
+              <p className="inline-block px-3 py-1 rounded-md bg-indigo-400 text-indigo-50">
+                {m.content}
+              </p>
+            )}
+          </div>
           {loading && (
             <div className="mt-2 flex items-center space-x-4">
               <span className="text-sm text-zinc-400 italic">

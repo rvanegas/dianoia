@@ -30,8 +30,9 @@ argument_format = {
                 "type": "array",
                 "items": {"type": "string"}
             },
+            "truth": {"type": "number"}
         },
-        "required": ["index", "proposition", "justifiers"],
+        "required": ["index", "proposition", "justifiers", "truth"],
         "additionalProperties": False
     }
 }
@@ -69,7 +70,7 @@ class ArgumentResponse(BaseModel):
     counter_argument: list[Step]
     explanation: str
 
-def proofreadResponse(messages, prompt, content):
+def proofread_response(messages, prompt, content):
     def verify_uniqueness(steps):
         seen = set()
         duplicates = []
@@ -123,6 +124,11 @@ def proofreadResponse(messages, prompt, content):
         unused = [step.index for step in steps[:-1] if step.index not in reachable]
         return unused
 
+    def verify_proposition_limit(prev_steps, curr_steps):
+        steps_delta = len(curr_steps) - len(prev_steps)
+        if (steps_delta > 3 and prev_steps == 0) or steps_delta > 4:
+            return True
+
     theses = ThesisResponse.parse_raw(prompt.history[1]['content'])
     response = ArgumentResponse.parse_raw(content)
     prevResponses = [m for m in messages if m["role"] == "assistant"]
@@ -162,6 +168,11 @@ def proofreadResponse(messages, prompt, content):
         conclusion_error = verify_final_conclusion(curr_steps)
         if conclusion_error:
             errors[label].append(conclusion_error)
+
+        # # Introduction Limit
+        # exceeds_limits = verify_proposition_limit(prev_steps, curr_steps)
+        # if exceeds_limits:
+        #     errors[label].append(f"Too many new propositions")
 
     # Agreement of conclusions with theses
     if len(response.argument) and theses.thesis != response.argument[-1].proposition:
