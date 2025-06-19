@@ -58,7 +58,7 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
         'premise' : 'from ' + step.justifiers.join(', ')
       return (
         <div key={key}>
-          ({step.index}) {step.proposition} [{justifier}]
+          ({step.index}) {step.proposition} [{justifier}; {step.truth}]
           {
             step.justifiers.length == 0 ?
               <ExpandPremiseButton
