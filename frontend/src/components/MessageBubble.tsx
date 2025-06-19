@@ -1,34 +1,30 @@
 import ReactMarkdown from "react-markdown";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
 
-function MessageBubble({ message }: { message: Message }) {
-  const isUser = message.role === "user";
+function MessageBubble({ role, content }: { role: string, content: string }) {
+  const isUser = role === "user";
 
   return (
     <div
       className={`flex flex-col max-w-full my-2 ${
         isUser ? "items-end" : "items-start"
       }`}>
-      <p className={`text-sm text-gray-500 italic ${
-        isUser ? "text-sagegreen" : "text-umber"
+      <p className={`italic ${
+        isUser ? "text-indigo-500" : "text-slate-400"
       }`}>
         {isUser ? "You" : "Dianoia"}
       </p>
 
       <div
-        className={`max-w-[85%] px-4 font-serif border break-words ${
+        className={`max-w-[85%] px-4 font-serif ${
           isUser
-            ? "bg-sagegreen text-ivory rounded-2xl rounded-tr-none text-right"
-            : "text-umber border-umber rounded-2xl rounded-tl-none text-left"
+            ? "text-white bg-indigo-500 rounded-2xl rounded-tr-none"
+            : "text-slate-700 bg-slate-100 rounded-2xl rounded-tl-none"
         }`}>
-        <div className={`font-serif prose prose-sm prose-p:my-1 prose-pre:my-2 prose-pre:rounded-md dark:prose-invert ${
-          isUser ? "text-ivory" : "text-umber"
+        <div className={`font-serif prose prose-sm prose-p:my-[2px] prose-pre:my-[2px] prose-pre:rounded-md dark:prose-invert ${
+          isUser ? 'text-white' : 'text-slate-700'
         }`}>
-          <ReactMarkdown>{message.content}</ReactMarkdown>
+          <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </div>
     </div>

@@ -10,13 +10,13 @@ html, body, #root {
   gap: 2px;
   font-weight: 500;
   font-style: italic;
-  color: var(--color-softsand);
+  color: var(--color-slate-500);
 }
 
 .typing-dot {
   width: 4px;
   height: 4px;
-  background-color: var(--color-softsand);
+  background-color: var(--color-slate-500);
   border-radius: 50%;
   animation: typing 1.2s infinite ease-in-out;
 }
