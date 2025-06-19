@@ -118,15 +118,13 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async ({internalPrompt}) => {
+  const handleSend = async ({ internalPrompt }) => {
     const content = internalPrompt ? internalPrompt : prompt
     if (!content.trim()) return
     const userMessage: Message = {role: 'user', content}
     const newMessages = [...messages, userMessage]
 
     setPrompt('')
-    const userMessage: Message = { role: "user", content: prompt }
-    const newMessages = [...messages, userMessage]
     setMessages(prev => newMessages)
     setLoading(true)
 
@@ -183,60 +181,61 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className=" flex flex-1 flex-col h-[100%] w-[100%]" >
+      <div className=" flex flex-1 flex-col h-[100%] w-[100%] items-center" >
         {/* Message bubbles area */}
-        <div className="flex flex-1 overflow-y-auto p-20 flex-col gap-10 w-[100%]">
+        <div className="flex flex-1 overflow-y-auto p-20 flex-col w-[100%] scroll-hide">
           {/* Example message bubbles - you would map through actual messages here */}
           {messages.map((m, i) => (
-          <div
-            key={i}
-            className={m.role === 'user' ? 'my-2 text-right' : 'my-2 text-left'}>
-            <p
-              className={`${
-                m.role == "user"
-                  ? "text-indigo-600"
-                  : "text-slate-500 dark:text-gray-400"
-              }`}>
-              {m.role === "user" ? "You" : "Dianoia"}
-            </p>
-            {m.role == 'assistant' ? (
-              <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
-                <div className="prose dark:prose-invert max-w-none">
-                  {
-                    i == 1
-                      ? <Theses content={m.content}></Theses>
-                      : <Arguments
-                          content={m.content}
-                          handleExpandPremise={handleExpandPremise}
-                          handleExpandInference={handleExpandInference}
-                        >
-                        </Arguments>
-                  }
-                </div>
-              </div>
-            ) : (
-              <p className="inline-block px-3 py-1 rounded-md bg-indigo-400 text-indigo-50">
-                {m.content}
+            <div
+              key={i}
+              className={`max-w-[80%] ${m.role == 'user' ? 'self-end' : 'self-start'}`}>
+              <p
+                className={`${
+                  m.role == "user"
+                    ? "text-indigo-600 text-right"
+                    : "text-slate-500 dark:text-gray-400"
+                }`}>
+                {m.role === "user" ? "You" : "Dianoia"}
               </p>
-            )}
-          </div>
-          {loading && (
-            <div className="mt-2 flex items-center space-x-4">
-              <span className="text-sm text-zinc-400 italic">
-                Dianoia is thinking
-              </span>
-              <span className="typing-indicator">
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
-              </span>
+              {m.role == 'assistant' ? (
+                <div className="bg-slate-100 dark:bg-zinc-700 rounded-3xl rounded-tl-none text-zinc-700 p-2 py-4">
+                  <div className="prose dark:prose-invert max-w-none">
+                    {
+                      i == 1
+                        ? <Theses content={m.content}></Theses>
+                        : <Arguments
+                            content={m.content}
+                            handleExpandPremise={handleExpandPremise}
+                            handleExpandInference={handleExpandInference}
+                          >
+                          </Arguments>
+                    }
+                  </div>
+                </div>
+              ) : (
+                <p className="inline-block px-3 py-1 rounded-3xl rounded-tr-none bg-indigo-400 text-indigo-50">
+                  {m.content}
+                </p>
+              )}
             </div>
-          )}
+          ))}
+          {loading && (
+              <div className="mt-2 flex items-center space-x-4">
+                <span className="text-sm text-zinc-400 italic">
+                  Dianoia is thinking
+                </span>
+                <span className="typing-indicator">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                </span>
+              </div>
+            )}
           <div ref={bottomRef} />
         </div>
 
         {/* Input area fixed at the bottom */}
-        <div className="p-4 flex gap-2 h-[10%]">
+        <div className="p-4 flex gap-2 h-[10%] w-[100%]">
           <input 
             type="text" 
             placeholder="Type your message here..." 
@@ -244,7 +243,7 @@ function App() {
             onChange={e => setPrompt(e.target.value)}
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key == "Enter") {
-                handleSend();
+                handleSend({internalPrompt: ''});
                 e.preventDefault();
               }
             }}
