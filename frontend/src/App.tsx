@@ -38,12 +38,8 @@ function Theses({content}) {
   )
 }
 
-function Arguments({content}) {
+function Arguments({content, handleExpandPremise}) {
   const arguments_ = JSON.parse(content)
-
-  const handleExpandPremise = async () => {
-    console.log('click')
-  }
 
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
@@ -52,8 +48,12 @@ function Arguments({content}) {
       return (
         <div key={key}>
           ({step.index}) {step.proposition} [{justifier}]
-          <ExpandPremiseButton handleExpandPremise={handleExpandPremise}>
-          </ExpandPremiseButton>
+          {
+            step.justifiers.length != 0 ? undefined :
+              <ExpandPremiseButton
+                handleExpandPremise={() => handleExpandPremise(step.index)}>
+              </ExpandPremiseButton>
+          }
         </div>
       )
     })
@@ -101,17 +101,17 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async () => {
-    if (!prompt.trim()) return
-    const userMessage: Message = { role: 'user', content: prompt }
+  const handleSend = async ({internalPrompt}) => {
+    const content = internalPrompt ? internalPrompt : prompt
+    if (!content.trim()) return
+    const userMessage: Message = {role: 'user', content}
     const newMessages = [...messages, userMessage]
     setPrompt('')
     setMessages(prev => newMessages)
     setLoading(true)
     try {
-      const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
-        history: newMessages,
-      })
+      const url = `${VITE_API_BASE_URL}/api/v1/chat`
+      const response = await axios.post(url, {history: newMessages})
       const botMessage: Message = {
         role: 'assistant',
         content: response.data.reply,
@@ -125,13 +125,20 @@ function App() {
     }
   }
 
+  const handleExpandPremise = async (index) => {
+    handleSend({
+      internalPrompt: `Introduce one or more premises from ` +
+        `which proposition (${index}) is inferred.`
+    })
+  }
+
   const handleBack = () => {
     const lastUserMessageIndex = messages.findLastIndex(m => m.role == 'user')
     setMessages(messages.slice(0, lastUserMessageIndex))
   }
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({behavior: 'smooth'})
   }, [messages, loading])
 
   // window.xmessages = messages
@@ -142,9 +149,7 @@ function App() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`my-2 ${
-              m.role === "user" ? "text-right" : "text-left"
-            }`}>
+            className={m.role === 'user' ? 'my-2 text-right' : 'my-2 text-left'}>
             <p
               className={`${
                 m.role == "user"
@@ -153,13 +158,16 @@ function App() {
               }`}>
               {m.role === "user" ? "You" : "Dianoia"}
             </p>
-            {m.role === "assistant" ? (
+            {m.role == 'assistant' ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
                   {
                     i == 1
                       ? <Theses content={m.content}></Theses>
-                      : <Arguments content={m.content}></Arguments>
+                      : <Arguments
+                          content={m.content}
+                          handleExpandPremise={handleExpandPremise}>
+                        </Arguments>
                   }
                 </div>
               </div>
