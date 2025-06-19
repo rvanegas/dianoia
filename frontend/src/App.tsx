@@ -24,6 +24,17 @@ function ExpandPremiseButton({handleExpandPremise}) {
   )
 }
 
+function ExpandInferenceButton({handleExpandInference}) {
+  return (
+    <button
+      onClick={handleExpandInference}
+      className="inline text-xs px-1 py-0.5 text-transparent
+        hover:text-black focus:outline-none">
+      Explicit
+    </button>
+  )
+}
+
 function Theses({content}) {
   const theses = JSON.parse(content)
   return (
@@ -38,7 +49,7 @@ function Theses({content}) {
   )
 }
 
-function Arguments({content, handleExpandPremise}) {
+function Arguments({content, handleExpandPremise, handleExpandInference}) {
   const arguments_ = JSON.parse(content)
 
   const argumentNode = argument => {
@@ -49,10 +60,13 @@ function Arguments({content, handleExpandPremise}) {
         <div key={key}>
           ({step.index}) {step.proposition} [{justifier}]
           {
-            step.justifiers.length != 0 ? undefined :
+            step.justifiers.length == 0 ?
               <ExpandPremiseButton
                 handleExpandPremise={() => handleExpandPremise(step.index)}>
-              </ExpandPremiseButton>
+              </ExpandPremiseButton> :
+              <ExpandInferenceButton
+                handleExpandInference={() => handleExpandInference(step.index)}>
+              </ExpandInferenceButton>
           }
         </div>
       )
@@ -134,6 +148,14 @@ function App() {
     })
   }
 
+  const handleExpandInference = async (index) => {
+    handleSend({
+      internalPrompt: `If the inference from which proposition ` +
+        `(${index}) is inferred is not strictly deductive, introduce ` +
+        `a premise to make the inference more explicit.`
+    })
+  }
+
   const handleBack = () => {
     const lastUserMessageIndex = messages.findLastIndex(m => m.role == 'user')
     setMessages(messages.slice(0, lastUserMessageIndex))
@@ -168,7 +190,9 @@ function App() {
                       ? <Theses content={m.content}></Theses>
                       : <Arguments
                           content={m.content}
-                          handleExpandPremise={handleExpandPremise}>
+                          handleExpandPremise={handleExpandPremise}
+                          handleExpandInference={handleExpandInference}
+                        >
                         </Arguments>
                   }
                 </div>
