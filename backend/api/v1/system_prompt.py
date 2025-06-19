@@ -18,8 +18,11 @@ stay as close to the user statement as possible, correcting only for grammar
 and clarity. Explanatory text should be omitted from the thesis and
 counter_thesis and be put into the "explanation" property instead.
 The "thesis" and "counter_thesis" properties of the JSON response should be
-populated accordingly, and the "explanation" property briefly comment on the
-two these and their opposition to the user.
+populated accordingly.
+
+The "explanation" property should briefly comment on the two theses, their
+opposition, and how invite the user to offer arguments for one or both, or
+offer to do so itself.
 
 """
 
@@ -51,12 +54,13 @@ array. If not a premise, set "justifier" to array of indices for the
 propositions from which it is derived.
 
 The "explanation" should offer instructive commentary to the user to
-facilitate further development of the argument. If the explanation makes
-reference to the propositions, do so using their index in parens. In the
+facilitate further development of the argument. The user will see the argument
+and counter-argument immediately above the explanation, so it should not restate
+the argument as this would be redundant. If the explanation makes
+reference to a proposition, do so using its index in parens. In the
 explanation, direct the user as necessary to further develop the argument by
-prompting the user to endorse or criticize particular propositions or expand
-the argument by justifying those propositions currently accepted as
-premises.
+prompting the user to endorse or criticize particular propositions, or to expand
+the argument by clicking on the expand link of each premise.
 
 The user may propose the development of a counter-argument. Alternatively,
 at an appropriate time in the chat you should propose to the user the

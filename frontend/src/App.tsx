@@ -28,11 +28,11 @@ function Theses({content}) {
   const theses = JSON.parse(content)
   return (
     <div>
-      <div>Thesis:</div>
+      <div className="text-lg font-bold">Thesis:</div>
       <div>{theses.thesis}</div>
-      <div>Counter-Thesis:</div>
+      <div className="text-lg font-bold">Counter-Thesis:</div>
       <div>{theses.counter_thesis}</div>
-      <div>Explanation:</div>
+      <div className="text-lg font-bold">Explanation:</div>
       <div>{theses.explanation}</div>
     </div>
   )
@@ -62,16 +62,18 @@ function Arguments({content, handleExpandPremise}) {
 
   return (
     <div>
-      <div>Argument:</div>
-      <div>{argumentNode(arguments_.argument)}</div>
+      <div>
+        <div className="text-lg font-bold">Argument:</div>
+        <div>{argumentNode(arguments_.argument)}</div>
+      </div>
       {
         arguments_.counter_argument.length == 0 ? undefined :
         <div>
-          <div>Counter-Argument:</div>
+          <div className="text-lg font-bold">Counter-Argument:</div>
           <div>{argumentNode(arguments_.counter_argument)}</div>
         </div>
       }
-      <div>Explanation:</div>
+      <div className="text-lg font-bold">Explanation:</div>
       <div>{arguments_.explanation}</div>
     </div>
   )
