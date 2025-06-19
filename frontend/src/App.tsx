@@ -143,7 +143,7 @@ function App() {
 
   const handleExpandPremise = async (index) => {
     handleSend({
-      internalPrompt: `Introduce one or more premises from ` +
+      internalPrompt: `Introduce one or two premises from ` +
         `which proposition (${index}) is inferred.`
     })
   }
@@ -152,7 +152,7 @@ function App() {
     handleSend({
       internalPrompt: `If the inference from which proposition ` +
         `(${index}) is inferred is not strictly deductive, introduce ` +
-        `a premise to make the inference more explicit.`
+        `one or two premises to make the inference more explicit.`
     })
   }
 
