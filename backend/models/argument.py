@@ -30,8 +30,9 @@ argument_format = {
                 "type": "array",
                 "items": {"type": "string"}
             },
+            "truth": {"type": "number"}
         },
-        "required": ["index", "proposition", "justifiers"],
+        "required": ["index", "proposition", "justifiers", "truth"],
         "additionalProperties": False
     }
 }
