@@ -171,9 +171,9 @@ function App() {
   // window.xmessages = messages
 
   return (
-    <div className="flex w-[100vw] h-[100vh]">
+    <div className="flex w-[100dvw] h-[100dvh]">
       {/* Left Sidebar - empty div as requested */}
-      <div className="flex flex-col items-center w-[250px] bg-slate-100 dark:bg-zinc-800">
+      <div className="flex flex-col items-center w-[250px] bg-slate-100 dark:bg-zinc-800" id='sidebar'>
         {/* Sidebar content would go here */}
         <button className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'>
           New Chat
@@ -183,12 +183,12 @@ function App() {
       {/* Main Chat Area */}
       <div className=" flex flex-1 flex-col h-[100%] w-[100%] items-center" >
         {/* Message bubbles area */}
-        <div className="flex flex-1 overflow-y-auto p-20 flex-col w-[100%] scroll-hide">
+        <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide">
           {/* Example message bubbles - you would map through actual messages here */}
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`max-w-[80%] ${m.role == 'user' ? 'self-end' : 'self-start'}`}>
+              className={`max-w-[85%] ${m.role == 'user' ? 'self-end' : 'self-start'}`}>
               <p
                 className={`${
                   m.role == "user"
