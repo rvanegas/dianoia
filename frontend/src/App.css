@@ -41,3 +41,9 @@ html, body, #root {
     opacity: 1;
   }
 }
+
+@media (max-width: 720px) {
+  #sidebar {
+    display: none;
+  }
+}
