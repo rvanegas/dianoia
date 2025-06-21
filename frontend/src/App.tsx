@@ -214,7 +214,7 @@ function App() {
         )}
         <div ref={bottomRef} />
       </div>
-      <div className="flex mt-4">
+      <div className="flex space-x-2 mt-4">
         <input
           className="flex-1 border border-zinc-600 rounded-md p-2 mr-2 text-gray-700 dark:text-gray-200"
           value={prompt}
