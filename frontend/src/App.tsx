@@ -113,8 +113,7 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async ({internalPrompt}) => {
-    const content = internalPrompt ? internalPrompt : prompt
+  const handleSend = async (content) => {
     if (!content.trim()) return
     const userMessage: Message = {role: 'user', content}
     const newMessages = [...messages, userMessage]
@@ -138,18 +137,16 @@ function App() {
   }
 
   const handleExpandPremise = async (index) => {
-    handleSend({
-      internalPrompt: `Introduce one or two premises from ` +
-        `which proposition (${index}) is inferred.`
-    })
+    handleSend(`Introduce one or two premises from
+      which proposition (${index}) is inferred.`
+    )
   }
 
   const handleExpandInference = async (index) => {
-    handleSend({
-      internalPrompt: `If the inference from which proposition ` +
-        `(${index}) is inferred is not strictly deductive, introduce ` +
-        `one or two premises to make the inference more explicit.`
-    })
+    handleSend(`If the inference from which proposition
+      (${index}) is inferred is not strictly deductive, introduce
+      one or two premises to make the inference more explicit.`
+    )
   }
 
   const handleBack = () => {
@@ -221,14 +218,14 @@ function App() {
           onChange={e => setPrompt(e.target.value)}
           onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key == "Enter") {
-              handleSend()
+              handleSend(prompt)
               e.preventDefault()
             }
           }}
           placeholder="Type your message..."
         />
         <button
-          onClick={handleSend}
+          onClick={() => handleSend(prompt)}
           className="bg-indigo-600 text-white font-bold
             px-4 py-2 rounded-md hover:bg-indigo-500">
           Send
