@@ -17,8 +17,8 @@ function ExpandPremiseButton({handleExpandPremise}) {
   return (
     <button
       onClick={handleExpandPremise}
-      className="inline text-xs px-1 py-0.5 text-transparent
-        hover:text-black focus:outline-none">
+      className="inline text-xs px-1 py-0.5 ml-1
+        hover:text-white hover:bg-gray-500">
       Expand
     </button>
   )
@@ -28,8 +28,8 @@ function ExpandInferenceButton({handleExpandInference}) {
   return (
     <button
       onClick={handleExpandInference}
-      className="inline text-xs px-1 py-0.5 text-transparent
-        hover:text-black focus:outline-none">
+      className="inline text-xs px-1 py-0.5 ml-1
+        hover:text-white hover:bg-gray-500">
       Explicit
     </button>
   )
