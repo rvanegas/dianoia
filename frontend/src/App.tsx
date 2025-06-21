@@ -161,82 +161,89 @@ function App() {
   // window.xmessages = messages
 
   return (
-    <div className="px-4  pt-4 max-w-[720px] size-full max-h-[90vh] flex flex-col">
-      <div className="rounded px-4 h-screen overflow-y-scroll bg-white dark:bg-zinc-800">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={m.role === 'user' ? 'my-2 text-right' : 'my-2 text-left'}>
-            <p
-              className={`${
-                m.role == "user"
-                  ? "text-indigo-600"
-                  : "text-slate-500 dark:text-gray-400"
-              }`}>
-              {m.role === "user" ? "You" : "Dianoia"}
-            </p>
-            {m.role == 'assistant' ? (
-              <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
-                <div className="prose dark:prose-invert max-w-none">
-                  {
-                    i == 1
-                      ? <Theses content={m.content}></Theses>
-                      : <Arguments
-                          content={m.content}
-                          handleExpandPremise={handleExpandPremise}
-                          handleExpandInference={handleExpandInference}
-                        >
-                        </Arguments>
-                  }
-                </div>
-              </div>
-            ) : (
-              <p className="inline-block px-3 py-1 rounded-md bg-indigo-400 text-indigo-50">
-                {m.content}
-              </p>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="mt-2 flex items-center space-x-4">
-            <span className="text-sm text-zinc-400 italic">
-              Dianoia is thinking
-            </span>
-            <span className="typing-indicator">
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-            </span>
-          </div>
-        )}
-        <div ref={bottomRef} />
+    <div className="flex w-[100dvw] h-[100dvh]">
+      <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 md:block hidden">
+        <button className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'>
+        New Chat
+        </button>
       </div>
-      <div className="flex space-x-2 mt-4">
-        <input
-          className="flex-1 border border-zinc-600 rounded-md p-2 mr-2 text-gray-700 dark:text-gray-200"
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key == "Enter") {
-              handleSend(prompt)
-              e.preventDefault()
-            }
-          }}
-          placeholder="Type your message..."
-        />
-        <button
-          onClick={() => handleSend(prompt)}
-          className="bg-indigo-600 text-white font-bold
-            px-4 py-2 rounded-md hover:bg-indigo-500">
-          Send
-        </button>
-        <button
-          onClick={handleBack}
-          className="bg-indigo-600 text-white font-bold
-            px-4 py-2 rounded-md hover:bg-indigo-500">
-          Back
-        </button>
-        <ExportButton textCallback={() => exportMarkdown(messages)}/>
+      <div className="  flex flex-1 flex-col h-[100%] w-[100%] items-center" >
+        <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`max-w-[75%] text-left ${m.role === 'user' ? 'my-2 self-end' : 'my-2 self-start'}`}>
+              <p
+                className={`${
+                  m.role == "user"
+                    ? "text-indigo-600 text-right"
+                    : "text-slate-500 dark:text-gray-400 text-left"
+                }`}>
+                {m.role === "user" ? "You" : "Dianoia"}
+              </p>
+              {m.role == 'assistant' ? (
+                <div className="bg-slate-200 dark:bg-zinc-700 rounded-2xl rounded-tl-none text-zinc-700 p-3">
+                  <div className="prose dark:prose-invert max-w-none">
+                    {
+                      i == 1
+                        ? <Theses content={m.content}></Theses>
+                        : <Arguments
+                            content={m.content}
+                            handleExpandPremise={handleExpandPremise}
+                            handleExpandInference={handleExpandInference}
+                          >
+                          </Arguments>
+                    }
+                  </div>
+                </div>
+              ) : (
+                <p className="inline-block px-3 py-1 rounded-2xl rounded-tr-none bg-indigo-400 text-indigo-50">
+                  {m.content}
+                </p>
+              )}
+            </div>
+          ))}
+          {loading && (
+            <div className="mt-2 flex items-center space-x-4">
+              <span className="text-sm text-zinc-400 italic">
+                Dianoia is thinking
+              </span>
+              <span className="typing-indicator">
+                <span className="typing-dot"></span>
+                <span className="typing-dot"></span>
+                <span className="typing-dot"></span>
+              </span>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+        <div className="p-4 flex gap-2 w-[100%] flex-wrap">
+          <input
+            className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key == "Enter") {
+                handleSend(prompt)
+                e.preventDefault()
+              }
+            }}
+            placeholder="Type your message..."
+          />
+          <button
+            onClick={() => handleSend(prompt)}
+            className="bg-indigo-600 text-white font-bold
+              px-4 py-2 rounded-md hover:bg-indigo-500">
+            Send
+          </button>
+          <button
+            onClick={handleBack}
+            className="bg-indigo-600 text-white font-bold
+              px-4 py-2 rounded-md hover:bg-indigo-500">
+            Back
+          </button>
+          <ExportButton textCallback={() => exportMarkdown(messages)}/>
+        </div>
       </div>
     </div>
   )
