@@ -232,19 +232,19 @@ function App() {
           placeholder="Type your message..."
         />
         <div class="flex space-x-2">
-        <button
-          onClick={handleSend}
-          className="bg-indigo-600 text-white font-bold
-            px-4 py-2 rounded-md hover:bg-indigo-500">
-          Send
-        </button>
-        <button
-          onClick={handleBack}
-          className="bg-indigo-600 text-white font-bold
-            px-4 py-2 rounded-md hover:bg-indigo-500">
-          Back
-        </button>
-        <ExportButton textCallback={() => exportMarkdown(messages)}/>
+          <button
+            onClick={handleSend}
+            className="bg-indigo-600 text-white font-bold
+              px-4 py-2 rounded-md hover:bg-indigo-500">
+            Send
+          </button>
+          <button
+            onClick={handleBack}
+            className="bg-indigo-600 text-white font-bold
+              px-4 py-2 rounded-md hover:bg-indigo-500">
+            Back
+          </button>
+          <ExportButton textCallback={() => exportMarkdown(messages)}/>
         </div>
       </div>
     </div>
