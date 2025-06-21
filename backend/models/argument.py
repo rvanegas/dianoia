@@ -10,10 +10,9 @@ thesis_response_format = {
             "type": "object",
             "properties": {
                 "thesis": {"type": "string"},
-                "counter_thesis": {"type": "string"},
-                "explanation": {"type": "string"}
+                "counter_thesis": {"type": "string"}
             },
-            "required": ["thesis", "counter_thesis", "explanation"],
+            "required": ["thesis", "counter_thesis"],
             "additionalProperties": False
         }
     }
@@ -46,10 +45,9 @@ argument_response_format = {
             "type": "object",
             "properties": {
                 "argument": argument_format,
-                "counter_argument": argument_format,
-                "explanation": {"type": "string"}
+                "counter_argument": argument_format
             },
-            "required": ["argument", "counter_argument", "explanation"],
+            "required": ["argument", "counter_argument"],
             "additionalProperties": False
         }
     }
@@ -58,7 +56,6 @@ argument_response_format = {
 class ThesisResponse(BaseModel):
     thesis: str
     counter_thesis: str
-    explanation: str
 
 class Step(BaseModel):
     index: str
@@ -68,7 +65,6 @@ class Step(BaseModel):
 class ArgumentResponse(BaseModel):
     argument: list[Step]
     counter_argument: list[Step]
-    explanation: str
 
 def proofread_response(messages, prompt, content):
     def verify_uniqueness(steps):
