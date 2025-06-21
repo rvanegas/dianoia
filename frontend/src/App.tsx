@@ -231,6 +231,7 @@ function App() {
           }}
           placeholder="Type your message..."
         />
+        <div class="flex space-x-2">
         <button
           onClick={handleSend}
           className="bg-indigo-600 text-white font-bold
@@ -244,6 +245,7 @@ function App() {
           Back
         </button>
         <ExportButton textCallback={() => exportMarkdown(messages)}/>
+        </div>
       </div>
     </div>
   )
