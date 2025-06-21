@@ -164,10 +164,10 @@ function App() {
     <div className="flex w-[100dvw] h-[100dvh]">
       <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 md:block hidden">
         <button className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'>
-        New Chat
+          New Chat
         </button>
       </div>
-      <div className="  flex flex-1 flex-col h-[100%] w-[100%] items-center" >
+      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
         <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
           {messages.map((m, i) => (
             <div
@@ -182,7 +182,7 @@ function App() {
                 {m.role === "user" ? "You" : "Dianoia"}
               </p>
               {m.role == 'assistant' ? (
-                <div className="bg-slate-200 dark:bg-zinc-700 rounded-2xl rounded-tl-none text-zinc-700 p-3">
+                <div className="bg-slate-100 dark:bg-zinc-700 rounded-2xl rounded-tl-none text-zinc-700 p-3">
                   <div className="prose dark:prose-invert max-w-none">
                     {
                       i == 1
