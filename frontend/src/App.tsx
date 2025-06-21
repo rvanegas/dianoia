@@ -43,8 +43,6 @@ function Theses({content}) {
       <div>{theses.thesis}</div>
       <div className="text-lg font-bold">Counter-Thesis:</div>
       <div>{theses.counter_thesis}</div>
-      <div className="text-lg font-bold">Explanation:</div>
-      <div>{theses.explanation}</div>
     </div>
   )
 }
@@ -87,8 +85,6 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
           <div>{argumentNode(arguments_.counter_argument)}</div>
         </div>
       }
-      <div className="text-lg font-bold">Explanation:</div>
-      <div>{arguments_.explanation}</div>
     </div>
   )
 }
