@@ -13,8 +13,8 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500 text-white
-  font-bold px-4 py-2 rounded-md`
+const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500 
+  text-white font-bold px-4 py-2 rounded-md`
 const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
@@ -40,15 +40,14 @@ function ExpandInferenceButton({handleExpandInference}) {
 }
 
 function Theses({content}) {
-  const theses = JSON.parse(content)
   return (
     <div>
       <div className={headingClassNames}>Thesis:</div>
-      <div>{theses.thesis}</div>
+      <div>{content.thesis}</div>
       <div className={headingClassNames}>Counter-Thesis:</div>
-      <div>{theses.counter_thesis}</div>
+      <div>{content.counter_thesis}</div>
       <div className={headingClassNames}>Presuppositions:</div>
-      <div>{theses.presuppositions}</div>
+      <div>{content.presuppositions}</div>
     </div>
   )
 }
@@ -114,28 +113,33 @@ function ExportButton({textCallback}) {
 
 function App() {
   const [prompt, setPrompt] = useState<string>('')
+  const [lastPrompt, setLastPrompt] = useState<string>('')
+  const [theses, setTheses] = useState({thesis:'', counter_thesis: '', presuppositions: ''})
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleSend = async (content) => {
     if (!content.trim()) return
-    const userMessage: Message = {role: 'user', content}
-    const newMessages = [...messages, userMessage]
+    // const userMessage: Message = {role: 'user', content}
+    // const newMessages = [...messages, userMessage]
+    setLastPrompt(content)
     setPrompt('')
-    setMessages(prev => newMessages)
+    // setMessages(prev => newMessages)
     setLoading(true)
+    const thesesPrompt = {prompt: content, ...theses}
     try {
-      const url = `${VITE_API_BASE_URL}/api/v1/chat`
-      const response = await axios.post(url, {history: newMessages})
-      const botMessage: Message = {
-        role: 'assistant',
-        content: response.data.reply,
-      }
-      setMessages(prev => [...newMessages, botMessage])
-      setPrompt('')
+      const url = `${VITE_API_BASE_URL}/api/v1/theses`
+      const response = await axios.post(url, thesesPrompt)
+      setTheses(JSON.parse(response.data.reply))
+      // const botMessage: Message = {
+      //   role: 'assistant',
+      //   content: response.data.reply,
+      // }
+      // setMessages(prev => [...newMessages, botMessage])
+      // setPrompt('')
     } catch (error) {
-      console.log('Error: ', error)
+      console.error('Error: ', error)
     } finally {
       setLoading(false)
     }
@@ -331,12 +335,6 @@ function App() {
     </div>
   )
 
-  const theses = {
-    thesis: "Foo", 
-    counter_thesis: "Counter-Foo", 
-    presuppositions: "Bar"
-  }
-
   const arguments_ = {
     argument: [
       {
@@ -366,7 +364,7 @@ function App() {
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w-[75%] text-left my-2 self-start">
-          <Theses content={JSON.stringify(theses)}/>
+          <Theses content={theses}/>
           <Arguments
             content={JSON.stringify(arguments_)}
             handleExpandPremise={handleExpandPremise}
@@ -388,6 +386,7 @@ function App() {
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
         {newMessagesDiv}
+        <div>Last: {lastPrompt}</div>
         {userDiv}
       </div>
     </div>
