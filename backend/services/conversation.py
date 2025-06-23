@@ -6,33 +6,32 @@ import json
 
 from core.utils import logger
 from .system_prompt import system_welcome_prompt, system_development_prompt
-from models.argument import argument_response_format, thesis_response_format, proofread_response
+from models.argument import argument_response_format, theses_response_format, proofread_response
 
 class Prompt(BaseModel):
     history: object = {}
 
-class ThesisPrompt(BaseModel):
+class ThesesPrompt(BaseModel):
     thesis: str
     counter_thesis: str
-    presupposition: str
+    presuppositions: str
     prompt: str
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def develop_thesis(thesis_prompt):
-    response_format=thesis_response_format
+def develop_theses(theses_prompt):
     messages = [{
         "role": "system",
         "content": system_welcome_prompt
     },
     {
         "role": "user",
-        "content": thesis_prompt.json().dumps()
+        "content": theses_prompt.json()
     }]
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        response_format=thesis_response_format,
+        response_format=theses_response_format,
     )
     content = response.choices[0].message.content
     return content
