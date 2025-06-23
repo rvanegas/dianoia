@@ -337,16 +337,18 @@ function App() {
   )
 
   const newMessagesDiv = (
-    <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
+    <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
-        <div className="max-w-[75%] text-left my-2 self-start">
-          <Theses content={theses}/>
-          <Arguments
-            content={args}
-            handleExpandPremise={handleExpandPremise}
-            handleExpandInference={handleExpandInference}
-          >
-          </Arguments>
+        <div className="max-w text-left my-2 self-start">
+          {!theses.thesis ? undefined : <Theses content={theses}/>}
+          {args.argument.length == 0 ? undefined :
+            <Arguments
+              content={args}
+              handleExpandPremise={handleExpandPremise}
+              handleExpandInference={handleExpandInference}
+            >
+            </Arguments>
+          }
         </div>
       </div>
       {loadingIndicator}
@@ -363,7 +365,7 @@ function App() {
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
         {newMessagesDiv}
-        <div>Last: {lastPrompt}</div>
+        {!lastPrompt ? undefined : <div>Last: {lastPrompt}</div>}
         {userDiv}
       </div>
     </div>
