@@ -46,8 +46,8 @@ function Theses({content}) {
       <div>{content.thesis}</div>
       <div className={headingClassNames}>Counter-Thesis:</div>
       <div>{content.counter_thesis}</div>
-      <div className={headingClassNames}>Presuppositions:</div>
-      <div>{content.presuppositions}</div>
+      <div className={headingClassNames}>Presupposition:</div>
+      <div>{content.presupposition}</div>
     </div>
   )
 }
@@ -112,7 +112,7 @@ function ExportButton({textCallback}) {
 function App() {
   const [prompt, setPrompt] = useState<string>('')
   const [lastPrompt, setLastPrompt] = useState<string>('')
-  const [theses, setTheses] = useState({thesis:'', counter_thesis: '', presuppositions: ''})
+  const [theses, setTheses] = useState({thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState({argument: [], counter_argument: []})
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState<boolean>(false)
