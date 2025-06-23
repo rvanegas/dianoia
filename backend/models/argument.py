@@ -57,6 +57,7 @@ argument_response_format = {
 class ThesisResponse(BaseModel):
     thesis: str
     counter_thesis: str
+    presuppositions: str
 
 class Step(BaseModel):
     index: str
@@ -66,6 +67,12 @@ class Step(BaseModel):
 class ArgumentResponse(BaseModel):
     argument: list[Step]
     counter_argument: list[Step]
+
+class ThesesPrompt(ThesisResponse):
+    prompt: str
+
+class ArgumentPrompt(ArgumentResponse, ThesisResponse):
+    prompt: str
 
 def proofread_response(messages, prompt, content):
     def verify_uniqueness(steps):
