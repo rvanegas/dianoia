@@ -53,8 +53,6 @@ function Theses({content}) {
 }
 
 function Arguments({content, handleExpandPremise, handleExpandInference}) {
-  const arguments_ = JSON.parse(content)
-
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
       const justifier = step.justifiers.length == 0 ?
@@ -81,13 +79,13 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
     <div>
       <div>
         <div className={headingClassNames}>Argument:</div>
-        <div>{argumentNode(arguments_.argument)}</div>
+        <div>{argumentNode(content.argument)}</div>
       </div>
       {
-        arguments_.counter_argument.length == 0 ? undefined :
+        content.counter_argument.length == 0 ? undefined :
         <div>
           <div className={headingClassNames}>Counter-Argument:</div>
-          <div>{argumentNode(arguments_.counter_argument)}</div>
+          <div>{argumentNode(content.counter_argument)}</div>
         </div>
       }
     </div>
@@ -115,29 +113,42 @@ function App() {
   const [prompt, setPrompt] = useState<string>('')
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [theses, setTheses] = useState({thesis:'', counter_thesis: '', presuppositions: ''})
+  const [args, setArgs] = useState({argument: [], counter_argument: []})
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleSend = async (content) => {
+    if (theses.thesis != '') {
+      handleArgsSend(content)
+      return
+    }
     if (!content.trim()) return
-    // const userMessage: Message = {role: 'user', content}
-    // const newMessages = [...messages, userMessage]
     setLastPrompt(content)
     setPrompt('')
-    // setMessages(prev => newMessages)
     setLoading(true)
     const thesesPrompt = {prompt: content, ...theses}
     try {
       const url = `${VITE_API_BASE_URL}/api/v1/theses`
       const response = await axios.post(url, thesesPrompt)
       setTheses(JSON.parse(response.data.reply))
-      // const botMessage: Message = {
-      //   role: 'assistant',
-      //   content: response.data.reply,
-      // }
-      // setMessages(prev => [...newMessages, botMessage])
-      // setPrompt('')
+    } catch (error) {
+      console.error('Error: ', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleArgsSend = async (content) => {
+    if (!content.trim()) return
+    setLastPrompt(content)
+    setPrompt('')
+    setLoading(true)
+    const argumentPrompt = {prompt: content, ...args, ...theses}
+    try {
+      const url = `${VITE_API_BASE_URL}/api/v1/argument`
+      const response = await axios.post(url, argumentPrompt)
+      setArgs(JSON.parse(response.data.reply))
     } catch (error) {
       console.error('Error: ', error)
     } finally {
@@ -291,18 +302,6 @@ function App() {
           )}
         </div>
       ))}
-      {loading && (
-        <div className="mt-2 flex items-center space-x-4">
-          <span className="text-sm text-zinc-400 italic">
-            Dianoia is thinking
-          </span>
-          <span className="typing-indicator">
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
-          </span>
-        </div>
-      )}
       <div ref={bottomRef} />
     </div>
   )
@@ -366,13 +365,25 @@ function App() {
         <div className="max-w-[75%] text-left my-2 self-start">
           <Theses content={theses}/>
           <Arguments
-            content={JSON.stringify(arguments_)}
+            content={args}
             handleExpandPremise={handleExpandPremise}
             handleExpandInference={handleExpandInference}
           >
           </Arguments>
         </div>
       </div>
+      {loading && (
+        <div className="mt-2 flex items-center space-x-4">
+          <span className="text-sm text-zinc-400 italic">
+            Dianoia is thinking
+          </span>
+          <span className="typing-indicator">
+            <span className="typing-dot"></span>
+            <span className="typing-dot"></span>
+            <span className="typing-dot"></span>
+          </span>
+        </div>
+      )}
       <div ref={bottomRef} />
     </div>
   )
