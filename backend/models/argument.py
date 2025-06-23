@@ -10,9 +10,10 @@ thesis_response_format = {
             "type": "object",
             "properties": {
                 "thesis": {"type": "string"},
-                "counter_thesis": {"type": "string"}
+                "counter_thesis": {"type": "string"},
+                "presupposition": {"type": "string"}
             },
-            "required": ["thesis", "counter_thesis"],
+            "required": ["thesis", "counter_thesis", "presupposition"],
             "additionalProperties": False
         }
     }
