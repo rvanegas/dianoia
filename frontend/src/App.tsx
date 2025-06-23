@@ -40,15 +40,15 @@ function ExpandInferenceButton({handleExpandInference}) {
 }
 
 function Theses({content}) {
-  console.log('c', content)
-  const theses = JSON.parse(content.content)
-  console.log('y', theses)
+  const theses = JSON.parse(content)
   return (
     <div>
       <div className={headingClassNames}>Thesis:</div>
       <div>{theses.thesis}</div>
       <div className={headingClassNames}>Counter-Thesis:</div>
       <div>{theses.counter_thesis}</div>
+      <div className={headingClassNames}>Presuppositions:</div>
+      <div>{theses.presuppositions}</div>
     </div>
   )
 }
@@ -337,17 +337,11 @@ function App() {
     presuppositions: "bar"
   }
 
-  const thesesContent = {
-    content: JSON.stringify(theses)
-  }
-
-  console.log('t', thesesContent)
-
   const newMessagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
-      <div className="bg-slate-100 dark:bg-zinc-700 rounded-2xl rounded-tl-none text-zinc-700 p-3">
-        <div className="prose dark:prose-invert max-w-none">
-          <Theses content={{content: JSON.stringify(theses)}}/>
+      <div className="p-3 prose dark:prose-invert max-w-none">
+        <div className="max-w-[75%] text-left my-2 self-start">
+          <Theses content={JSON.stringify(theses)}/>
         </div>
       </div>
       <div ref={bottomRef} />
