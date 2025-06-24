@@ -7,8 +7,14 @@ import ReactMarkdown from 'react-markdown'
 import { exportMarkdown } from './markdown.tsx'
 
 type Message = {
-  role: 'user' | 'assistant';
-  content: string;
+  role: 'user' | 'assistant'
+  content: string
+}
+
+type ThesesType = {
+  thesis: string
+  counter_thesis: string
+  presupposition: string
 }
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -112,7 +118,7 @@ function ExportButton({textCallback}) {
 function App() {
   const [prompt, setPrompt] = useState<string>('')
   const [lastPrompt, setLastPrompt] = useState<string>('')
-  const [theses, setTheses] = useState({thesis:'', counter_thesis: '', presupposition: ''})
+  const [theses, setTheses] = useState<ThesesType>({thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState({argument: [], counter_argument: []})
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState<boolean>(false)
