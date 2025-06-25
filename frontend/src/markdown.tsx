@@ -9,27 +9,40 @@ export function thesisMarkdown(theses) {
 }
 
 export function developmentMarkdown(args) {
-  let md = '**Argument:**\n\n'
+  let md = ''
   let justifier = ''
 
-  const argumentMarkdown = argument => {
-    argument.forEach(item => {
-      md += `(${item.index}${item.changed ? '*' : ''}) `
+  const assumptionsMarkdown = assumptions => {
+    assumptions.forEach(item => {
+      md += `(${item.index}) `
       md += `${item.proposition} `
-      if (item.justifiers.length == 0) {
-        justifier = 'premise'
-      } else {
-        justifier = `from ${item.justifiers.join(', ')}`
-      }
-      md += `_[${justifier}; ${item.truth}]_\n\n`
     })
   }
 
-  argumentMarkdown(args.argument)
-  if (args.counter_argument.length != 0) {
-    md += '**Counter-Argument:**\n\n'
-    argumentMarkdown(args.counter_argument)
+  const argumentMarkdown = argument => {
+    argument.forEach(item => {
+      md += `(${item.index}) `
+      md += `${item.proposition} `
+
+      let justifier = ''
+      let value = `${step.truth}`
+      if (step.justifiers.length == 0) {
+        justifier = 'premise'
+      }
+      else {
+        justifier = 'from ' + step.justifiers.join(', ')
+        value += `, ${step.valid}`
+      }
+      md += `_[${justifier}; ${value}]_\n\n`
+    })
   }
+
+  md += '**Assumptions:**\n\n'
+  assumptionsMarkdown(args.assumptions)
+  md += '**Argument:**\n\n'
+  argumentMarkdown(args.argument)
+  md += '**Counter-Argument:**\n\n'
+  argumentMarkdown(args.counter_argument)
   return md
 }
 
