@@ -98,4 +98,7 @@ from 0.0 to 1.0 corresponding to how likely the proposition is to be true. For
 every proposition that is inferred, set the property "truth" to a number
 from 0.0 to 1.0 corresponding to the degree to which the inference is valid.
 
+Do not use the presuppostion as an explicit premise in the propositions. It
+is presupposed, which means that its contribution is implicit.
+
 """
