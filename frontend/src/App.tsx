@@ -27,19 +27,6 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function Theses({content}) {
-  return (
-    <>
-      <div className={headingClassNames}>Thesis:</div>
-      <div>{content.thesis}</div>
-      <div className={headingClassNames}>Counter-Thesis:</div>
-      <div>{content.counter_thesis}</div>
-      <div className={headingClassNames}>Presupposition:</div>
-      <div>{content.presupposition}</div>
-    </>
-  )
-}
-
 function ExportButton({textCallback}) {
   const [copied, setCopied] = useState<boolean>(false)
   const handleCopy = async () => {
@@ -119,11 +106,6 @@ function App() {
     )
   }
 
-  const handleBack = () => {
-    const lastUserMessageIndex = messages.findLastIndex(m => m.role == 'user')
-    setMessages(messages.slice(0, lastUserMessageIndex))
-  }
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({behavior: 'smooth'})
   }, [messages, loading])
@@ -142,6 +124,11 @@ function App() {
   )
 
   // window.xmessages = messages
+
+  const placeholderText =
+    userMode == 'thesis' ? 'Enter thesis' :
+    userMode == 'inputProposition' ?
+      'Enter proposition' : ''
 
   const userDiv = (
     <div className="p-4 flex gap-2 w-[100%] flex-wrap">
@@ -165,12 +152,7 @@ function App() {
       <button
         onClick={() => handleSend(prompt)}
         className={bigButtonClassNames}>
-        Send
-      </button>
-      <button
-        onClick={handleBack}
-        className={bigButtonClassNames}>
-        Back
+        Enter
       </button>
       <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
     </div>
@@ -225,11 +207,22 @@ function App() {
     </>
   )
 
-  const newMessagesDiv = (
+  const thesesDiv = (
+    <>
+      <div className={headingClassNames}>Thesis:</div>
+      <div>{theses.thesis}</div>
+      <div className={headingClassNames}>Counter-Thesis:</div>
+      <div>{theses.counter_thesis}</div>
+      <div className={headingClassNames}>Presupposition:</div>
+      <div>{theses.presupposition}</div>
+    </>
+  )
+
+  const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
-          {!theses.thesis ? undefined : <Theses content={theses}/>}
+          {!theses.thesis ? undefined : thesesDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
           {!lastPrompt ? undefined : 
             <>
@@ -252,7 +245,7 @@ function App() {
         </button>
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
-        {newMessagesDiv}
+        {messagesDiv}
         {userDiv}
       </div>
     </div>
