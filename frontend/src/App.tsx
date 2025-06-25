@@ -69,6 +69,7 @@ function App() {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [prompt, setPrompt] = useState<string>('')
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleEnter = async (content) => {
     if (!content.trim()) return
@@ -187,6 +188,10 @@ function App() {
 
   // console.log('t', theses)
   // console.log('a', args)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({behavior: 'smooth'})
+  }, [loading])
 
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
