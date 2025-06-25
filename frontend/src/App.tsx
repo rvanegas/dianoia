@@ -108,17 +108,24 @@ function App() {
     }
   }
 
-  const handleExpandPremise = async (index) => {
-    handleEnter(`Introduce one or two premises from
-      which proposition (${index}) is inferred.`
-    )
+  const handleSupport = async (index, justifiers) => {
+    if (justifiers.length == 0) {
+      handleEnter(`Introduce one or two premises from
+        which proposition (${index}) is inferred.`
+      )
+    }
+    else {
+      handleEnter(`If the inference from which proposition
+        (${index}) is inferred is not strictly deductive, introduce
+        one or two premises to make the inference more explicit.`
+      )
+    }
   }
 
-  const handleExpandInference = async (index) => {
-    handleEnter(`If the inference from which proposition
-      (${index}) is inferred is not strictly deductive, introduce
-      one or two premises to make the inference more explicit.`
-    )
+  const handleRemove = async (index) => {
+    handleEnter(`Remove proposition (${index}). Adjust inference
+      relations to ensure that every proposition still contributes
+      to the argument's conclusion.`)
   }
 
   const loadingIndicator = loading && (
@@ -171,7 +178,7 @@ function App() {
         <button
           className={bigButtonClassNames}
           onClick={() => setUserMode('inputProposition')}>
-          input
+          Input
         </button>
       }
       <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
@@ -188,18 +195,17 @@ function App() {
       return (
         <div key={key}>
           ({step.index}) {step.proposition} [{justifier}; {step.truth}]
-          {
-            step.justifiers.length == 0 ?
-              <button
-                className={smallButtonClassNames}
-                onClick={() => handleExpandPremise(step.index)}>
-                expand
-              </button> :
-              <button
-                className={smallButtonClassNames}
-                onClick={() => handleExpandInference(step.index)}>
-                explicit
-              </button>
+          <button
+            className={smallButtonClassNames}
+            onClick={() => handleSupport(step.index, step.justifiers)}>
+            support
+          </button>
+          {key == argument.length -1 ? undefined :
+            <button
+              className={smallButtonClassNames}
+              onClick={() => handleRemove(step.index)}>
+              remove
+            </button>
           }
         </div>
       )
