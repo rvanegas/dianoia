@@ -19,6 +19,19 @@ theses_response_format = {
     }
 }
 
+assumptions_format = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "index": {"type": "string"},
+            "proposition": {"type": "string"},
+        },
+        "required": ["index", "proposition"],
+        "additionalProperties": False
+    }
+}
+
 argument_format = {
     "type": "array",
     "items": {
@@ -30,9 +43,10 @@ argument_format = {
                 "type": "array",
                 "items": {"type": "string"}
             },
-            "truth": {"type": "number"}
+            "truth": {"type": "number"},
+            "valid": {"type": "number"}
         },
-        "required": ["index", "proposition", "justifiers", "truth"],
+        "required": ["index", "proposition", "justifiers", "truth", "valid"],
         "additionalProperties": False
     }
 }
@@ -46,9 +60,10 @@ argument_response_format = {
             "type": "object",
             "properties": {
                 "argument": argument_format,
-                "counter_argument": argument_format
+                "counter_argument": argument_format,
+                "assumptions": assumptions_format
             },
-            "required": ["argument", "counter_argument"],
+            "required": ["argument", "counter_argument", "assumptions"],
             "additionalProperties": False
         }
     }
@@ -59,12 +74,19 @@ class ThesisResponse(BaseModel):
     counter_thesis: str
     presupposition: str
 
+class Assumption(BaseModel):
+    index: str
+    proposition: str
+
 class Step(BaseModel):
     index: str
     proposition: str
     justifiers: list[str]
+    truth: float
+    valid: float
 
 class ArgumentResponse(BaseModel):
+    assumptions: list[Assumption]
     argument: list[Step]
     counter_argument: list[Step]
 

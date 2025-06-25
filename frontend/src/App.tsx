@@ -17,16 +17,23 @@ type ThesesType = {
   presupposition: string
 }
 
-type ArgumentType = {
+type StepType = {
   index: string
   proposition: string
   justifiers: string[]
   truth: number
+  valid: number
+}
+
+type AssumptionType = {
+  index: string
+  proposition: string
 }
 
 type ArgsType = {
-  argument: ArgumentType
-  counter_argument: ArgumentType
+  argument: StepType[]
+  counter_argument: StepType[]
+  assumptions: AssumptionType[]
 }
 
 type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
@@ -65,9 +72,8 @@ function App() {
   const [theses, setTheses] = useState<ThesesType>({
     thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState<ArgsType>({
-    argument: [], counter_argument: []})
+    argument: [], counter_argument: [], assumptions: []})
   const [lastPrompt, setLastPrompt] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(false)
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
@@ -75,7 +81,6 @@ function App() {
     if (!content.trim()) return
     setLastPrompt(content)
     setPrompt('')
-    setLoading(true)
     let apiPrompt = {prompt: content, ...theses}
     if (theses.thesis) {
       apiPrompt = {...apiPrompt, ...args}
@@ -104,9 +109,6 @@ function App() {
         setUserMode('thesis')
       }
     } 
-    finally {
-      setLoading(false)
-    }
   }
 
   const handleSupport = async (index, justifiers) => {
@@ -123,13 +125,19 @@ function App() {
     }
   }
 
-  const handleRemove = async (index) => {
-    handleEnter(`Remove proposition (${index}). Adjust inference
-      relations to ensure that every proposition still contributes
+  const handleAssume = async (index) => {
+    handleEnter(`Move proposition (${index}) to the assumptions. Adjust
+      inference relations to ensure that every proposition still contributes
       to the argument's conclusion.`)
   }
 
-  const loadingIndicator = loading && (
+  const handleRemove = async (index) => {
+    handleEnter(`Remove proposition (${index}). Adjust
+      inference relations to ensure that every proposition still contributes
+      to the argument's conclusion.`)
+  }
+
+  const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
         Dianoia is thinking
@@ -190,27 +198,43 @@ function App() {
   // console.log('a', args)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({behavior: 'smooth'})
-  }, [loading])
+    if (userMode == 'waiting') {
+      bottomRef.current?.scrollIntoView({behavior: 'smooth'})
+    }
+  }, [userMode])
 
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
-      const justifier = step.justifiers.length == 0 ?
-        'premise' : 'from ' + step.justifiers.join(', ')
+      let justifier = ''
+      let value = `${step.truth}`
+      if (step.justifiers.length == 0) {
+        justifier = 'premise'
+      }
+      else {
+        justifier = 'from ' + step.justifiers.join(', ')
+        value += `, ${step.valid}`
+      }
       return (
         <div key={key}>
-          ({step.index}) {step.proposition} [{justifier}; {step.truth}]
+          ({step.index}) {step.proposition} [{justifier}; {value}]
           <button
             className={smallButtonClassNames}
             onClick={() => handleSupport(step.index, step.justifiers)}>
             support
           </button>
           {key == argument.length -1 ? undefined :
-            <button
-              className={smallButtonClassNames}
-              onClick={() => handleRemove(step.index)}>
-              remove
-            </button>
+            <>
+              <button
+                className={smallButtonClassNames}
+                onClick={() => handleAssume(step.index)}>
+                assume
+              </button>
+              <button
+                className={smallButtonClassNames}
+                onClick={() => handleRemove(step.index)}>
+                remove
+              </button>
+            </>
           }
         </div>
       )
@@ -228,6 +252,22 @@ function App() {
         <div className={headingClassNames}>Counter-Argument:</div>
         <div>{argumentNode(args.counter_argument)}</div>
       </div>
+    </>
+  )
+
+  const assumptionsDiv = (
+    <>
+      <div className={headingClassNames}>Assumptions:</div>
+      {args.assumptions.map((assumption, key) => (
+        <div key={key}>
+          ({assumption.index}) {assumption.proposition}
+          <button
+            className={smallButtonClassNames}
+            onClick={() => handleRemove(assumption.index)}>
+            remove
+          </button>
+        </div>
+      ))}
     </>
   )
 
@@ -254,6 +294,7 @@ function App() {
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
           {!theses.thesis ? undefined : thesesDiv}
+          {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
           {!lastPrompt ? undefined : lastDiv}
         </div>
