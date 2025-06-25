@@ -17,6 +17,8 @@ type ThesesType = {
   presupposition: string
 }
 
+type UserMode = 'thesis' | 'development' | 'inputProposition'
+
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
@@ -57,8 +59,7 @@ function ExportButton({textCallback}) {
 
 function App() {
   const [prompt, setPrompt] = useState<string>('')
-  const [promptPlaceholder, setPromptPlaceholder] = useState<string>('')
-  const [inputDisabled, setInputDisabled] = useState<boolean>(false)
+  const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [theses, setTheses] = useState<ThesesType>({thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState({argument: [], counter_argument: []})
@@ -84,7 +85,6 @@ function App() {
       console.error('Error: ', error)
     } finally {
       setLoading(false)
-      setPromptPlaceholder('')
     }
   }
 
@@ -102,6 +102,7 @@ function App() {
       console.error('Error: ', error)
     } finally {
       setLoading(false)
+      setUserMode('development')
     }
   }
 
@@ -127,10 +128,6 @@ function App() {
     bottomRef.current?.scrollIntoView({behavior: 'smooth'})
   }, [messages, loading])
 
-  useEffect(() => {
-    setPromptPlaceholder('Enter thesis.')
-  }, [])
-
   const loadingIndicator = loading && (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -151,7 +148,7 @@ function App() {
       <input
         className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
         value={prompt}
-        disabled={inputDisabled}
+        disabled={userMode == 'development'}
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == "Enter") {
@@ -159,7 +156,11 @@ function App() {
             e.preventDefault()
           }
         }}
-        placeholder={promptPlaceholder}
+        placeholder={
+          userMode == 'thesis' ? 'Enter thesis' :
+          userMode == 'inputProposition' ?
+            'Enter proposition' : ''
+        }
       />
       <button
         onClick={() => handleSend(prompt)}
@@ -209,6 +210,8 @@ function App() {
           <button
             className={smallButtonClassNames + " font-normal"}
             onClick={() => {
+              setUserMode('inputProposition')
+              // disable send button
             }}>
             input
           </button>
