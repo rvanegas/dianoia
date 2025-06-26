@@ -12,4 +12,3 @@ class Conversation(Base):
 
 # user = session.query(User).filter_by(name="Alice").first()
 # print(user.email)
-
