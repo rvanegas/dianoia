@@ -73,6 +73,7 @@ function App() {
     thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState<ArgsType>({
     argument: [], counter_argument: [], assumptions: []})
+  const [argErrors, setArgErrors] = useState({argument: [], counter_argument: []})
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -98,6 +99,7 @@ function App() {
       }
       else {
         setArgs(responseObject)
+        setArgErrors(response.data.errors)
         setUserMode('development')
       }
     }
@@ -204,6 +206,10 @@ function App() {
     }
   }, [userMode])
 
+  // useEffect(() => {
+  //   console.log('a', argErrors)
+  // }, [argErrors])
+
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
       let justifier = ''
@@ -243,15 +249,33 @@ function App() {
     return <div>{argumentSteps}</div>
   }
 
+  const argErrorsNode = errors => errors.map((error, key) => {
+    return (
+      <div key={key}>{error}</div>
+    )
+  })
+
   const argumentsDiv = (
     <>
       <div>
         <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode(args.argument)}</div>
+        {argErrors.argument.length == 0 ? undefined :
+          <>
+            <div className={headingClassNames}>Errors:</div>
+            <div>{argErrorsNode(argErrors.argument)}</div>
+          </>
+        }
       </div>
       <div>
         <div className={headingClassNames}>Counter-Argument:</div>
         <div>{argumentNode(args.counter_argument)}</div>
+        {argErrors.counter_argument.length == 0 ? undefined :
+          <>
+            <div className={headingClassNames}>Errors:</div>
+            <div>{argErrorsNode(argErrors.counter_argument)}</div>
+          </>
+        }
       </div>
     </>
   )
