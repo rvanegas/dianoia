@@ -90,6 +90,7 @@ function App() {
     setUserMode('waiting')
     try {
       const response = await axios.post(url, apiPrompt)
+      // console.log('r', response.data)
       const responseObject = JSON.parse(response.data.reply)
       if (!responseObject.argument) {
         setTheses(responseObject)
@@ -99,14 +100,14 @@ function App() {
         setArgs(responseObject)
         setUserMode('development')
       }
-    } 
+    }
     catch (error) {
       console.error('Error: ', error)
-      if (theses.argument) {
-        setUserMode('development')
+      if (!theses.argument) {
+        setUserMode('thesis')
       }
       else {
-        setUserMode('thesis')
+        setUserMode('development')
       }
     } 
   }
