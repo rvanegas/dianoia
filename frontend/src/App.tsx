@@ -82,16 +82,16 @@ function App() {
     if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setPrompt('')
+    const callArgument = userMode == 'argument' || content == 'Argue.'
     let apiPrompt = {prompt: content, ...theses}
-    if (theses.thesis) {
+    if (callArgument) {
       apiPrompt = {...apiPrompt, ...args}
     }
-    const path = theses.thesis ? '/api/v1/argument' : '/api/v1/theses'
+    const path = callArgument ? '/api/v1/argument' : '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
     setUserMode('waiting')
     try {
       const response = await axios.post(url, apiPrompt)
-      // console.log('r', response.data)
       const responseObject = JSON.parse(response.data.reply)
       if (!responseObject.argument) {
         setTheses(responseObject)
@@ -112,6 +112,10 @@ function App() {
         setUserMode('development')
       }
     } 
+  }
+
+  const handleArgue = async () => {
+    handleEnter('Argue.')
   }
 
   const handleSupport = async (index, justifiers) => {
@@ -177,16 +181,21 @@ function App() {
             'Enter proposition' : ''
         }
       />
-      {userMode == 'development' || userMode == 'waiting' ? 
-        undefined :
+      {!(userMode == 'thesis' && theses.thesis) ? undefined :
+        <button
+          className={bigButtonClassNames}
+          onClick={() => handleArgue()}>
+          Argue
+        </button>
+      }
+      {userMode == 'development' || userMode == 'waiting' ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleEnter(prompt)}>
           Enter
         </button>
       }
-      {userMode != 'development' ?
-        undefined :
+      {userMode != 'development' ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => setUserMode('inputProposition')}>
@@ -197,18 +206,11 @@ function App() {
     </div>
   )
 
-  // console.log('t', theses)
-  // console.log('a', args)
-
   useEffect(() => {
     if (userMode == 'waiting') {
       bottomRef.current?.scrollIntoView({behavior: 'smooth'})
     }
   }, [userMode])
-
-  // useEffect(() => {
-  //   console.log('a', argErrors)
-  // }, [argErrors])
 
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
