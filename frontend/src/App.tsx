@@ -1,10 +1,20 @@
 import './App.css'
-import type { ThesesType, StepType, ArgsType } from './types'
 
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
+import type { ThesesType, StepType, ArgsType } from './types'
 import { exportMarkdown } from './markdown'
+
+type AppSnapshot = {
+  theses: ThesesType
+  args: ArgsType
+  argErrors: { argument: string[], counter_argument: string[] }
+  lastPrompt: string
+  userMode: UserMode
+}
+
+type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
 
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development
@@ -18,8 +28,6 @@ const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
 const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
-
-type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
 
 function ExportButton({textCallback}: {textCallback: () => string}) {
   const [copied, setCopied] = useState<boolean>(false)
@@ -47,6 +55,19 @@ function App() {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [history, setHistory] = useState<AppSnapshot[]>([{
+    theses: theses,
+    args: args,
+    argErrors: argErrors,
+    lastPrompt: lastPrompt,
+    userMode: userMode,
+  }])
+  const [histIndex, setHistIndex] = useState<number>(0)
+
+  const saveSnapshot = (newSnap: AppSnapshot) => {
+    setHistory([...history, newSnap])
+    setHistIndex((prev) => prev + 1)
+  }
 
   const handleEnter = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
@@ -54,9 +75,12 @@ function App() {
     setPrompt('')
     const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
     const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
-    let apiPrompt = {prompt: content, ...theses}
-    if (newUserMode == 'development') {
-      apiPrompt = {...apiPrompt, ...args}
+    let apiPrompt
+    if (newUserMode == 'thesis') {
+      apiPrompt = {prompt: content, ...theses}
+    }
+    else {
+      apiPrompt = {prompt: content, ...theses, ...args}
     }
     const path = newUserMode == 'development' ? '/api/v1/argument' : '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
@@ -66,10 +90,23 @@ function App() {
       const responseObject = JSON.parse(response.data.reply)
       if (newUserMode == 'thesis') {
         setTheses(responseObject)
+        saveSnapshot({
+          ...history[histIndex],
+          userMode: newUserMode,
+          theses: responseObject,
+          args, argErrors,
+        })
       }
       else {
         setArgs(responseObject)
         setArgErrors(response.data.errors)
+        saveSnapshot({
+          ...history[histIndex],
+          userMode: newUserMode,
+          theses,
+          args: responseObject,
+          argErrors: response.data.errors,
+        })
       }
     }
     catch (error) {
@@ -108,6 +145,32 @@ function App() {
     handleEnter(`Remove proposition (${index}). Adjust
       inference relations to ensure that every proposition still contributes
       to the argument's conclusion.`)
+  }
+
+  const handleUndo = () => {
+    if (histIndex <= 0) return
+    const newIndex = histIndex - 1
+    setHistIndex(newIndex)
+    const prev = history[newIndex]
+
+    setTheses(prev.theses)
+    setArgs(prev.args)
+    setArgErrors(prev.argErrors)
+    setLastPrompt(prev.lastPrompt)
+    setUserMode(prev.userMode)
+  }
+
+  const handleRedo = () => {
+    if (histIndex >= history.length - 1) return
+    const newIndex = histIndex + 1
+    setHistIndex(newIndex)
+    const next = history[newIndex]
+
+    setTheses(next.theses)
+    setArgs(next.args)
+    setArgErrors(next.argErrors)
+    setLastPrompt(next.lastPrompt)
+    setUserMode(next.userMode)
   }
 
   const loadingIndicator = userMode != 'waiting' ? undefined : (
@@ -164,6 +227,18 @@ function App() {
           Input
         </button>
       }
+      <button
+        disabled={histIndex <= 0}
+        onClick={handleUndo}
+        className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+          Undo
+      </button>
+      <button
+        disabled={histIndex >= history.length - 1}
+        onClick={handleRedo}
+        className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+          Redo
+      </button>
       <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
     </div>
   )
