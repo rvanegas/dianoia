@@ -2,7 +2,9 @@
 Createt Lightsail instance
 Ubuntu 22.04 LTS
 lightsail-ubuntu ssh key
+
 Networking / Attach static IP
+Add ipv4 rule for tcp/8000
 
 sudo apt update
 sudo apt upgrade -y
@@ -11,8 +13,10 @@ sudo usermod -aG docker $USER
 sudo reboot
 
 scp gh keys and config to server
+git clone git@github.com:rvanegas/dianoia.git
 
-copy OPENAI_ID to .env
+copy OPENAI_ID to backend/.env
+copy VITE_API_BASE_URL to frontend/.env
 
 docker-compose down --volumes --remove-orphans
 docker-compose build --no-cache
