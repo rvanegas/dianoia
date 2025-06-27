@@ -44,8 +44,6 @@ type AppSnapshot = {
   userMode: UserMode
 }
 
-type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
-
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development
 // development -> waiting -> development
