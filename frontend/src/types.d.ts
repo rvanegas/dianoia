@@ -12,13 +12,8 @@ export type StepType = {
   valid: number
 }
 
-export type AssumptionType = {
-  index: string
-  proposition: string
-}
-
 export type ArgsType = {
   argument: StepType[]
   counter_argument: StepType[]
-  assumptions: AssumptionType[]
+  assumptions: StepType[]
 }
