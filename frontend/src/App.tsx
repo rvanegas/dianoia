@@ -1,6 +1,5 @@
 import './App.css'
-import type { ThesesType, StepType,
-  ArgsType, UserMode } from './types'
+import type { ThesesType, StepType, ArgsType } from './types'
 
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
@@ -19,6 +18,8 @@ const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
 const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
+
+type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
 
 function ExportButton({textCallback}: {textCallback: () => string}) {
   const [copied, setCopied] = useState<boolean>(false)
@@ -142,18 +143,18 @@ function App() {
         }}
         placeholder={placeholderText}
       />
-      {!(userMode == 'thesis' && theses.thesis) ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => handleArgue()}>
-          Argue
-        </button>
-      }
       {userMode == 'development' || userMode == 'waiting' ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleEnter(prompt)}>
           Enter
+        </button>
+      }
+      {!(userMode == 'thesis' && theses.thesis) ? undefined :
+        <button
+          className={bigButtonClassNames}
+          onClick={() => handleArgue()}>
+          Argue
         </button>
       }
       {userMode != 'development' ? undefined :

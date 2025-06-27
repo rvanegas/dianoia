@@ -1,5 +1,4 @@
-import type { ThesesType, StepType, AssumptionType,
-  ArgsType } from './types'
+import type { ThesesType, StepType, AssumptionType, ArgsType } from './types'
 
 export function thesisMarkdown(theses: ThesesType) {
   let md = '**Thesis:**\n\n'
