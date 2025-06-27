@@ -6,10 +6,15 @@ import axios from 'axios'
 import type { ThesesType, StepType, ArgsType } from './types'
 import { exportMarkdown } from './markdown'
 
+type ArgErrors = {
+  argument: string[]
+  counter_argument: string[]
+}
+
 type AppSnapshot = {
   theses: ThesesType
   args: ArgsType
-  argErrors: { argument: string[], counter_argument: string[] }
+  argErrors: ArgErrors
   lastPrompt: string
   userMode: UserMode
 }
@@ -51,7 +56,7 @@ function App() {
     thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState<ArgsType>({
     argument: [], counter_argument: [], assumptions: []})
-  const [argErrors, setArgErrors] = useState({argument: [], counter_argument: []})
+  const [argErrors, setArgErrors] = useState<ArgErrors>({argument: [], counter_argument: []})
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
