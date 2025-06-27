@@ -4,7 +4,47 @@ import type { ThesesType, StepType, ArgsType } from './types'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
-import { exportMarkdown } from './markdown'
+import { exportMarkdown } from './markdown.tsx'
+
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+type ThesesType = {
+  thesis: string
+  counter_thesis: string
+  presupposition: string
+}
+
+type StepType = {
+  index: string
+  proposition: string
+  justifiers: string[]
+  truth: number
+  valid: number
+}
+
+type AssumptionType = {
+  index: string
+  proposition: string
+}
+
+type ArgsType = {
+  argument: StepType[]
+  counter_argument: StepType[]
+  assumptions: AssumptionType[]
+}
+
+type AppSnapshot = {
+  theses: ThesesType
+  args: ArgsType
+  argErrors: { argument: [], counter_argument: [] }
+  lastPrompt: string
+  userMode: UserMode
+}
+
+type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
 
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development
@@ -38,6 +78,8 @@ function ExportButton({textCallback}: {textCallback: () => string}) {
 }
 
 function App() {
+  const MAX_HISTORY: number = 100
+
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [theses, setTheses] = useState<ThesesType>({
     thesis:'', counter_thesis: '', presupposition: ''})
@@ -47,8 +89,25 @@ function App() {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [history, setHistory] = useState<AppSnapshot[]>([{
+    theses: theses,
+    args: args,
+    argErrors: argErrors,
+    lastPrompt: lastPrompt,
+    userMode: userMode,
+  }])
+  const [histIndex, setHistIndex] = useState<number>(0)
 
-  const handleEnter = async (content: string) => {
+  const saveSnapshot = (newSnap: AppSnapshot) => {
+    const newHistory = history.slice(
+      Math.max(0, histIndex + 1 - MAX_HISTORY),
+      histIndex + 1
+    )
+    setHistory([...newHistory, newSnap])
+    setHistIndex((prev) => prev + 1)
+  }
+
+  const handleEnter = async (content) => {
     if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setPrompt('')
@@ -70,7 +129,15 @@ function App() {
       else {
         setArgs(responseObject)
         setArgErrors(response.data.errors)
+        setUserMode('development')
       }
+      saveSnapshot({
+        ...history[histIndex],
+        theses: responseObject.argument ? history[histIndex].theses : responseObject,
+        args: responseObject.argument ? responseObject : history[histIndex].args,
+        argErrors: response.data.errors || { argument: [], counter_argument: [] },
+        userMode: responseObject.argument ? 'development' : 'thesis'
+      })
     }
     catch (error) {
       console.error('Error: ', error)
@@ -110,6 +177,32 @@ function App() {
       to the argument's conclusion.`)
   }
 
+  const handleUndo = () => {
+    if (histIndex <= 0) return
+    const newIndex = histIndex - 1
+    setHistIndex(newIndex)
+    const prev = history[newIndex]
+
+    setTheses(prev.theses)
+    setArgs(prev.args)
+    setArgErrors(prev.argErrors)
+    setLastPrompt(prev.lastPrompt)
+    setUserMode(prev.userMode)
+  }
+
+  const handleRedo = () => {
+    if (histIndex >= history.length - 1) return
+    const newIndex = histIndex + 1
+    setHistIndex(newIndex)
+    const next = history[newIndex]
+    
+    setTheses(next.theses)
+    setArgs(next.args)
+    setArgErrors(next.argErrors)
+    setLastPrompt(next.lastPrompt)
+    setUserMode(next.userMode)
+  }
+
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -129,42 +222,62 @@ function App() {
       'Enter proposition' : ''
 
   const userDiv = (
-    <div className="p-4 flex gap-2 w-[100%] flex-wrap">
-      <input
-        className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
-        value={prompt}
-        disabled={userMode == 'development' || userMode == 'waiting'}
-        onChange={e => setPrompt(e.target.value)}
-        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-          if (e.key == 'Enter') {
-            handleEnter(prompt)
-            e.preventDefault()
+    <div className="flex flex-col w-[100%]">
+      <div className="flex justify-center ">
+        <button
+          disabled={histIndex <= 0}
+          onClick={handleUndo}
+          className={bigButtonClassNames + ' disabled:bg-slate-200 mx-2'}>
+            Undo
+        </button>
+        <button
+          disabled={histIndex >= history.length - 1}
+          onClick={handleRedo}
+          className={bigButtonClassNames + ' disabled:bg-slate-200 mx-2'}>
+            Redo
+        </button>
+      </div>
+      <div className="p-4 flex gap-2 w-[100%] flex-wrap">
+        <input
+          className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
+          value={prompt}
+          disabled={userMode == 'development' || userMode == 'waiting'}
+          onChange={e => setPrompt(e.target.value)}
+          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key == 'Enter') {
+              handleEnter(prompt)
+              e.preventDefault()
+            }
+          }}
+          placeholder={
+            userMode == 'thesis' ? 'Enter thesis' :
+            userMode == 'inputProposition' ?
+              'Enter proposition' : ''
           }
-        }}
-        placeholder={placeholderText}
-      />
-      {userMode == 'development' || userMode == 'waiting' ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => handleEnter(prompt)}>
-          Enter
-        </button>
-      }
-      {!(userMode == 'thesis' && theses.thesis) ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => handleArgue()}>
-          Argue
-        </button>
-      }
-      {userMode != 'development' ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => setUserMode('inputProposition')}>
-          Input
-        </button>
-      }
-      <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
+        />
+        {!(userMode == 'thesis' && theses.thesis) ? undefined :
+          <button
+            className={bigButtonClassNames}
+            onClick={() => handleArgue()}>
+            Argue
+          </button>
+        }
+        {userMode == 'development' || userMode == 'waiting' ? undefined :
+          <button
+            className={bigButtonClassNames}
+            onClick={() => handleEnter(prompt)}>
+            Enter
+          </button>
+        }
+        {userMode != 'development' ? undefined :
+          <button
+            className={bigButtonClassNames}
+            onClick={() => setUserMode('inputProposition')}>
+            Input
+          </button>
+        }
+        <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
+      </div>
     </div>
   )
 
