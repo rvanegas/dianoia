@@ -98,10 +98,11 @@ def proofread_response(argument_prompt, argument_response):
                 mismatches.append((prev_map[step.proposition], step.index))
         return mismatches
 
-    def verify_dependency_order(steps):
-        index_order = {step.index: i for i, step in enumerate(steps)}
+    def verify_dependency_order(assumptions, curr_steps):
+        all_steps = assumptions + curr_steps
+        index_order = {step.index: i for i, step in enumerate(all_steps)}
         violations = []
-        for i, step in enumerate(steps):
+        for i, step in enumerate(all_steps):
             for justifier in step.justifiers:
                 if justifier not in index_order:
                     violations.append((step.index, justifier, "missing justifier"))
@@ -114,23 +115,30 @@ def proofread_response(argument_prompt, argument_response):
             return None
         return None if steps[-1].justifiers else "Final proposition must be conclusion, not premise"
 
-    def verify_conclusion_dependency(steps):
+    def verify_conclusion_dependency(assumptions, curr_steps):
         # Basic check: trace dependencies backward from the final conclusion
-        if not steps:
+        all_steps = assumptions + curr_steps
+        if not all_steps:
             return None
 
-        index_map = {step.index: step for step in steps}
+        index_map = {step.index: step for step in all_steps}
         reachable = set()
-        to_visit = list(steps[-1].justifiers)
+        to_visit = list(all_steps[-1].justifiers)
 
         while to_visit:
             current = to_visit.pop()
             if current in reachable:
                 continue
             reachable.add(current)
-            to_visit.extend(index_map.get(current, Step(index=current, proposition="", justifiers=[], truth=0.0, valid=0.0)).justifiers)
+            to_visit.extend(index_map.get(
+                current,
+                Step(index=current, proposition="", justifiers=[], truth=0.0, valid=0.0)
+            ).justifiers)
 
-        unused = [step.index for step in steps[:-1] if step.index not in reachable]
+        assumption_indices = {step.index for step in assumptions}
+        non_assumption_steps = [step for step in curr_steps[:-1]]  # exclude conclusion
+        unused = [step.index for step in non_assumption_steps if step.index not in reachable]
+
         return unused
 
     def verify_proposition_limit(prev_steps, curr_steps):
@@ -158,13 +166,15 @@ def proofread_response(argument_prompt, argument_response):
         if mismatches:
             errors[label].append(f"Index changes detected: {mismatches}")
 
+        # logger.debug(f"assumptions: {assumptions}")
+        # logger.debug(f"curr_steps: {curr_steps}")
         # Contribution to conclusion
-        unused = verify_conclusion_dependency(curr_steps + assumptions)
+        unused = verify_conclusion_dependency(assumptions, curr_steps)
         if unused:
             errors[label].append(f"Propositions not contributing to conclusion: {unused}")
 
         # Order conformance
-        order_violations = verify_dependency_order(curr_steps)
+        order_violations = verify_dependency_order(assumptions, curr_steps)
         if order_violations:
             formatted = [(s, j, reason) for s, j, reason in order_violations]
             errors[label].append(f"Dependency order violations: {formatted}")

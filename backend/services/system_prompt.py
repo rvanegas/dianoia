@@ -99,7 +99,8 @@ array. If not a premise, set "justifier" to array of indices for the
 propositions from which it is derived.
 
 For every proposition, set the property "truth" to a number from 0.0 to 1.0
-corresponding to how likely the proposition is to be true. 
+corresponding to how likely the proposition is to be true. Values should be
+rounded to the nearest multiple of 0.05.
 
 For every proposition that is inferred, set the property "valid" to a number
 from 0.0 to 1.0 corresponding to the degree to which the inference is valid,
@@ -110,13 +111,15 @@ abduction should have values less than 1.0. For premises alone, set "valid"
 to 1.0. This is not meaningful, but instead required since API does not
 permit optional properties in its JSON Schema.
 
-Do not use the presuppostion as an explicit premise in the propositions. It
-is presupposed, which means that its contribution is implicit.
-
 There is also an "assumptions" property which includes propositions moved
 there by the user. Propositions moved there from either the "argument" or
-the "counter_argument" should be assumed absolutely true by both the
-argument and counter_argument inferences, and may be referenced as justifiers.
-Accordingly, their "truth" and "valid" must both be set to 1.0.
+the "counter_argument". They should be assumed absolutely true by both the
+argument and counter_argument inferences, and should be referenced as
+justifiers, wherever they contribute to the arguments. Accordingly,
+their "truth" and "valid" properties must be set to 1.0.
+
+Do not include the presuppostion as an explicit premise in the propositions of
+the arguments or the assumptions. It is presupposed, which means that its
+contribution is implicit.
 
 """
