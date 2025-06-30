@@ -1,5 +1,5 @@
 
-Createt Lightsail instance
+Create Lightsail instance
 Ubuntu 22.04 LTS
 lightsail-ubuntu ssh key
 
