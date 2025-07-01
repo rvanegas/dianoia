@@ -39,7 +39,7 @@ type ConversationSnapshot = {
 }
 
 type ConversationType = {
-  index: number
+  id: number
   name: string
   snapshots: ConversationSnapshot[]
 }
