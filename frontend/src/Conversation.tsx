@@ -1,11 +1,11 @@
 import './App.css'
 
-import { useEffect, useRef, useState } from 'react'
+import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type { ThesesType, StepType, ArgsType, ArgErrors, 
-  UserMode, ConversationSnapshot, ConversationType } from './types'
-import { exportMarkdown } from './markdown'
+import type {ThesesType, StepType, ArgsType, ArgErrors,
+  UserMode, ConversationSnapshot, ConversationType} from './types'
+import {exportMarkdown} from './markdown'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -15,8 +15,13 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function Conversation({newConversation}: {
-  newConversation: (index: string, proposition: string) => void
+function Conversation({conversationIndex, conversation, 
+  setConversation, createConversation
+}: {
+  conversationIndex: number,
+  conversation: ConversationType,
+  setConversation: any,
+  createConversation: (proposition: string) => void
 }) {
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [theses, setTheses] = useState<ThesesType>({
@@ -28,11 +33,10 @@ function Conversation({newConversation}: {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [conversation, setConversation] = useState<ConversationType>({
-    index: 1, name: '', snapshots: []
-  })
   const [histIndex, setHistIndex] = useState<number>(0)
   const [copied, setCopied] = useState<boolean>(false)
+
+  console.log('ci', conversationIndex, conversation)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
@@ -114,7 +118,7 @@ function Conversation({newConversation}: {
   }
 
   const handleDispute = async (step: StepType) => {
-    newConversation(step.index, step.proposition)
+    createConversation(step.proposition)
   }
 
   const handleUndo = () => {
@@ -347,6 +351,8 @@ function Conversation({newConversation}: {
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
+          <div className={headingClassNames}>Id:</div>
+          <div>{conversationIndex}</div>
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
