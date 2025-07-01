@@ -3,8 +3,8 @@ import './App.css'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
-import type { ThesesType, StepType, ArgsType,
-  ArgErrors, UserMode, ConversationSnapshot } from './types'
+import type { ThesesType, StepType, ArgsType, ArgErrors, 
+  UserMode, ConversationSnapshot, ConversationType } from './types'
 import { exportMarkdown } from './markdown'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -15,7 +15,9 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function Conversation({newConversation}) {
+function Conversation({newConversation}: {
+  newConversation: (index: string, proposition: string) => void
+}) {
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [theses, setTheses] = useState<ThesesType>({
     thesis:'', counter_thesis: '', presupposition: ''})
@@ -26,14 +28,15 @@ function Conversation({newConversation}) {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [history, setHistory] = useState<ConversationSnapshot[]>([{
-    theses, args, argErrors, lastPrompt, userMode}])
+  const [conversation, setConversation] = useState<ConversationType>({
+    index: 1, name: '', snapshots: []
+  })
   const [histIndex, setHistIndex] = useState<number>(0)
   const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
-    setHistory([...history, newSnap])
-    setHistIndex((prev) => prev + 1)
+    setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
+    setHistIndex(prev => prev + 1)
   }
 
   const handleEnter = async (content: string) => {
@@ -56,7 +59,7 @@ function Conversation({newConversation}) {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
       const newSnapshot = {
-        ...history[histIndex],
+        ...conversation.snapshots[histIndex],
         userMode: newUserMode,
         lastPrompt: content,
         theses, args, argErrors,
@@ -118,7 +121,7 @@ function Conversation({newConversation}) {
     if (histIndex <= 0) return
     const newIndex = histIndex - 1
     setHistIndex(newIndex)
-    const prev = history[newIndex]
+    const prev = conversation.snapshots[newIndex]
 
     setTheses(prev.theses)
     setArgs(prev.args)
@@ -128,10 +131,10 @@ function Conversation({newConversation}) {
   }
 
   const handleRedo = () => {
-    if (histIndex >= history.length - 1) return
+    if (histIndex >= conversation.snapshots.length - 1) return
     const newIndex = histIndex + 1
     setHistIndex(newIndex)
-    const next = history[newIndex]
+    const next = conversation.snapshots[newIndex]
 
     setTheses(next.theses)
     setArgs(next.args)
@@ -201,7 +204,7 @@ function Conversation({newConversation}) {
           Input
         </button>
       }
-      {history.length < 2 ? undefined :
+      {conversation.snapshots.length < 2 ? undefined :
         <>
           <button
             disabled={histIndex <= 0}
@@ -210,7 +213,7 @@ function Conversation({newConversation}) {
               Undo
           </button>
           <button
-            disabled={histIndex >= history.length - 1}
+            disabled={histIndex >= conversation.snapshots.length - 1}
             onClick={handleRedo}
             className={bigButtonClassNames + ' disabled:bg-slate-200'}>
               Redo

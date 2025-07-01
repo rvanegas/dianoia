@@ -37,3 +37,9 @@ type ConversationSnapshot = {
   lastPrompt: string
   userMode: UserMode
 }
+
+type ConversationType = {
+  index: number
+  name: string
+  snapshots: ConversationSnapshot[]
+}
