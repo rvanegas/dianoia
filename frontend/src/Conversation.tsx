@@ -3,28 +3,9 @@ import './App.css'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
-import type { ThesesType, StepType, ArgsType } from './types'
+import type { ThesesType, StepType, ArgsType,
+  ArgErrors, UserMode, ConversationSnapshot } from './types'
 import { exportMarkdown } from './markdown'
-
-type ArgErrors = {
-  argument: string[]
-  counter_argument: string[]
-}
-
-type AppSnapshot = {
-  theses: ThesesType
-  args: ArgsType
-  argErrors: ArgErrors
-  lastPrompt: string
-  userMode: UserMode
-}
-
-type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
-
-// thesis -> waiting -> thesis
-// thesis -> waiting -> development
-// development -> waiting -> development
-// development -> inputProposition -> waiting -> development
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -45,12 +26,12 @@ function Conversation({newConversation}) {
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [history, setHistory] = useState<AppSnapshot[]>([{
+  const [history, setHistory] = useState<ConversationSnapshot[]>([{
     theses, args, argErrors, lastPrompt, userMode}])
   const [histIndex, setHistIndex] = useState<number>(0)
   const [copied, setCopied] = useState<boolean>(false)
 
-  const saveSnapshot = (newSnap: AppSnapshot) => {
+  const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setHistory([...history, newSnap])
     setHistIndex((prev) => prev + 1)
   }

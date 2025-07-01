@@ -2,6 +2,8 @@ import './App.css'
 import Conversation from './Conversation'
 
 function App() {
+
+
   const newConversation = (index, proposition) => {
     console.log(`newConversation ${index} ${proposition}`)
   }
