@@ -34,7 +34,7 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function Conversation() {
+function Conversation({newConversation}) {
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [theses, setTheses] = useState<ThesesType>({
     thesis:'', counter_thesis: '', presupposition: ''})
@@ -127,6 +127,10 @@ function Conversation() {
     handleEnter(`Remove proposition (${index}). Adjust
       inference relations to ensure that every proposition still contributes
       to the argument's conclusion.`)
+  }
+
+  const handleDispute = async (step: StepType) => {
+    newConversation(step.index, step.proposition)
   }
 
   const handleUndo = () => {
@@ -276,6 +280,11 @@ function Conversation() {
                 className={smallButtonClassNames}
                 onClick={() => handleRemove(step.index)}>
                 remove
+              </button>
+              <button
+                className={smallButtonClassNames}
+                onClick={() => handleDispute(step)}>
+                dispute
               </button>
             </>
           }
