@@ -56,7 +56,7 @@ def develop_argument(argument_prompt):
 
     # logger.debug(f"argument_prompt: {argument_prompt}")
     # logger.debug(f"argument_response: {argument_response}")
-    logger.debug(f"errors['argument']: {errors['argument']}")
-    logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
+    # logger.debug(f"errors['argument']: {errors['argument']}")
+    # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
 
     return content, errors
