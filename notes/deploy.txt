@@ -4,7 +4,7 @@ Ubuntu 22.04 LTS
 lightsail-ubuntu ssh key
 
 Networking / Attach static IP
-Add ipv4 rule for tcp/8000
+Add ipv4 rule for tcp/8000 and tcp/https/443
 
 sudo apt update
 sudo apt upgrade -y
