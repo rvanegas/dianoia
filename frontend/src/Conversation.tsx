@@ -3,8 +3,7 @@ import './App.css'
 import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type {ThesesType, StepType, ArgsType, ArgErrors,
-  UserMode, ConversationSnapshot, ConversationType} from './types'
+import type {StepType, UserMode, ConversationSnapshot, ConversationType} from './types'
 import {exportMarkdown} from './markdown'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -15,6 +14,27 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
+function initialSnapshot() : ConversationSnapshot {
+  return {
+    theses: {
+      thesis: '',
+      counter_thesis: '',
+      presupposition: '',
+    },
+    args: {
+      assumptions: [],
+      argument: [],
+      counter_argument: [],
+    },
+    argErrors: {
+      argument: [],
+      counter_argument: [],
+    },
+    lastPrompt: '',
+    userMode: 'thesis',
+  }
+}
+
 function Conversation({conversationIndex, conversation, 
   setConversation, createConversation
 }: {
@@ -23,16 +43,20 @@ function Conversation({conversationIndex, conversation,
   setConversation: any,
   createConversation: (proposition: string) => void
 }) {
-  const currentSnapshot = conversation.snapshots.at(-1)
-  // console.log('c1', currentSnapshot)
-  const [userMode, setUserMode] = useState<UserMode>(currentSnapshot?.userMode)
-  const [theses, setTheses] = useState<ThesesType>(currentSnapshot?.theses)
-  const [args, setArgs] = useState<ArgsType>(currentSnapshot?.args)
-  const [argErrors, setArgErrors] = useState<ArgErrors>(currentSnapshot?.argErrors)
-  const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot?.lastPrompt)
+  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length - 1 || 0)
+
+  const lastConversation = conversation.snapshots[histIndex]
+  const currentSnapshot: ConversationSnapshot = lastConversation ?
+    lastConversation : initialSnapshot()
+
+  const theses = currentSnapshot.theses
+  const args = currentSnapshot.args
+  const argErrors = currentSnapshot.argErrors
+  const lastPrompt = currentSnapshot.lastPrompt
+  const [userMode, setUserMode] = useState<UserMode>(currentSnapshot.userMode)
+
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length)
   const [copied, setCopied] = useState<boolean>(false)
 
   // console.log('ci', conversationIndex, conversation)
@@ -44,7 +68,7 @@ function Conversation({conversationIndex, conversation,
 
   const handleEnter = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
-    setLastPrompt(content)
+    // setLastPrompt(content)
     setPrompt('')
     const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
     const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
@@ -68,14 +92,25 @@ function Conversation({conversationIndex, conversation,
         theses, args, argErrors,
       }
       if (newUserMode == 'thesis') {
-        setTheses(responseObject)
-        saveSnapshot({...newSnapshot, theses: responseObject})
+        // setTheses(responseObject)
+        if (responseObject) {
+          const newTheses = responseObject
+          saveSnapshot({...newSnapshot, theses: newTheses})
+        }
+        else {
+          throw('empty responseObject')
+        }
       }
       else {
-        setArgs(responseObject)
-        setArgErrors(response.data.errors)
-        saveSnapshot({...newSnapshot, args: responseObject,
-          argErrors: response.data.errors})
+        // setArgs(responseObject)
+        // setArgErrors(response.data.errors)
+        if (responseObject && response.data.errors) {
+          saveSnapshot({...newSnapshot, args: responseObject,
+            argErrors: response.data.errors})
+        }
+        else {
+          throw('empty responseObject or missing errors')
+        }
       }
     }
     catch (error) {
@@ -124,26 +159,26 @@ function Conversation({conversationIndex, conversation,
     if (histIndex <= 0) return
     const newIndex = histIndex - 1
     setHistIndex(newIndex)
-    const prev = conversation.snapshots[newIndex]
 
-    setTheses(prev.theses)
-    setArgs(prev.args)
-    setArgErrors(prev.argErrors)
-    setLastPrompt(prev.lastPrompt)
-    setUserMode(prev.userMode)
+    // const prev = conversation.snapshots[newIndex]
+    // setTheses(prev.theses)
+    // setArgs(prev.args)
+    // setArgErrors(prev.argErrors)
+    // setLastPrompt(prev.lastPrompt)
+    // setUserMode(prev.userMode)
   }
 
   const handleRedo = () => {
     if (histIndex >= conversation.snapshots.length - 1) return
     const newIndex = histIndex + 1
     setHistIndex(newIndex)
-    const next = conversation.snapshots[newIndex]
 
-    setTheses(next.theses)
-    setArgs(next.args)
-    setArgErrors(next.argErrors)
-    setLastPrompt(next.lastPrompt)
-    setUserMode(next.userMode)
+    // const next = conversation.snapshots[newIndex]
+    // setTheses(next.theses)
+    // setArgs(next.args)
+    // setArgErrors(next.argErrors)
+    // setLastPrompt(next.lastPrompt)
+    // setUserMode(next.userMode)
   }
 
   const handleCopy = async () => {
