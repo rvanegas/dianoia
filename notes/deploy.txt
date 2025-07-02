@@ -23,3 +23,9 @@ hard reset:
 docker-compose down --volumes --remove-orphans
 docker-compose build --no-cache
 docker-compose up -d
+
+--
+
+sudo apt install certbot python3-certbot-nginx -y
+docker run --rm -p 80:80 certbot/certbot certonly --standalone \
+  --non-interactive --agree-tos -m rvanegas@gmail.com -d dianoia.rvanegas.com
