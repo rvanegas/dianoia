@@ -8,17 +8,52 @@ import Conversation from './Conversation'
 const initialState0: ConversationType = {
   id: 0,
   name: '',
-  snapshots: []
+  snapshots: [{
+    theses: {
+      thesis: '',
+      counter_thesis: '',
+      presupposition: '',
+    },
+    args: {
+      assumptions: [],
+      argument: [],
+      counter_argument: [],
+    },
+    argErrors: {
+      argument: [],
+      counter_argument: [],
+    },
+    lastPrompt: '',
+    userMode: 'thesis',
+  }]
 }
 
 const initialState1: ConversationType = {
   id: 1,
   name: '',
-  snapshots: []
+  snapshots: [{
+    theses: {
+      thesis: '',
+      counter_thesis: '',
+      presupposition: '',
+    },
+    args: {
+      assumptions: [],
+      argument: [],
+      counter_argument: [],
+    },
+    argErrors: {
+      argument: [],
+      counter_argument: [],
+    },
+    lastPrompt: '',
+    userMode: 'thesis',
+  }]
 }
 
 function App() {
-  const [conversations, setConversations] = useImmer<ConversationType[]>([initialState0, initialState1])
+  const [conversations, setConversations] = useImmer<ConversationType[]>(
+    [initialState0, initialState1])
   const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
 
   const setConversation = (newConversation: ConversationType) => {
@@ -33,7 +68,7 @@ function App() {
     setCurrConvIndex(index)
   }
 
-  console.log('x', currConvIndex, conversations)
+  // console.log('x', currConvIndex, conversations)
 
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
@@ -56,6 +91,7 @@ function App() {
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
         <Conversation
+          key={currConvIndex}
           conversationIndex={currConvIndex}
           conversation={conversations[currConvIndex]}
           setConversation={setConversation}
