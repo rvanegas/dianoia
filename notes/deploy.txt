@@ -4,7 +4,7 @@ Ubuntu 22.04 LTS
 lightsail-ubuntu ssh key
 
 Networking / Attach static IP
-Add ipv4 rule for tcp/8000 and tcp/https/443
+Add ipv4 rule for tcp/8000
 
 sudo apt update
 sudo apt upgrade -y
@@ -25,6 +25,8 @@ docker-compose build --no-cache
 docker-compose up -d
 
 --
+
+Add ipv4 tcp/https/443
 
 sudo apt install certbot python3-certbot-nginx -y
 docker run --rm -p 80:80 certbot/certbot certonly --standalone \
