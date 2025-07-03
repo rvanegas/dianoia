@@ -17,7 +17,7 @@ git clone git@github.com:rvanegas/dianoia.git
 
 add dianoia/bin to bash PATH
 copy OPENAI_ID to backend/.env
-copy VITE_API_BASE_URL to frontend/.env
+set VITE_API_BASE_URL in frontend/.env to blank
 
 hard reset:
 docker-compose down --volumes --remove-orphans

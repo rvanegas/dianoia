@@ -35,14 +35,12 @@ function initialSnapshot() : ConversationSnapshot {
   }
 }
 
-function Conversation({conversation, setConversation, createConversation
-}: {
+function Conversation({conversation, setConversation, createConversation}: {
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void,
   createConversation: (proposition: string) => void
 }) {
-  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length - 1 || 0)
-
+  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length - 1)
   const lastSnapshot = conversation.snapshots[histIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
@@ -57,8 +55,6 @@ function Conversation({conversation, setConversation, createConversation
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [copied, setCopied] = useState<boolean>(false)
 
-  // console.log('ci', conversation)
-
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
     setHistIndex(prev => prev + 1)
@@ -66,8 +62,9 @@ function Conversation({conversation, setConversation, createConversation
 
   const handleEnter = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
-    // setLastPrompt(content)
+    setUserMode('waiting')
     setPrompt('')
+    // setLastPrompt(content)
     const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
     const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
     let apiPrompt
@@ -79,7 +76,6 @@ function Conversation({conversation, setConversation, createConversation
     }
     const path = newUserMode == 'development' ? '/api/v1/argument' : '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
-    setUserMode('waiting')
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
@@ -186,6 +182,22 @@ function Conversation({conversation, setConversation, createConversation
     setTimeout(() => setCopied(false), 3000)
   }
 
+  useEffect(() => {
+    if (userMode == 'waiting') {
+      bottomRef.current?.scrollIntoView({behavior: 'smooth'})
+    }
+  }, [userMode])
+
+  const hasLoadedInitPrompt = useRef(false)
+  useEffect(() => {
+    if (conversation.initPrompt && histIndex == -1 && !hasLoadedInitPrompt.current) {
+      hasLoadedInitPrompt.current = true
+      handleEnter(conversation.initPrompt)
+    }
+  }, [])
+
+  // console.log('ci', conversation)
+
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -263,12 +275,6 @@ function Conversation({conversation, setConversation, createConversation
       </button>
     </div>
   )
-
-  useEffect(() => {
-    if (userMode == 'waiting') {
-      bottomRef.current?.scrollIntoView({behavior: 'smooth'})
-    }
-  }, [userMode])
 
   const argumentNode = (argument: StepType[]) => {
     const argumentSteps = argument.map((step, key) => {
