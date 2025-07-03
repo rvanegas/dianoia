@@ -23,7 +23,7 @@ type ArgErrors = {
   counter_argument: string[]
 }
 
-type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
+type UserMode = 'thesis' | 'development'
 
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development

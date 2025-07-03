@@ -48,11 +48,10 @@ function Conversation({conversation, setConversation, createConversation}: {
   const theses = currentSnapshot.theses
   const args = currentSnapshot.args
   const argErrors = currentSnapshot.argErrors
-  const lastPrompt = currentSnapshot.lastPrompt
-  const [userMode, setUserMode] = useState<UserMode>(currentSnapshot.userMode)
+  const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot.lastPrompt)
+  const [userMode, setUserMode] = useState<string>('ready')
 
   const [prompt, setPrompt] = useState<string>('')
-  const bottomRef = useRef<HTMLDivElement | null>(null)
   const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
@@ -62,18 +61,13 @@ function Conversation({conversation, setConversation, createConversation}: {
 
   const handleEnter = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
+    setLastPrompt(content)
     setUserMode('waiting')
     setPrompt('')
-    const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
-    const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
-    let apiPrompt
-    if (newUserMode == 'thesis') {
-      apiPrompt = {prompt: content, ...theses}
-    }
-    else {
-      apiPrompt = {prompt: content, ...theses, ...args}
-    }
-    const path = newUserMode == 'development' ? '/api/v1/argument' : '/api/v1/theses'
+    const newUserMode : UserMode = content == 'Argue.' ? 'development' : currentSnapshot.userMode
+    const apiPrompt = newUserMode == 'thesis' ?
+      {prompt: content, ...theses} : {prompt: content, ...theses, ...args}
+    const path = newUserMode == 'thesis' ? '/api/v1/theses' : '/api/v1/argument'
     const url = VITE_API_BASE_URL + path
     try {
       const response = await axios.post(url, apiPrompt)
@@ -88,6 +82,7 @@ function Conversation({conversation, setConversation, createConversation}: {
         if (responseObject) {
           const newTheses = responseObject
           saveSnapshot({...newSnapshot, theses: newTheses})
+          setLastPrompt('')
         }
         else {
           throw('empty responseObject')
@@ -97,6 +92,7 @@ function Conversation({conversation, setConversation, createConversation}: {
         if (responseObject && response.data.errors) {
           saveSnapshot({...newSnapshot, args: responseObject,
             argErrors: response.data.errors})
+          setLastPrompt('')
         }
         else {
           throw('empty responseObject or missing errors')
@@ -107,7 +103,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       console.error('Error: ', error)
     }
     finally {
-      setUserMode(newUserMode)
+      setUserMode('ready')
     }
   }
 
@@ -149,12 +145,14 @@ function Conversation({conversation, setConversation, createConversation}: {
     if (histIndex <= 0) return
     const newIndex = histIndex - 1
     setHistIndex(newIndex)
+    setUserMode('ready')
   }
 
   const handleRedo = () => {
     if (histIndex >= conversation.snapshots.length - 1) return
     const newIndex = histIndex + 1
     setHistIndex(newIndex)
+    setUserMode('ready')
   }
 
   const handleCopy = async () => {
@@ -164,6 +162,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     setTimeout(() => setCopied(false), 3000)
   }
 
+  const bottomRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (userMode == 'waiting') {
       bottomRef.current?.scrollIntoView({behavior: 'smooth'})
@@ -190,13 +189,6 @@ function Conversation({conversation, setConversation, createConversation}: {
       </span>
     </div>
   )
-
-  const placeholderText =
-    userMode == 'thesis' ? 'Enter thesis' :
-    userMode == 'inputProposition' ?
-      'Enter proposition' : ''
-
-  console.log('p', userMode, placeholderText)
 
   const argumentNode = (argument: StepType[]) => {
     const argumentSteps = argument.map((step, key) => {
@@ -300,10 +292,11 @@ function Conversation({conversation, setConversation, createConversation}: {
     </>
   )
 
+  const displayPrompt = lastPrompt || currentSnapshot.lastPrompt
   const lastDiv = (
     <>
       <div className={headingClassNames}>Prompt:</div>
-      <div>{lastPrompt}</div>
+      <div>{displayPrompt}</div>
     </>
   )
 
@@ -316,19 +309,23 @@ function Conversation({conversation, setConversation, createConversation}: {
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
-          {!lastPrompt ? undefined : lastDiv}
+          {!displayPrompt ? undefined : lastDiv}
         </div>
       </div>
       {loadingIndicator}
     </div>
   )
 
+  const placeholderText =
+    currentSnapshot.userMode == 'thesis' ? 'Enter thesis' :
+    userMode == 'input' ? 'Enter proposition' : ''
+
   const userDiv = (
     <div className="p-4 flex gap-2 w-[100%] flex-wrap">
       <input
         className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
         value={prompt}
-        disabled={userMode == 'development' || userMode == 'waiting'}
+        disabled={!(currentSnapshot.userMode == 'thesis' || userMode == 'input')}
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == 'Enter') {
@@ -338,24 +335,24 @@ function Conversation({conversation, setConversation, createConversation}: {
         }}
         placeholder={placeholderText}
       />
-      {userMode == 'development' || userMode == 'waiting' ? undefined :
+      {!(currentSnapshot.userMode == 'thesis' || userMode == 'input') ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleEnter(prompt)}>
           Enter
         </button>
       }
-      {!(userMode == 'thesis' && theses.thesis) ? undefined :
+      {!(currentSnapshot.userMode == 'thesis' && theses.thesis) ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleArgue()}>
           Argue
         </button>
       }
-      {userMode != 'development' ? undefined :
+      {!(currentSnapshot.userMode == 'development' && userMode == 'ready') ? undefined :
         <button
           className={bigButtonClassNames}
-          onClick={() => setUserMode('inputProposition')}>
+          onClick={() => setUserMode('input')}>
           Input
         </button>
       }
