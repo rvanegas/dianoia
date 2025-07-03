@@ -32,8 +32,6 @@ function App() {
     setCurrConvIndex(index)
   }
 
-  // console.log('x', conversations, nextConvId, currConvIndex)
-
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
       <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 lg:block hidden">
