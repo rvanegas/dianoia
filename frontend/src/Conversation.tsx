@@ -302,12 +302,14 @@ function Conversation({conversation, setConversation, createConversation}: {
     </>
   )
 
+  const snapshotId = histIndex == -1 ? '' : `.${histIndex + 1}`
+
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
           <div className={headingClassNames}>Id:</div>
-          <div>{conversation.id}</div>
+          <div>{conversation.id}{snapshotId}</div>
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
