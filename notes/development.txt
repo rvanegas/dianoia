@@ -1,0 +1,11 @@
+
+Use pyenv and nodenv to have these runtimes determined by dotfiles.
+
+Python 3.13.3
+NodeJS 22.16.0
+
+Use these in separate shells during development.
+
+alias rbe='cd ~/src/dianoia && uvicorn main:app --reload --host=0.0.0.0 --port 8000'
+alias rfe='cd ~/src/dianoia && npm run dev'
+alias rtc='cd ~/src/dianoia && npm run typecheck'
