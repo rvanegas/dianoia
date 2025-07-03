@@ -14,8 +14,8 @@ const initialState: ConversationType = {
 
 function App() {
   const [conversations, setConversations] = useImmer<ConversationType[]>(
-    [{...initialState, id: 1}, {...initialState, id: 2}])
-  const [nextConvId, setNextConvId] = useImmer<number>(3)
+    [{...initialState, id: 1}])
+  const [nextConvId, setNextConvId] = useImmer<number>(2)
   const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
 
   const setConversation = (newConversation: ConversationType) => {
