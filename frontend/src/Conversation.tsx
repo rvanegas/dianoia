@@ -35,19 +35,17 @@ function initialSnapshot() : ConversationSnapshot {
   }
 }
 
-function Conversation({conversationIndex, conversation, 
-  setConversation, createConversation
+function Conversation({conversation, setConversation, createConversation
 }: {
-  conversationIndex: number,
   conversation: ConversationType,
-  setConversation: any,
+  setConversation: (newConversation: ConversationType) => void,
   createConversation: (proposition: string) => void
 }) {
   const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length - 1 || 0)
 
-  const lastConversation = conversation.snapshots[histIndex]
-  const currentSnapshot: ConversationSnapshot = lastConversation ?
-    lastConversation : initialSnapshot()
+  const lastSnapshot = conversation.snapshots[histIndex]
+  const currentSnapshot: ConversationSnapshot = lastSnapshot ?
+    lastSnapshot : initialSnapshot()
 
   const theses = currentSnapshot.theses
   const args = currentSnapshot.args
@@ -59,7 +57,7 @@ function Conversation({conversationIndex, conversation,
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [copied, setCopied] = useState<boolean>(false)
 
-  // console.log('ci', conversationIndex, conversation)
+  // console.log('ci', conversation)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
@@ -386,7 +384,7 @@ function Conversation({conversationIndex, conversation,
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
           <div className={headingClassNames}>Id:</div>
-          <div>{conversationIndex}</div>
+          <div>{conversation.id}</div>
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
