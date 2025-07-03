@@ -64,7 +64,6 @@ function Conversation({conversation, setConversation, createConversation}: {
     if (!content.trim() || userMode == 'waiting') return
     setUserMode('waiting')
     setPrompt('')
-    // setLastPrompt(content)
     const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
     const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
     let apiPrompt
@@ -86,7 +85,6 @@ function Conversation({conversation, setConversation, createConversation}: {
         theses, args, argErrors,
       }
       if (newUserMode == 'thesis') {
-        // setTheses(responseObject)
         if (responseObject) {
           const newTheses = responseObject
           saveSnapshot({...newSnapshot, theses: newTheses})
@@ -96,8 +94,6 @@ function Conversation({conversation, setConversation, createConversation}: {
         }
       }
       else {
-        // setArgs(responseObject)
-        // setArgErrors(response.data.errors)
         if (responseObject && response.data.errors) {
           saveSnapshot({...newSnapshot, args: responseObject,
             argErrors: response.data.errors})
@@ -153,26 +149,12 @@ function Conversation({conversation, setConversation, createConversation}: {
     if (histIndex <= 0) return
     const newIndex = histIndex - 1
     setHistIndex(newIndex)
-
-    // const prev = conversation.snapshots[newIndex]
-    // setTheses(prev.theses)
-    // setArgs(prev.args)
-    // setArgErrors(prev.argErrors)
-    // setLastPrompt(prev.lastPrompt)
-    // setUserMode(prev.userMode)
   }
 
   const handleRedo = () => {
     if (histIndex >= conversation.snapshots.length - 1) return
     const newIndex = histIndex + 1
     setHistIndex(newIndex)
-
-    // const next = conversation.snapshots[newIndex]
-    // setTheses(next.theses)
-    // setArgs(next.args)
-    // setArgErrors(next.argErrors)
-    // setLastPrompt(next.lastPrompt)
-    // setUserMode(next.userMode)
   }
 
   const handleCopy = async () => {
@@ -196,8 +178,6 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }, [])
 
-  // console.log('ci', conversation)
-
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -216,65 +196,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     userMode == 'inputProposition' ?
       'Enter proposition' : ''
 
-  const userDiv = (
-    <div className="p-4 flex gap-2 w-[100%] flex-wrap">
-      <input
-        className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
-        value={prompt}
-        disabled={userMode == 'development' || userMode == 'waiting'}
-        onChange={e => setPrompt(e.target.value)}
-        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-          if (e.key == 'Enter') {
-            handleEnter(prompt)
-            e.preventDefault()
-          }
-        }}
-        placeholder={placeholderText}
-      />
-      {userMode == 'development' || userMode == 'waiting' ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => handleEnter(prompt)}>
-          Enter
-        </button>
-      }
-      {!(userMode == 'thesis' && theses.thesis) ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => handleArgue()}>
-          Argue
-        </button>
-      }
-      {userMode != 'development' ? undefined :
-        <button
-          className={bigButtonClassNames}
-          onClick={() => setUserMode('inputProposition')}>
-          Input
-        </button>
-      }
-      {conversation.snapshots.length < 2 ? undefined :
-        <>
-          <button
-            disabled={histIndex <= 0}
-            onClick={handleUndo}
-            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-              Undo
-          </button>
-          <button
-            disabled={histIndex >= conversation.snapshots.length - 1}
-            onClick={handleRedo}
-            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-              Redo
-          </button>
-        </>
-      }
-      <button
-        onClick={handleCopy}
-        className={bigButtonClassNames}>
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-    </div>
-  )
+  console.log('p', userMode, placeholderText)
 
   const argumentNode = (argument: StepType[]) => {
     const argumentSteps = argument.map((step, key) => {
@@ -398,6 +320,66 @@ function Conversation({conversation, setConversation, createConversation}: {
         </div>
       </div>
       {loadingIndicator}
+    </div>
+  )
+
+  const userDiv = (
+    <div className="p-4 flex gap-2 w-[100%] flex-wrap">
+      <input
+        className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
+        value={prompt}
+        disabled={userMode == 'development' || userMode == 'waiting'}
+        onChange={e => setPrompt(e.target.value)}
+        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (e.key == 'Enter') {
+            handleEnter(prompt)
+            e.preventDefault()
+          }
+        }}
+        placeholder={placeholderText}
+      />
+      {userMode == 'development' || userMode == 'waiting' ? undefined :
+        <button
+          className={bigButtonClassNames}
+          onClick={() => handleEnter(prompt)}>
+          Enter
+        </button>
+      }
+      {!(userMode == 'thesis' && theses.thesis) ? undefined :
+        <button
+          className={bigButtonClassNames}
+          onClick={() => handleArgue()}>
+          Argue
+        </button>
+      }
+      {userMode != 'development' ? undefined :
+        <button
+          className={bigButtonClassNames}
+          onClick={() => setUserMode('inputProposition')}>
+          Input
+        </button>
+      }
+      {conversation.snapshots.length < 2 ? undefined :
+        <>
+          <button
+            disabled={histIndex <= 0}
+            onClick={handleUndo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+              Undo
+          </button>
+          <button
+            disabled={histIndex >= conversation.snapshots.length - 1}
+            onClick={handleRedo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+              Redo
+          </button>
+        </>
+      }
+      <button
+        onClick={handleCopy}
+        className={bigButtonClassNames}>
+        {copied ? 'Copied' : 'Copy'}
+      </button>
     </div>
   )
 
