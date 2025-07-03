@@ -26,7 +26,7 @@ docker-compose up -d
 
 --
 
-Add ipv4 tcp/https/443
+Add ipv4 ryle for tcp/https/443
 
 sudo apt install certbot python3-certbot-nginx -y
 
