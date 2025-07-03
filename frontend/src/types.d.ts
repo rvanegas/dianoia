@@ -41,5 +41,6 @@ type ConversationSnapshot = {
 type ConversationType = {
   id: number
   name: string
+  initPrompt: string
   snapshots: ConversationSnapshot[]
 }
