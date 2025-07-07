@@ -1,5 +1,6 @@
 import './App.css'
 import {useImmer} from 'use-immer'
+import {useState, useEffect} from 'react'
 
 import type {ConversationType} from './types'
 
@@ -17,6 +18,7 @@ function App() {
     [{...initialState, id: 1}])
   const [nextConvId, setNextConvId] = useImmer<number>(2)
   const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
+  const [paneOpened, setPaneOpened] = useState<boolean>(false)
 
   const setConversation = (newConversation: ConversationType) => {
     setConversations(c => {c[currConvIndex] = newConversation})
@@ -32,9 +34,29 @@ function App() {
     setCurrConvIndex(index)
   }
 
+  useEffect(() => {
+    if (paneOpened) {
+      setPaneOpened(!paneOpened)
+    }
+  }, [currConvIndex])
+
+  const paneButton = (
+    <button
+      className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-500 text-white rounded-md'
+      onClick={() => setPaneOpened(!paneOpened)}
+    >
+      ☰
+    </button>
+  )
+
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
-      <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 lg:block hidden">
+      {paneButton}
+      <div className={`
+        flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800
+        fixed lg:relative h-full z-40 transition-all duration-300 max-lg:pt-15
+        ${paneOpened ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         <button
           className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'
           onClick={() => createConversation('')}>
@@ -49,7 +71,7 @@ function App() {
           </button>
         ))}
       </div>
-      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center">
+      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-10 dark:bg-zinc-900">
         <Conversation
           key={currConvIndex}
           conversation={conversations[currConvIndex]}
