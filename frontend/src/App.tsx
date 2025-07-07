@@ -42,7 +42,7 @@ function App() {
 
   const paneButton = (
     <button
-      className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-500 text-white rounded-md'
+      className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-md'
       onClick={() => setPaneOpened(!paneOpened)}
     >
       ☰
@@ -51,27 +51,34 @@ function App() {
 
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
-      {paneButton}
       <div className={`
-        flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800
+        flex flex-col items-start px-2 w-[250px] bg-slate-200 dark:bg-zinc-800
         fixed lg:relative h-full z-40 transition-all duration-300 max-lg:pt-15
         ${paneOpened ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <button
-          className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'
+          className='w-[90%] px-2 py-2 m-4 text-white bg-indigo-500 border-none rounded-xl'
           onClick={() => createConversation('')}>
           New
         </button>
         {conversations.map((conv, index) => (
           <button
             key={conv.id}
-            className='w-[80%] px-2 py-4 m-4 text-white bg-indigo-500 border-none rounded-2xl'
+            className={`
+              w-[100%] text-left rounded-md p-2 text-white border-none
+              hover:bg-slate-300 dark:hover:bg-zinc-700
+              ${
+                conv.id == currConvIndex + 1 ?
+                'border-indigo-500 border-solid border-2' : 'border-none'
+              }
+            `}
             onClick={() => selectConversation(index)}>
             Select {conv.id}
           </button>
         ))}
       </div>
-      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-10 dark:bg-zinc-900">
+      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900">
+        {paneButton}
         <Conversation
           key={currConvIndex}
           conversation={conversations[currConvIndex]}
