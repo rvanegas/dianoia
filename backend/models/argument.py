@@ -30,6 +30,11 @@ class ArgumentPrompt(ThesisResponse, ArgumentResponse):
 class JustifyPrompt(ArgumentResponse):
     step_id: str
 
+    def validate_step_id(self):
+        step = next((x for x in self.all_steps() if x.index == self.step_id), None)
+        if step == None:
+            raise ValueError('step_id does not refer')
+
     def next_id(self):
         steps = (self.assumptions +
             self.argument +
@@ -52,12 +57,7 @@ class JustifyPrompt(ArgumentResponse):
             if c not in seen:
                 return c
 
-    def validate_step_id(self):
-        step = next((x for x in self.all_steps() if x.index == self.step_id), None)
-        if step == None:
-            raise ValueError('step_id does not refer')
-
-    def insert_proposition(self, new_proposition):
+    def insert_proposition(self, new_proposition: str):
         next_id = self.next_id()
         new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
         index_in_argument = find_index(self.argument, lambda x: x.index == self.step_id)
@@ -65,9 +65,11 @@ class JustifyPrompt(ArgumentResponse):
         if index_in_argument != -1:
             arg = self.argument
             index = index_in_argument
+            loc = "argument"
         elif index_in_counter_argument != -1:
             arg = self.counter_argument
             index = index_in_counter_argument
+            loc = "counter_argument"
         else:
             raise ValueError("Invalid step_id")
         conclusion = arg[index]
@@ -75,7 +77,22 @@ class JustifyPrompt(ArgumentResponse):
         arg.insert(index, new_step)
         new_arg = [s for s in arg if s.index in conclusion.justifiers]
         new_arg.append(conclusion)
-        return new_arg
+        return new_arg, loc
+
+    def add_evaluations(self, new_arg: list[Step], loc: str, evaluations: dict):
+        if loc == "argument":
+            arg = self.argument
+        elif loc == "counter_argument":
+            arg = self.counter_argument
+        else:
+            raise ValueError("Invalid loc")
+        for new_arg_index, step in enumerate(new_arg):
+            arg_index = find_index(arg, lambda x: x.index == step.index)
+            arg[arg_index].truth = evaluations["truth"][new_arg_index]
+            if new_arg_index == len(new_arg) - 1:
+                arg[arg_index].valid = evaluations["valid"]
+            else:
+                arg[arg_index].valid = 1.0
 
 def proofread_response(argument_prompt, argument_response):
     def verify_uniqueness(steps):
