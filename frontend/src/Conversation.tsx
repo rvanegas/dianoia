@@ -109,29 +109,36 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  const handleSupport = async (step_id: string) => {
-    const lastPrompt = `Justify proposition (${step_id})`
+  const handleSupport = async (step_ids: string[], new_args = {}) => {
+    const lastPrompt = `Justify proposition (${step_ids})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
-    const apiPrompt = {...args, step_id}
     const url = VITE_API_BASE_URL + '/api/v1/justify'
+    let apiPrompt = {...args, ...new_args}
+    let newSnapshot = {
+      ...conversation.snapshots[histIndex],
+      lastPrompt, argErrors: {},
+    }
+    let responseObject
+
     try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
+      for (let step_id of step_ids) {
+        apiPrompt.step_id = step_id
+        const response = await axios.post(url, apiPrompt)
+        responseObject = JSON.parse(response.data.reply)
 
-      if (response.data.errors) {
-        throw(response.data.errors)
-        return
-      }
-      if (!responseObject) {
-        throw("empty responseObject")
-        return
+        if (response.data.errors) {
+          throw(response.data.errors)
+          return
+        }
+        if (!responseObject) {
+          throw("empty responseObject")
+          return
+        }
+        apiPrompt = {...apiPrompt, ...responseObject}
       }
 
-      const newSnapshot = {
-        ...conversation.snapshots[histIndex],
-        lastPrompt, args: responseObject, argErrors: {},
-      }
+      newSnapshot.args = responseObject
       saveSnapshot(newSnapshot)
       setLastPrompt('')
     }
@@ -144,7 +151,23 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleArgue = async () => {
-    handleEnter('Argue.')
+    const new_args = {
+      argument: [{
+        index: 'A',
+        proposition: theses.thesis,
+        justifiers: [],
+        truth: 0.5,
+        valid: 0.5,
+      }],
+      counter_argument: [{
+        index: 'B',
+        proposition: theses.counter_thesis,
+        justifiers: [],
+        truth: 0.5,
+        valid: 0.5,
+      }],
+    }
+    await handleSupport(['A', 'B'], new_args)
   }
 
   const handleAssume = async (index: string) => {
@@ -228,7 +251,7 @@ function Conversation({conversation, setConversation, createConversation}: {
           ({step.index}) {step.proposition} [{justifier}; {value}]
           <button
             className={smallButtonClassNames}
-            onClick={() => handleSupport(step.index)}>
+            onClick={() => handleSupport([step.index])}>
             support
           </button>
           {key == argument.length -1 ? undefined :
