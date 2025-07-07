@@ -57,7 +57,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
-    setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
+    const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
+    setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
     setSnapshotIndex(prev => prev + 1)
   }
 
