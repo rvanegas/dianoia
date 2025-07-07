@@ -360,22 +360,6 @@ function Conversation({conversation, setConversation, createConversation}: {
           Input
         </button>
       }
-      {conversation.snapshots.length < 2 ? undefined :
-        <>
-          <button
-            disabled={histIndex <= 0}
-            onClick={handleUndo}
-            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-              Undo
-          </button>
-          <button
-            disabled={histIndex >= conversation.snapshots.length - 1}
-            onClick={handleRedo}
-            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-              Redo
-          </button>
-        </>
-      }
       <button
         onClick={handleCopy}
         className={bigButtonClassNames}>
@@ -387,6 +371,22 @@ function Conversation({conversation, setConversation, createConversation}: {
   return (
     <>
       {messagesDiv}
+      {conversation.snapshots.length < 2 ? undefined :
+        <div className="flex w-full gap-x-5  lg:justify-start pt-4 px-5">
+          <button
+            disabled={histIndex <= 0}
+            onClick={handleUndo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
+              Undo
+          </button>
+          <button
+            disabled={histIndex >= conversation.snapshots.length - 1}
+            onClick={handleRedo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
+              Redo
+          </button>
+        </div>
+      }
       {userDiv}
     </>
   )
