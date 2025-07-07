@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 
 from core.utils import logger
-from services.conversation import develop_argument, develop_theses
-from models.argument import ArgumentPrompt, ThesesPrompt
+from services.conversation import (develop_argument, develop_theses,
+    justify_proposition)
+from models.argument import ArgumentPrompt, ThesesPrompt, JustifyPrompt
 
 router = APIRouter()
 
@@ -15,3 +16,8 @@ async def theses(thesesPrompt: ThesesPrompt):
 async def argument(argumentPrompt: ArgumentPrompt):
     args, errors = develop_argument(argumentPrompt)
     return {"reply": args, "errors": errors}
+
+@router.post("/justify")
+async def justify(justifyPrompt: JustifyPrompt):
+    new_args, errors = justify_proposition(justifyPrompt)
+    return {"reply": new_args, "errors": errors}

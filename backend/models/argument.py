@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from core.utils import logger
+from core.utils import logger, find_index
 
 theses_response_format = {
     "type": "json_schema",
@@ -46,11 +46,30 @@ argument_response_format = {
         "schema": {
             "type": "object",
             "properties": {
+                "assumptions": argument_format,
                 "argument": argument_format,
-                "counter_argument": argument_format,
-                "assumptions": argument_format
+                "counter_argument": argument_format
             },
             "required": ["argument", "counter_argument", "assumptions"],
+            "additionalProperties": False
+        }
+    }
+}
+
+justify_response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "response",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "propositions": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["propositions"],
             "additionalProperties": False
         }
     }
@@ -73,11 +92,56 @@ class ArgumentResponse(BaseModel):
     argument: list[Step]
     counter_argument: list[Step]
 
+    def all_steps(self):
+        return self.assumptions + self.argument + self.counter_argument
+
 class ThesesPrompt(ThesisResponse):
     prompt: str
 
-class ArgumentPrompt(ArgumentResponse, ThesisResponse):
+class ArgumentPrompt(ThesisResponse, ArgumentResponse):
     prompt: str
+
+class JustifyPrompt(ArgumentResponse):
+    step_id: str
+
+    def next_id(self):
+        steps = (self.assumptions +
+            self.argument +
+            self.counter_argument)
+        letters = [step.index for step in steps]
+        if not all(isinstance(c, str) and len(c) == 1 and
+            'A' <= c <= 'Z' for c in letters):
+            raise ValueError("All elements must be single lowercase letters A-Z")
+
+        seen = set(letters)
+        if len(seen) == 26:
+            raise ValueError("All 26 letters are already present")
+
+        if 'Z' not in seen:
+            last = sorted(seen)[-1]
+            return chr(ord(last)+1)
+
+        for i in range(ord('A'), ord('Z') + 1):
+            c = chr(i)
+            if c not in seen:
+                return c
+
+    def validate_step_id(self):
+        step = next((x for x in self.all_steps() if x.index == self.step_id), None)
+        if step == None:
+            raise ValueError('step_id does not refer')
+
+    def insert_proposition(self, new_proposition):
+        new_step = Step(index=self.next_id(), proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
+        index_in_argument = find_index(self.argument, lambda x: x.index == self.step_id)
+        index_in_counter_argument = find_index(self.counter_argument, lambda x: x.index == self.step_id)
+        if index_in_argument != -1:
+            self.argument.insert(index_in_argument, new_step)
+        elif index_in_counter_argument != -1:
+            self.counter_argument.insert(index_in_counter_argument, next_step)
+        else:
+            raise ValueError("Invalid step_id")
+
 
 def proofread_response(argument_prompt, argument_response):
     def verify_uniqueness(steps):
