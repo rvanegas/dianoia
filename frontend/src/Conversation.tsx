@@ -42,8 +42,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   setConversation: (newConversation: ConversationType) => void,
   createConversation: (proposition: string) => void
 }) {
-  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length - 1)
-  const lastSnapshot = conversation.snapshots[histIndex]
+  const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
+  const lastSnapshot = conversation.snapshots[snapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
 
@@ -58,7 +58,7 @@ function Conversation({conversation, setConversation, createConversation}: {
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
-    setHistIndex(prev => prev + 1)
+    setSnapshotIndex(prev => prev + 1)
   }
 
   const handleEnter = async (content: string) => {
@@ -75,7 +75,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
       const newSnapshot = {
-        ...conversation.snapshots[histIndex],
+        ...conversation.snapshots[snapshotIndex],
         argMode: newUserMode,
         lastPrompt: content,
         theses, args, argErrors,
@@ -116,7 +116,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     const url = VITE_API_BASE_URL + '/api/v1/justify'
     let apiPrompt = {...args, ...new_args}
     let newSnapshot = {
-      ...conversation.snapshots[histIndex],
+      ...conversation.snapshots[snapshotIndex],
       lastPrompt, argErrors: {},
     }
     let responseObject
@@ -187,16 +187,16 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleUndo = () => {
-    if (histIndex <= 0) return
-    const newIndex = histIndex - 1
-    setHistIndex(newIndex)
+    if (snapshotIndex <= 0) return
+    const newIndex = snapshotIndex - 1
+    setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
 
   const handleRedo = () => {
-    if (histIndex >= conversation.snapshots.length - 1) return
-    const newIndex = histIndex + 1
-    setHistIndex(newIndex)
+    if (snapshotIndex >= conversation.snapshots.length - 1) return
+    const newIndex = snapshotIndex + 1
+    setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
 
@@ -216,7 +216,7 @@ function Conversation({conversation, setConversation, createConversation}: {
 
   const hasLoadedInitPrompt = useRef(false)
   useEffect(() => {
-    if (conversation.initPrompt && histIndex == -1 && !hasLoadedInitPrompt.current) {
+    if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
       hasLoadedInitPrompt.current = true
       handleEnter(conversation.initPrompt)
     }
@@ -345,7 +345,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     </>
   )
 
-  const snapshotId = histIndex == -1 ? '' : `.${histIndex + 1}`
+  const snapshotId = snapshotIndex == -1 ? '' : `.${snapshotIndex + 1}`
 
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
@@ -411,13 +411,13 @@ function Conversation({conversation, setConversation, createConversation}: {
       {conversation.snapshots.length < 2 ? undefined :
         <div className="fixed top-4 right-4 z-10 flex gap-2">
           <button
-            disabled={histIndex <= 0}
+            disabled={snapshotIndex <= 0}
             onClick={handleUndo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Undo
           </button>
           <button
-            disabled={histIndex >= conversation.snapshots.length - 1}
+            disabled={snapshotIndex >= conversation.snapshots.length - 1}
             onClick={handleRedo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Redo
