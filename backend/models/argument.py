@@ -25,51 +25,40 @@ class ArgumentResponse(BaseModel):
 
 class ThesesPrompt(ThesisResponse):
     prompt: str
+
     def develop(self):
         return gpt_welcome(self.json())
 
 class ArgumentPrompt(ThesisResponse, ArgumentResponse):
     prompt: str
+
     def develop(self):
         content = gpt_develop(self.json())
-
         args = json.loads(content)
         argument_response = ArgumentResponse.parse_obj(args)
-
         errors = proofread_response(self, argument_response)
-
-        # logger.debug(f"argument_prompt: {argument_prompt}")
-        # logger.debug(f"argument_response: {argument_response}")
-        # logger.debug(f"errors['argument']: {errors['argument']}")
-        # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
-
         return content, errors
 
 class JustifyPrompt(ArgumentResponse):
     step_id: str
+
     def justify(self):
         self.validate_step_id()
         response = gpt_justify(self.json())
-
-        # logger.debug(f"r({response})")
         new_propositions = json.loads(response)["propositions"]
+
         for p in new_propositions:
             new_arg, loc = self.insert_proposition(p)
 
         props = [s.proposition for s in new_arg]
-        # logger.debug(f"r({response})")
-
         content = gpt_evaluate(json.dumps(props))
         evaluations = json.loads(content)
         self.add_evaluations(new_arg, loc, evaluations)
-        # logger.debug(f"evaluations{evaluations}")
-
-        # logger.debug(f"evaluations{evaluations}")
-
         return self.json()
 
     def validate_step_id(self):
         step = next((x for x in self.all_steps() if x.index == self.step_id), None)
+
         if step == None:
             raise ValueError('step_id does not refer')
 
@@ -100,6 +89,7 @@ class JustifyPrompt(ArgumentResponse):
         new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
         index_in_argument = find_index(self.argument, lambda x: x.index == self.step_id)
         index_in_counter_argument = find_index(self.counter_argument, lambda x: x.index == self.step_id)
+
         if index_in_argument != -1:
             arg = self.argument
             index = index_in_argument
@@ -110,6 +100,7 @@ class JustifyPrompt(ArgumentResponse):
             loc = "counter_argument"
         else:
             raise ValueError("Invalid step_id")
+
         conclusion = arg[index]
         conclusion.justifiers.append(next_id)
         arg.insert(index, new_step)
@@ -124,6 +115,7 @@ class JustifyPrompt(ArgumentResponse):
             arg = self.counter_argument
         else:
             raise ValueError("Invalid loc")
+
         for new_arg_index, step in enumerate(new_arg):
             arg_index = find_index(arg, lambda x: x.index == step.index)
             arg[arg_index].truth = evaluations["truth"][new_arg_index]
