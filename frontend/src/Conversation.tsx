@@ -72,7 +72,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     const newUserMode : ArgMode = content == 'Argue.' ? 'development' : currentSnapshot.argMode
     const apiPrompt = newUserMode == 'thesis' ?
       {prompt: content, ...theses} : {prompt: content, ...theses, ...args}
-    const path = newUserMode == 'thesis' ? '/api/v1/theses' : '/api/v1/argument'
+    const path = newUserMode == 'thesis' ? '/api/v1/theses' : '/api/v1/arguments'
     const url = VITE_API_BASE_URL + path
     try {
       const response = await axios.post(url, apiPrompt)

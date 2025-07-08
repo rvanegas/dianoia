@@ -4,8 +4,6 @@ from core.utils import logger
 
 from .system_prompt import (welcome_system_prompt, development_system_prompt,
     justify_system_prompt, evaluate_system_prompt)
-# from models.argument import (ArgumentPrompt, ArgumentResponse, ThesesPrompt,
-#     JustifyPrompt, Step, proofread_response)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
