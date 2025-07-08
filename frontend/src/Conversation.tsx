@@ -56,6 +56,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   const [prompt, setPrompt] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
 
+  // console.log('m', currentSnapshot.argMode)
+
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
     setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
@@ -116,8 +118,9 @@ function Conversation({conversation, setConversation, createConversation}: {
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/justify'
     let apiPrompt = {...args, ...new_args, step_id: ''}
+    const argMode: ArgMode = 'development'
     let newSnapshot = {
-      ...conversation.snapshots[snapshotIndex],
+      ...conversation.snapshots[snapshotIndex], argMode,
       lastPrompt, argErrors: initialSnapshot().argErrors,
     }
     let responseObject
@@ -140,6 +143,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       }
 
       newSnapshot.args = responseObject
+      // console.log('n', newSnapshot.argMode)
       saveSnapshot(newSnapshot)
       setLastPrompt('')
     }
