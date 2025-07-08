@@ -1,13 +1,11 @@
 from openai import OpenAI
 from config import OPENAI_API_KEY
 from core.utils import logger
-import json
 
-from core.utils import logger
 from .system_prompt import (welcome_system_prompt, development_system_prompt,
-    justify_system_prompt, re_evaluate_system_prompt)
-from models.argument import (ArgumentPrompt, ArgumentResponse, ThesesPrompt,
-    JustifyPrompt, Step, proofread_response)
+    justify_system_prompt, evaluate_system_prompt)
+# from models.argument import (ArgumentPrompt, ArgumentResponse, ThesesPrompt,
+#     JustifyPrompt, Step, proofread_response)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -105,31 +103,30 @@ re_evaluate_response_format = {
     }
 }
 
-def develop_theses(theses_prompt):
+def gpt_welcome(prompt):
     messages = [{
         "role": "system",
         "content": welcome_system_prompt
     },
     {
         "role": "user",
-        "content": theses_prompt.json()
+        "content": prompt
     }]
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
         response_format=theses_response_format,
     )
-    theses = response.choices[0].message.content
-    return theses
+    return response.choices[0].message.content
 
-def develop_argument(argument_prompt):
+def gpt_develop(prompt: str):
     messages = [{
         "role": "system",
         "content": development_system_prompt
     },
     {
         "role": "user",
-        "content": argument_prompt.json()
+        "content": prompt
     }]
 
     # logger.debug(f"messages {len(messages)}")
@@ -145,29 +142,26 @@ def develop_argument(argument_prompt):
     # logger.debug("argument_response")
     # logger.debug(argument_response.argument)
 
-    args = json.loads(content)
-    argument_response = ArgumentResponse.parse_obj(args)
-    errors = proofread_response(argument_prompt, argument_response)
+    # args = json.loads(content)
+    # argument_response = ArgumentResponse.parse_obj(args)
+    # errors = proofread_response(argument_prompt, argument_response)
 
     # logger.debug(f"argument_prompt: {argument_prompt}")
     # logger.debug(f"argument_response: {argument_response}")
     # logger.debug(f"errors['argument']: {errors['argument']}")
     # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
 
-    return content, errors
+    return content
 
-def justify_proposition(prompt: JustifyPrompt):
-
+def gpt_justify(prompt):
     # logger.debug('prompt', prompt)
-    prompt.validate_step_id()
-
     messages = [{
         "role": "system",
         "content": justify_system_prompt
     },
     {
         "role": "user",
-        "content": prompt.json()
+        "content": prompt
     }]
 
     response = client.chat.completions.create(
@@ -178,31 +172,17 @@ def justify_proposition(prompt: JustifyPrompt):
     content = response.choices[0].message.content
     # jcontent = json.loads(content)
     # logger.debug(f"({jcontent})")
+    return content
 
-    new_propositions = json.loads(content)["propositions"]
-    for p in new_propositions:
-        new_arg, loc = prompt.insert_proposition(p)
 
-    evaluations = re_evaluate(new_arg)
-    prompt.add_evaluations(new_arg, loc, evaluations)
-    # logger.debug(f"evaluations{evaluations}")
-
-    new_args = prompt.json()
-    # logger.debug(f"new_arg{new_arg}")
-    # logger.debug(f"new_args{new_args}")
-
-    return new_args, None
-
-def re_evaluate(steps: list[Step]):
-    props = [s.proposition for s in steps]
-
+def gpt_evaluate(props: str):
     messages = [{
         "role": "system",
-        "content": re_evaluate_system_prompt
+        "content": evaluate_system_prompt
     },
     {
         "role": "user",
-        "content": json.dumps(props)
+        "content": props
     }]
 
     response = client.chat.completions.create(
@@ -212,7 +192,4 @@ def re_evaluate(steps: list[Step]):
     )
     content = response.choices[0].message.content
 
-    evaluations = json.loads(content)
-    logger.debug(f"evaluations{evaluations}")
-
-    return evaluations
+    return content

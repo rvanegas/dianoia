@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from core.utils import logger, find_index
+from services.conversation import gpt_welcome, gpt_justify, gpt_evaluate, gpt_develop
+import json
 
 class ThesisResponse(BaseModel):
     thesis: str
@@ -23,12 +25,48 @@ class ArgumentResponse(BaseModel):
 
 class ThesesPrompt(ThesisResponse):
     prompt: str
+    def develop(self):
+        return gpt_welcome(self.json())
 
 class ArgumentPrompt(ThesisResponse, ArgumentResponse):
     prompt: str
+    def develop(self):
+        content = gpt_develop(self.json())
+
+        args = json.loads(content)
+        argument_response = ArgumentResponse.parse_obj(args)
+
+        errors = proofread_response(self, argument_response)
+
+        # logger.debug(f"argument_prompt: {argument_prompt}")
+        # logger.debug(f"argument_response: {argument_response}")
+        # logger.debug(f"errors['argument']: {errors['argument']}")
+        # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
+
+        return content, errors
 
 class JustifyPrompt(ArgumentResponse):
     step_id: str
+    def justify(self):
+        self.validate_step_id()
+        response = gpt_justify(self.json())
+
+        # logger.debug(f"r({response})")
+        new_propositions = json.loads(response)["propositions"]
+        for p in new_propositions:
+            new_arg, loc = self.insert_proposition(p)
+
+        props = [s.proposition for s in new_arg]
+        # logger.debug(f"r({response})")
+
+        content = gpt_evaluate(json.dumps(props))
+        evaluations = json.loads(content)
+        self.add_evaluations(new_arg, loc, evaluations)
+        # logger.debug(f"evaluations{evaluations}")
+
+        # logger.debug(f"evaluations{evaluations}")
+
+        return self.json()
 
     def validate_step_id(self):
         step = next((x for x in self.all_steps() if x.index == self.step_id), None)

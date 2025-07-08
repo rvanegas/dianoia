@@ -141,7 +141,7 @@ Do not prefix the new propositions with indices, such as a letter or number.
 
 """
 
-re_evaluate_system_prompt = """
+evaluate_system_prompt = """
 
 You are a logical assistant in an argument clinic. Your task is to help the
 user develop and articulate arguments in syllogistic form.
