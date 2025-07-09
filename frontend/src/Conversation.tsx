@@ -219,12 +219,6 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  // const handleRemove = async (index: string) => {
-  //   handleEnter(`Remove proposition (${index}). Adjust
-  //     inference relations to ensure that every proposition still contributes
-  //     to the argument's conclusion.`)
-  // }
-
   const handleDispute = async (step: StepType) => {
     createConversation(step.proposition)
   }
