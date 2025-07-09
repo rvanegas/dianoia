@@ -138,4 +138,3 @@ gpt_evaluate = Gpt(
         }
     }
 )
-

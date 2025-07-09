@@ -176,11 +176,38 @@ function Conversation({conversation, setConversation, createConversation}: {
     await handleSupport(['A', 'B'], new_args)
   }
 
-  const handleAssume = async (index: string) => {
-    handleEnter(`Move proposition (${index}) to the assumptions. Adjust
-      inference relations to ensure that every proposition still contributes
-      to the argument's conclusion.`)
+  const handleAssume = async (step_id: string) => {
+    let index
+    let new_args
+    if ((index = args.argument.findIndex((s: StepType) => s.index == step_id)) != -1) {
+      new_args = {
+        assumptions: [...args.assumptions, args.argument[index]],
+        argument: [...args.argument.slice(0, index), ...args.argument.slice(index+1)],
+        counter_argument: args.counter_argument,
+      }
+    }
+    else if ((index = args.counter_argument.findIndex((s: StepType) => s.index == step_id)) != -1) {
+      new_args = {
+        assumptions: [...args.assumptions, args.counter_argument[index]],
+        argument: args.argument,
+        counter_argument: [...args.counter_argument.slice(0, index), ...args.counter_argument.slice(index+1)]
+      }
+    }
+    else {
+      throw "step_id not found"
+    }
+    const newSnapshot = {
+      ...conversation.snapshots[snapshotIndex],
+      args: new_args
+    }
+    saveSnapshot(newSnapshot)
   }
+
+  // const handleAssume = async (index: string) => {
+  //   handleEnter(`Move proposition (${index}) to the assumptions. Adjust
+  //     inference relations to ensure that every proposition still contributes
+  //     to the argument's conclusion.`)
+  // }
 
   const handleRemove = async (step_id: string) => {
     const lastPrompt = `Remove proposition (${step_id})`
