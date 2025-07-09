@@ -73,33 +73,28 @@ class ArgumentsWithStepPrompt(Arguments):
     def find_in_arguments(self):
         index = find_index(self.argument, lambda x: x.index == self.step_id)
         if index != -1:
-            return "argument", self.argument, index
+            return self.argument, index
         index = find_index(self.counter_argument, lambda x: x.index == self.step_id)
         if index != -1:
-            return "counter_argument", self.counter_argument, index
+            return self.counter_argument, index
         raise ValueError("Invalid step_id")
 
     def insert_proposition(self, new_proposition: str):
         next_id = self.next_id()
         new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
-        loc, arg, index = self.find_in_arguments()
+        arg, index = self.find_in_arguments()
         conclusion = arg[index]
         conclusion.justifiers.append(next_id)
         arg.insert(index, new_step)
         new_arg = [s for s in arg if s.index in conclusion.justifiers]
         new_arg.append(conclusion)
-        return new_arg, loc
+        return arg, new_arg
 
-    def add_evaluations(self, new_arg: list[Step], loc: str, evaluations: dict):
-        logger.debug(f"e({evaluations})")
-        # can this be written without loc?
-        if loc == "argument":
-            arg = self.argument
-        elif loc == "counter_argument":
-            arg = self.counter_argument
-        else:
-            raise ValueError("Invalid loc")
-
+    def add_evaluations(self, arg: list[Step], new_arg: list[Step]):
+        props = [s.proposition for s in new_arg]
+        content = gpt_evaluate.call(json.dumps(props))
+        evaluations = json.loads(content)
+        # logger.debug(f"e({evaluations})")
         for new_arg_index, step in enumerate(new_arg):
             arg_index = find_index(arg, lambda x: x.index == step.index)
             arg[arg_index].truth = evaluations["truth"][new_arg_index]
@@ -113,16 +108,13 @@ class ArgumentsWithStepPrompt(Arguments):
         response = gpt_justify.call(self.json())
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
-            new_arg, loc = self.insert_proposition(p)
-        props = [s.proposition for s in new_arg]
-        content = gpt_evaluate.call(json.dumps(props))
-        evaluations = json.loads(content)
-        self.add_evaluations(new_arg, loc, evaluations)
+            arg, new_arg = self.insert_proposition(p)
+        self.add_evaluations(arg, new_arg)
         return self.json()
 
     def remove(self):
         self.validate_step_id()
-        loc, arg, index = self.find_in_arguments()
+        arg, index = self.find_in_arguments()
         inferences_from = [s for s in arg if s.index in arg[index].justifiers]
         inferences_to = [s for s in arg if self.step_id in s.justifiers]
         # logger.debug(f"from {inferences_from} it {arg[index]} to {inferences_to}")
@@ -138,10 +130,7 @@ class ArgumentsWithStepPrompt(Arguments):
 
             new_arg = [s for s in arg if s.index in step.justifiers]
             new_arg.append(step)
-            props = [s.proposition for s in new_arg]
-            content = gpt_evaluate.call(json.dumps(props))
-            evaluations = json.loads(content)
-            self.add_evaluations(new_arg, loc, evaluations)
+            self.add_evaluations(arg, new_arg)
 
         del arg[index]
         return self.json()
