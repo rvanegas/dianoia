@@ -13,7 +13,7 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
 const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
-  hover:text-white hover:bg-gray-500`
+  hover:text-white hover:bg-gray-500 disabled:opacity-[25%]`
 const headingClassNames = `text-lg font-bold`
 
 function initialSnapshot() : ConversationSnapshot {
@@ -331,6 +331,7 @@ function Conversation({conversation, setConversation, createConversation}: {
         <div key={key}>
           ({step.index}) {step.proposition} [{justifier}; {value}]
           <button
+            disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
             onClick={() => handleSupport([step.index])}>
             support
@@ -339,6 +340,7 @@ function Conversation({conversation, setConversation, createConversation}: {
             <>
               <button
                 key="0"
+                disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
                 onClick={() => handleAssume(step.index)}>
                 assume
@@ -349,12 +351,14 @@ function Conversation({conversation, setConversation, createConversation}: {
             <>
               <button
                 key="1"
+                disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
                 onClick={() => handleRemove(step.index)}>
                 remove
               </button>
               <button
                 key="2"
+                disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
                 onClick={() => handleDispute(step)}>
                 dispute
@@ -473,6 +477,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       {!(currentSnapshot.argMode == 'thesis' || userMode == 'input') ? undefined :
         <button
           className={bigButtonClassNames}
+          disabled={userMode == 'waiting'}
           onClick={() => handleEnter(prompt)}>
           Enter
         </button>
@@ -480,6 +485,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
         <button
           className={bigButtonClassNames}
+          disabled={userMode == 'waiting'}
           onClick={() => handleArgue()}>
           Argue
         </button>
@@ -499,13 +505,14 @@ function Conversation({conversation, setConversation, createConversation}: {
       {conversation.snapshots.length < 2 ? undefined :
         <div className="fixed top-4 right-4 z-10 flex gap-2">
           <button
-            disabled={snapshotIndex <= 0}
+            disabled={snapshotIndex <= 0 || userMode == 'waiting'}
             onClick={handleUndo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Undo
           </button>
           <button
-            disabled={snapshotIndex >= conversation.snapshots.length - 1}
+            disabled={snapshotIndex >= conversation.snapshots.length - 1
+              || userMode == 'waiting'}
             onClick={handleRedo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Redo
