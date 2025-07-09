@@ -136,7 +136,7 @@ function Conversation({conversation, setConversation, createConversation}: {
           return
         }
         if (!responseObject) {
-          throw("empty responseObject")
+          throw('empty responseObject')
           return
         }
         apiPrompt = {...apiPrompt, ...responseObject}
@@ -182,11 +182,48 @@ function Conversation({conversation, setConversation, createConversation}: {
       to the argument's conclusion.`)
   }
 
-  const handleRemove = async (index: string) => {
-    handleEnter(`Remove proposition (${index}). Adjust
-      inference relations to ensure that every proposition still contributes
-      to the argument's conclusion.`)
+  const handleRemove = async (step_id: string) => {
+    const lastPrompt = `Remove proposition (${step_id})`
+    setLastPrompt(lastPrompt)
+    setUserMode('waiting')
+    const url = VITE_API_BASE_URL + '/api/v1/remove'
+    let apiPrompt = {...args, step_id}
+
+    try {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+
+      if (response.data.errors) {
+        throw(response.data.errors)
+        return
+      }
+      if (!responseObject) {
+        throw('empty responseObject')
+        return
+      }
+
+      const newSnapshot = {
+        ...conversation.snapshots[snapshotIndex],
+        args: responseObject, lastPrompt,
+        argErrors: initialSnapshot().argErrors,
+      }
+      console.log('n', newSnapshot)
+      saveSnapshot(newSnapshot)
+      setLastPrompt('')
+    }
+    catch (error) {
+      console.error('Error: ', error)
+    }
+    finally {
+      setUserMode('ready')
+    }
   }
+
+  // const handleRemove = async (index: string) => {
+  //   handleEnter(`Remove proposition (${index}). Adjust
+  //     inference relations to ensure that every proposition still contributes
+  //     to the argument's conclusion.`)
+  // }
 
   const handleDispute = async (step: StepType) => {
     createConversation(step.proposition)

@@ -39,22 +39,8 @@ class ArgumentsPrompt(Theses, Arguments):
         errors = proofread_response(self, argument_response)
         return content, errors
 
-class JustifyPrompt(Arguments):
+class ArgumentsWithStepPrompt(Arguments):
     step_id: str
-
-    def justify(self):
-        self.validate_step_id()
-        response = gpt_justify.call(self.json())
-        new_propositions = json.loads(response)["propositions"]
-
-        for p in new_propositions:
-            new_arg, loc = self.insert_proposition(p)
-
-        props = [s.proposition for s in new_arg]
-        content = gpt_evaluate.call(json.dumps(props))
-        evaluations = json.loads(content)
-        self.add_evaluations(new_arg, loc, evaluations)
-        return self.json()
 
     def validate_step_id(self):
         step = next((x for x in self.all_steps() if x.index == self.step_id), None)
@@ -84,23 +70,19 @@ class JustifyPrompt(Arguments):
             if c not in seen:
                 return c
 
+    def find_in_arguments(self):
+        index = find_index(self.argument, lambda x: x.index == self.step_id)
+        if index != -1:
+            return "argument", self.argument, index
+        index = find_index(self.counter_argument, lambda x: x.index == self.step_id)
+        if index != -1:
+            return "counter_argument", self.counter_argument, index
+        raise ValueError("Invalid step_id")
+
     def insert_proposition(self, new_proposition: str):
         next_id = self.next_id()
         new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
-        index_in_argument = find_index(self.argument, lambda x: x.index == self.step_id)
-        index_in_counter_argument = find_index(self.counter_argument, lambda x: x.index == self.step_id)
-
-        if index_in_argument != -1:
-            arg = self.argument
-            index = index_in_argument
-            loc = "argument"
-        elif index_in_counter_argument != -1:
-            arg = self.counter_argument
-            index = index_in_counter_argument
-            loc = "counter_argument"
-        else:
-            raise ValueError("Invalid step_id")
-
+        loc, arg, index = self.find_in_arguments()
         conclusion = arg[index]
         conclusion.justifiers.append(next_id)
         arg.insert(index, new_step)
@@ -109,6 +91,8 @@ class JustifyPrompt(Arguments):
         return new_arg, loc
 
     def add_evaluations(self, new_arg: list[Step], loc: str, evaluations: dict):
+        logger.debug(f"e({evaluations})")
+        # can this be written without loc?
         if loc == "argument":
             arg = self.argument
         elif loc == "counter_argument":
@@ -123,6 +107,44 @@ class JustifyPrompt(Arguments):
                 arg[arg_index].valid = evaluations["valid"]
             else:
                 arg[arg_index].valid = 1.0
+
+    def justify(self):
+        self.validate_step_id()
+        response = gpt_justify.call(self.json())
+        new_propositions = json.loads(response)["propositions"]
+        for p in new_propositions:
+            new_arg, loc = self.insert_proposition(p)
+        props = [s.proposition for s in new_arg]
+        content = gpt_evaluate.call(json.dumps(props))
+        evaluations = json.loads(content)
+        self.add_evaluations(new_arg, loc, evaluations)
+        return self.json()
+
+    def remove(self):
+        self.validate_step_id()
+        loc, arg, index = self.find_in_arguments()
+        inferences_from = [s for s in arg if s.index in arg[index].justifiers]
+        inferences_to = [s for s in arg if self.step_id in s.justifiers]
+        # logger.debug(f"from {inferences_from} it {arg[index]} to {inferences_to}")
+        premises = []
+        for step in inferences_from:
+            if step.index in arg[index].justifiers:
+                # arg[index].justifiers.remove(step.index)
+                premises.append(step.index)
+        for step in inferences_to:
+            step.justifiers.remove(self.step_id)
+            for premise in premises:
+                step.justifiers.append(premise)
+
+            new_arg = [s for s in arg if s.index in step.justifiers]
+            new_arg.append(step)
+            props = [s.proposition for s in new_arg]
+            content = gpt_evaluate.call(json.dumps(props))
+            evaluations = json.loads(content)
+            self.add_evaluations(new_arg, loc, evaluations)
+
+        del arg[index]
+        return self.json()
 
 def proofread_response(argument_prompt, argument_response):
     def verify_uniqueness(steps):
