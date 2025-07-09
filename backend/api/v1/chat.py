@@ -2,7 +2,8 @@ from fastapi import APIRouter
 
 from core.utils import logger
 from models.argument import (
-    ArgumentsPrompt, ThesesPrompt, ArgumentsWithStepPrompt)
+    Arguments, ArgumentsPrompt,
+    ThesesPrompt, ArgumentsWithStepPrompt)
 
 router = APIRouter()
 
@@ -24,4 +25,9 @@ async def justify(prompt: ArgumentsWithStepPrompt):
 @router.post("/remove")
 async def remove(prompt: ArgumentsWithStepPrompt):
     args = prompt.remove()
+    return {"reply": args}
+
+@router.post("/evaluate")
+async def evaluate(prompt: Arguments):
+    args = prompt.evaluate()
     return {"reply": args}

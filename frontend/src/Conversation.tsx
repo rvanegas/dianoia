@@ -143,7 +143,6 @@ function Conversation({conversation, setConversation, createConversation}: {
       }
 
       newSnapshot.args = responseObject
-      // console.log('n', newSnapshot.argMode)
       saveSnapshot(newSnapshot)
       setLastPrompt('')
     }
@@ -177,6 +176,9 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleAssume = async (step_id: string) => {
+    const lastPrompt = `Assume proposition (${step_id})`
+    setLastPrompt(lastPrompt)
+    setUserMode('waiting')
     let index
     let new_args
     if ((index = args.argument.findIndex((s: StepType) => s.index == step_id)) != -1) {
@@ -196,9 +198,25 @@ function Conversation({conversation, setConversation, createConversation}: {
     else {
       throw "step_id not found"
     }
+    const url = VITE_API_BASE_URL + '/api/v1/evaluate'
+    let apiPrompt = new_args
+
+    const response = await axios.post(url, apiPrompt)
+    const responseObject = JSON.parse(response.data.reply)
+
+    if (response.data.errors) {
+      throw(response.data.errors)
+      return
+    }
+    if (!responseObject) {
+      throw('empty responseObject')
+      return
+    }
+
     const newSnapshot = {
       ...conversation.snapshots[snapshotIndex],
-      args: new_args
+      lastPrompt, argErrors: initialSnapshot().argErrors,
+      args: responseObject
     }
     saveSnapshot(newSnapshot)
   }
@@ -231,10 +249,9 @@ function Conversation({conversation, setConversation, createConversation}: {
 
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
-        args: responseObject, lastPrompt,
-        argErrors: initialSnapshot().argErrors,
+        lastPrompt, argErrors: initialSnapshot().argErrors,
+        args: responseObject
       }
-      console.log('n', newSnapshot)
       saveSnapshot(newSnapshot)
       setLastPrompt('')
     }
@@ -318,19 +335,26 @@ function Conversation({conversation, setConversation, createConversation}: {
             onClick={() => handleSupport([step.index])}>
             support
           </button>
-          {key == argument.length -1 ? undefined :
+          {key == argument.length - 1 || step.justifiers.length != 0 ? undefined :
             <>
               <button
+                key="0"
                 className={smallButtonClassNames}
                 onClick={() => handleAssume(step.index)}>
                 assume
               </button>
+            </>
+          }
+          {key == argument.length - 1 ? undefined :
+            <>
               <button
+                key="1"
                 className={smallButtonClassNames}
                 onClick={() => handleRemove(step.index)}>
                 remove
               </button>
               <button
+                key="2"
                 className={smallButtonClassNames}
                 onClick={() => handleDispute(step)}>
                 dispute
