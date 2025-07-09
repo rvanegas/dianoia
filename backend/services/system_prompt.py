@@ -1,4 +1,4 @@
-welcome_system_prompt = """
+theses_system_prompt = """
 
 You are a logical assistant in an argument clinic. Your task is to help the
 user develop and articulate arguments in syllogistic form. You will begin by
@@ -55,7 +55,7 @@ presuppositions: Either the Beatles or The Rolling Stones are better.
 
 """
 
-development_system_prompt = """
+develop_system_prompt = """
 
 You are a logical assistant in an argument clinic. Your task is to help the
 user develop and articulate arguments in syllogistic form. The thesis and

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from core.utils import logger, find_index
-from services.conversation import gpt_welcome, gpt_justify, gpt_evaluate, gpt_develop
+from services.conversation import gpt_theses, gpt_develop, gpt_justify, gpt_evaluate
 import json
 
 class Theses(BaseModel):
@@ -27,13 +27,13 @@ class ThesesPrompt(Theses):
     prompt: str
 
     def develop(self):
-        return gpt_welcome(self.json())
+        return gpt_theses.call(self.json())
 
 class ArgumentsPrompt(Theses, Arguments):
     prompt: str
 
     def develop(self):
-        content = gpt_develop(self.json())
+        content = gpt_develop.call(self.json())
         args = json.loads(content)
         argument_response = Arguments.parse_obj(args)
         errors = proofread_response(self, argument_response)
@@ -44,14 +44,14 @@ class JustifyPrompt(Arguments):
 
     def justify(self):
         self.validate_step_id()
-        response = gpt_justify(self.json())
+        response = gpt_justify.call(self.json())
         new_propositions = json.loads(response)["propositions"]
 
         for p in new_propositions:
             new_arg, loc = self.insert_proposition(p)
 
         props = [s.proposition for s in new_arg]
-        content = gpt_evaluate(json.dumps(props))
+        content = gpt_evaluate.call(json.dumps(props))
         evaluations = json.loads(content)
         self.add_evaluations(new_arg, loc, evaluations)
         return self.json()
