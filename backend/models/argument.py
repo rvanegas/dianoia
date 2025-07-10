@@ -61,7 +61,6 @@ class ArgumentsWithStepPrompt(Arguments):
 
     def validate_step_id(self):
         step = next((x for x in self.all_arg_steps() if x.index == self.step_id), None)
-
         if step == None:
             raise ValueError('step_id does not refer')
 
@@ -73,15 +72,12 @@ class ArgumentsWithStepPrompt(Arguments):
         if not all(isinstance(c, str) and len(c) == 1 and
             'A' <= c <= 'Z' for c in letters):
             raise ValueError("All elements must be single lowercase letters A-Z")
-
         seen = set(letters)
         if len(seen) == 26:
             raise ValueError("All 26 letters are already present")
-
         if 'Z' not in seen:
             last = sorted(seen)[-1]
             return chr(ord(last)+1)
-
         for i in range(ord('A'), ord('Z') + 1):
             c = chr(i)
             if c not in seen:
@@ -103,8 +99,6 @@ class ArgumentsWithStepPrompt(Arguments):
         conclusion = arg[index]
         conclusion.justifiers.append(next_id)
         arg.insert(index, new_step)
-        # new_arg = [s for s in arg if s.index in conclusion.justifiers]
-        # new_arg.append(conclusion)
         return arg, conclusion
 
     def justify(self):
@@ -121,11 +115,9 @@ class ArgumentsWithStepPrompt(Arguments):
         arg, index = self.find_in_arguments()
         inferences_from = [s for s in arg if s.index in arg[index].justifiers]
         inferences_to = [s for s in arg if self.step_id in s.justifiers]
-        # logger.debug(f"from {inferences_from} it {arg[index]} to {inferences_to}")
         premises = []
         for step in inferences_from:
             if step.index in arg[index].justifiers:
-                # arg[index].justifiers.remove(step.index)
                 premises.append(step.index)
         for step in inferences_to:
             step.justifiers.remove(self.step_id)
