@@ -56,53 +56,35 @@ function Conversation({conversation, setConversation, createConversation}: {
   const [prompt, setPrompt] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
 
-  // console.log('m', currentSnapshot.argMode)
-
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
     setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
     setSnapshotIndex(prev => prev + 1)
   }
 
-  const handleEnter = async (content: string) => {
+  const handleThesis = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setUserMode('waiting')
     setPrompt('')
-    const newUserMode : ArgMode = content == 'Argue.' ? 'development' : currentSnapshot.argMode
-    const apiPrompt = newUserMode == 'thesis' ?
-      {prompt: content, ...theses} : {prompt: content, ...theses, ...args}
-    const path = newUserMode == 'thesis' ? '/api/v1/theses' : '/api/v1/arguments'
+    const apiPrompt = {prompt: content, ...theses}
+    const path = '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
+      if (!responseObject) {
+        throw('empty responseObject')
+      }
+      const argMode : ArgMode = 'thesis'
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
-        argMode: newUserMode,
         lastPrompt: content,
-        theses, args, argErrors,
+        args, argErrors, argMode,
+        theses: responseObject,
       }
-      if (newUserMode == 'thesis') {
-        if (responseObject) {
-          const newTheses = responseObject
-          saveSnapshot({...newSnapshot, theses: newTheses})
-          setLastPrompt('')
-        }
-        else {
-          throw('empty responseObject')
-        }
-      }
-      else {
-        if (responseObject && response.data.errors) {
-          saveSnapshot({...newSnapshot, args: responseObject,
-            argErrors: response.data.errors})
-          setLastPrompt('')
-        }
-        else {
-          throw('empty responseObject or missing errors')
-        }
-      }
+      saveSnapshot(newSnapshot)
+      setLastPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -299,7 +281,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   useEffect(() => {
     if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
       hasLoadedInitPrompt.current = true
-      handleEnter(conversation.initPrompt)
+      handleThesis(conversation.initPrompt)
     }
   }, [])
 
@@ -468,34 +450,24 @@ function Conversation({conversation, setConversation, createConversation}: {
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == 'Enter') {
-            handleEnter(prompt)
+            handleThesis(prompt)
             e.preventDefault()
           }
         }}
         placeholder={placeholderText}
       />
-      {!(currentSnapshot.argMode == 'thesis' || userMode == 'input') ? undefined :
-        <button
-          className={bigButtonClassNames}
-          disabled={userMode == 'waiting'}
-          onClick={() => handleEnter(prompt)}>
-          Enter
-        </button>
-      }
+      <button
+        className={bigButtonClassNames}
+        disabled={userMode == 'waiting' || userMode == 'ready'}
+        onClick={() => handleThesis(prompt)}>
+        Enter
+      </button>
       {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
         <button
           className={bigButtonClassNames}
           disabled={userMode == 'waiting'}
           onClick={() => handleArgue()}>
           Argue
-        </button>
-      }
-      {!(currentSnapshot.argMode == 'development' && userMode != 'input') ? undefined :
-        <button
-          className={bigButtonClassNames}
-          disabled={userMode == 'waiting'}
-          onClick={() => setUserMode('input')}>
-          Input
         </button>
       }
     </div>
