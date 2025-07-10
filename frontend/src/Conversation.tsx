@@ -52,6 +52,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   const argErrors = currentSnapshot.argErrors
   const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot.lastPrompt)
   const [userMode, setUserMode] = useState<UserMode>('ready')
+  const [targetLoc, setTargetLoc] = useState<string>()
+  const [targetIndex, setTargetIndex] = useState<number>()
 
   const [prompt, setPrompt] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
@@ -94,10 +96,11 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  const handleSupport = async (step_ids: string[], new_args = {}) => {
+  const handleAIJustify = async (step_ids: string[], new_args = {}) => {
     const lastPrompt = `Justify proposition (${step_ids})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
+    // rename to ai-justify
     const url = VITE_API_BASE_URL + '/api/v1/justify'
     let apiPrompt = {...args, ...new_args, step_id: ''}
     const argMode: ArgMode = 'development'
@@ -115,11 +118,9 @@ function Conversation({conversation, setConversation, createConversation}: {
 
         if (response.data.errors) {
           throw(response.data.errors)
-          return
         }
         if (!responseObject) {
           throw('empty responseObject')
-          return
         }
         apiPrompt = {...apiPrompt, ...responseObject}
       }
@@ -154,9 +155,41 @@ function Conversation({conversation, setConversation, createConversation}: {
         valid: 0.5,
       }],
     }
-    await handleSupport(['A', 'B'], new_args)
+    await handleAIJustify(['A', 'B'], new_args)
   }
 
+  const handleUserJustify = async (proposition: string) => {
+    const lastPrompt = `User Justify proposition ${targetLoc} ${targetIndex}`
+    setLastPrompt(lastPrompt)
+    setUserMode('waiting')
+    const url = VITE_API_BASE_URL + '/api/v1/user-justify'
+    let apiPrompt = {...args, loc: targetLoc, index: targetIndex, proposition}
+    try {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+      if (response.data.errors) {
+        throw(response.data.errors)
+      }
+      if (!responseObject) {
+        throw('empty responseObject')
+      }
+      const newSnapshot = {
+        ...conversation.snapshots[snapshotIndex],
+        lastPrompt, argErrors,
+        args: responseObject
+      }
+      saveSnapshot(newSnapshot)
+      setLastPrompt('')
+    }
+    catch (error) {
+      console.error('Error: ', error)
+    }
+    finally {
+      setUserMode('ready')
+    }
+  }
+
+  // use steptarget
   const handleAssume = async (step_id: string) => {
     const lastPrompt = `Assume proposition (${step_id})`
     setLastPrompt(lastPrompt)
@@ -188,11 +221,9 @@ function Conversation({conversation, setConversation, createConversation}: {
 
     if (response.data.errors) {
       throw(response.data.errors)
-      return
     }
     if (!responseObject) {
       throw('empty responseObject')
-      return
     }
 
     const newSnapshot = {
@@ -222,11 +253,9 @@ function Conversation({conversation, setConversation, createConversation}: {
 
       if (response.data.errors) {
         throw(response.data.errors)
-        return
       }
       if (!responseObject) {
         throw('empty responseObject')
-        return
       }
 
       const newSnapshot = {
@@ -298,8 +327,8 @@ function Conversation({conversation, setConversation, createConversation}: {
     </div>
   )
 
-  const argumentNode = (argument: StepType[]) => {
-    const argumentSteps = argument.map((step, key) => {
+  const argumentNode = (loc: string, argument: StepType[]) => {
+    const argumentSteps = argument.map((step, step_index) => {
       let justifier = ''
       let value = `${step.truth}`
       if (step.justifiers.length == 0) {
@@ -310,15 +339,25 @@ function Conversation({conversation, setConversation, createConversation}: {
         value += `, ${step.valid}`
       }
       return (
-        <div key={key}>
+        <div key={step_index}>
           ({step.index}) {step.proposition} [{justifier}; {value}]
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
-            onClick={() => handleSupport([step.index])}>
-            support
+            onClick={() => handleAIJustify([step.index])}>
+            ai-justify
           </button>
-          {key == argument.length - 1 || step.justifiers.length != 0 ? undefined :
+          <button
+            disabled={userMode == 'waiting'}
+            className={smallButtonClassNames}
+            onClick={() => {
+              setUserMode('input')
+              setTargetLoc(loc)
+              setTargetIndex(step_index)
+            }}>
+            user-justify
+          </button>
+          {step_index == argument.length - 1 || step.justifiers.length != 0 ? undefined :
             <>
               <button
                 key="0"
@@ -329,7 +368,7 @@ function Conversation({conversation, setConversation, createConversation}: {
               </button>
             </>
           }
-          {key == argument.length - 1 ? undefined :
+          {step_index == argument.length - 1 ? undefined :
             <>
               <button
                 key="1"
@@ -363,7 +402,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     <>
       <div>
         <div className={headingClassNames}>Argument:</div>
-        <div>{argumentNode(args.argument)}</div>
+        <div>{argumentNode('argument', args.argument)}</div>
         {!argErrors.argument || argErrors.argument.length == 0 ? undefined :
           <>
             <div className={headingClassNames}>Errors:</div>
@@ -373,7 +412,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       </div>
       <div>
         <div className={headingClassNames}>Counter-Argument:</div>
-        <div>{argumentNode(args.counter_argument)}</div>
+        <div>{argumentNode('counter_argument', args.counter_argument)}</div>
         {!argErrors.counter_argument || argErrors.counter_argument.length == 0 ? undefined :
           <>
             <div className={headingClassNames}>Errors:</div>
@@ -441,6 +480,15 @@ function Conversation({conversation, setConversation, createConversation}: {
     currentSnapshot.argMode == 'thesis' ? 'Enter thesis' :
     userMode == 'input' ? 'Enter proposition' : ''
 
+  const handleEnter = (prompt: string) => {
+    if (currentSnapshot.argMode == 'thesis') {
+      handleThesis(prompt)
+    }
+    else if (userMode == 'input') {
+      handleUserJustify(prompt)
+    }
+  }
+
   const userDiv = (
     <div className="p-4 flex gap-2 w-[100%] flex-wrap">
       <input
@@ -450,7 +498,7 @@ function Conversation({conversation, setConversation, createConversation}: {
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == 'Enter') {
-            handleThesis(prompt)
+            handleEnter(prompt)
             e.preventDefault()
           }
         }}
@@ -459,7 +507,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       <button
         className={bigButtonClassNames}
         disabled={userMode == 'waiting' || userMode == 'ready'}
-        onClick={() => handleThesis(prompt)}>
+        onClick={() => handleEnter(prompt)}>
         Enter
       </button>
       {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
