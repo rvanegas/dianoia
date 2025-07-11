@@ -11,7 +11,7 @@ async def theses(prompt: ThesesPrompt):
     theses = prompt.develop()
     return {"reply": theses}
 
-@router.post("/justify")
+@router.post("/ai-justify")
 async def justify(prompt: ArgumentsWithStepPrompt):
     args = prompt.justify()
     return {"reply": args}
