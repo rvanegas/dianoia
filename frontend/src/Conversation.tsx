@@ -96,23 +96,39 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  const handleAIJustify = async (step_ids: string[], new_args = {}) => {
-    const lastPrompt = `Justify proposition (${step_ids})`
+  // function foo() {
+  //   let steps: [string, number][] = [['argument', 0], ['counter_argument', 0]]
+  //   for (let [loc, step_index] of steps) {
+  //     let api: string = ''
+  //     api = loc
+  //     console.log(loc, step_index, api)
+  //   }
+  // }
+
+  // foo()
+
+  const handleAIJustifySimple = async (loc: string, index: number) => {
+    await handleAIJustify([[loc, index]])
+  }
+
+  const handleAIJustify = async (steps: [string, number][], new_args: object = {}) =>
+  {
+    const lastPrompt = 'Justify propositions'
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
-    // rename to ai-justify
-    const url = VITE_API_BASE_URL + '/api/v1/justify'
-    let apiPrompt = {...args, ...new_args, step_id: ''}
+    const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
+    let apiPrompt = {...args, ...new_args, loc: '', index: 0}
     const argMode: ArgMode = 'development'
     let newSnapshot = {
       ...conversation.snapshots[snapshotIndex], argMode,
       lastPrompt, argErrors: initialSnapshot().argErrors,
     }
     let responseObject
-
     try {
-      for (let step_id of step_ids) {
-        apiPrompt.step_id = step_id
+      for (let [loc, index] of steps) {
+        apiPrompt.loc = loc
+        apiPrompt.index = index
+        // console.log('a', apiPrompt)
         const response = await axios.post(url, apiPrompt)
         responseObject = JSON.parse(response.data.reply)
 
@@ -124,7 +140,6 @@ function Conversation({conversation, setConversation, createConversation}: {
         }
         apiPrompt = {...apiPrompt, ...responseObject}
       }
-
       newSnapshot.args = responseObject
       saveSnapshot(newSnapshot)
       setLastPrompt('')
@@ -155,7 +170,7 @@ function Conversation({conversation, setConversation, createConversation}: {
         valid: 0.5,
       }],
     }
-    await handleAIJustify(['A', 'B'], new_args)
+    await handleAIJustify([['argument', 0], ['counter_argument', 0]], new_args)
   }
 
   const handleUserJustify = async (proposition: string) => {
@@ -189,63 +204,52 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  // use steptarget
-  const handleAssume = async (step_id: string) => {
-    const lastPrompt = `Assume proposition (${step_id})`
+  const handleAssume = async (loc: string, index: number) => {
+    const propKey = args[loc][index].index
+    const lastPrompt = `Assume proposition (${propKey})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
-    let index
-    let new_args
-    if ((index = args.argument.findIndex((s: StepType) => s.index == step_id)) != -1) {
-      new_args = {
-        assumptions: [...args.assumptions, args.argument[index]],
-        argument: [...args.argument.slice(0, index), ...args.argument.slice(index+1)],
-        counter_argument: args.counter_argument,
-      }
+    // console.log(`args ${JSON.stringify(args)}`)
+    const new_args = {
+      ...args,
+      assumptions: [...args.assumptions, args[loc][index]],
     }
-    else if ((index = args.counter_argument.findIndex((s: StepType) => s.index == step_id)) != -1) {
-      new_args = {
-        assumptions: [...args.assumptions, args.counter_argument[index]],
-        argument: args.argument,
-        counter_argument: [...args.counter_argument.slice(0, index), ...args.counter_argument.slice(index+1)]
-      }
-    }
-    else {
-      throw "step_id not found"
-    }
+    new_args[loc] = [...args[loc].slice(0, index), ...args[loc].slice(index+1)]
+    // console.log(`new_args ${JSON.stringify(new_args)}`)
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     let apiPrompt = new_args
-
-    const response = await axios.post(url, apiPrompt)
-    const responseObject = JSON.parse(response.data.reply)
-
-    if (response.data.errors) {
-      throw(response.data.errors)
+    try {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+      if (response.data.errors) {
+        throw(response.data.errors)
+      }
+      if (!responseObject) {
+        throw('empty responseObject')
+      }
+      const newSnapshot = {
+        ...conversation.snapshots[snapshotIndex],
+        lastPrompt, argErrors: initialSnapshot().argErrors,
+        args: responseObject
+      }
+      saveSnapshot(newSnapshot)
+      setLastPrompt('')
     }
-    if (!responseObject) {
-      throw('empty responseObject')
+    catch (error) {
+      console.error('Error: ', error)
     }
-
-    const newSnapshot = {
-      ...conversation.snapshots[snapshotIndex],
-      lastPrompt, argErrors: initialSnapshot().argErrors,
-      args: responseObject
+    finally {
+      setUserMode('ready')
     }
-    saveSnapshot(newSnapshot)
   }
 
-  // const handleAssume = async (index: string) => {
-  //   handleEnter(`Move proposition (${index}) to the assumptions. Adjust
-  //     inference relations to ensure that every proposition still contributes
-  //     to the argument's conclusion.`)
-  // }
-
-  const handleRemove = async (step_id: string) => {
-    const lastPrompt = `Remove proposition (${step_id})`
+  const handleRemove = async (loc: string, index: number) => {
+    const propKey = args[loc][index].index
+    const lastPrompt = `Remove proposition (${propKey})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/remove'
-    let apiPrompt = {...args, step_id}
+    let apiPrompt = {...args, loc, index}
 
     try {
       const response = await axios.post(url, apiPrompt)
@@ -344,7 +348,7 @@ function Conversation({conversation, setConversation, createConversation}: {
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
-            onClick={() => handleAIJustify([step.index])}>
+            onClick={() => handleAIJustifySimple(loc, step_index)}>
             ai-justify
           </button>
           <button
@@ -363,7 +367,7 @@ function Conversation({conversation, setConversation, createConversation}: {
                 key="0"
                 disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
-                onClick={() => handleAssume(step.index)}>
+                onClick={() => handleAssume(loc, step_index)}>
                 assume
               </button>
             </>
@@ -374,7 +378,7 @@ function Conversation({conversation, setConversation, createConversation}: {
                 key="1"
                 disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
-                onClick={() => handleRemove(step.index)}>
+                onClick={() => handleRemove(loc, step_index)}>
                 remove
               </button>
               <button
@@ -426,12 +430,12 @@ function Conversation({conversation, setConversation, createConversation}: {
   const assumptionsDiv = (
     <>
       <div className={headingClassNames}>Assumptions:</div>
-      {args.assumptions.map((assumption, key) => (
-        <div key={key}>
+      {args.assumptions.map((assumption, step_index) => (
+        <div key={step_index}>
           ({assumption.index}) {assumption.proposition}
           <button
             className={smallButtonClassNames}
-            onClick={() => handleRemove(assumption.index)}>
+            onClick={() => handleRemove('assumptions', step_index)}>
             remove
           </button>
         </div>
