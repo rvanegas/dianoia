@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from core.utils import logger
-from models.argument import (ThesesPrompt, Arguments,
+from models.argument import (ThesesPrompt,
     ArgumentsWithStep, ArgumentsWithProposition)
 
 router = APIRouter()
@@ -11,9 +11,9 @@ async def theses(prompt: ThesesPrompt):
     theses = prompt.develop()
     return {"reply": theses}
 
-@router.post("/evaluate")
-async def evaluate(prompt: Arguments):
-    args = prompt.evaluate()
+@router.post("/assume")
+async def evaluate(prompt: ArgumentsWithStep):
+    args = prompt.assume()
     return {"reply": args}
 
 @router.post("/remove")

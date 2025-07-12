@@ -136,6 +136,15 @@ class ArgumentsWithStep(Arguments):
         # return using superclass
         return self.argsjson()
 
+    def assume(self):
+        self.validate_init()
+        if self.loc == "assumptions":
+            raise "already assumed"
+        self.assumptions.append(self.arg[self.index])
+        del self.arg[self.index]
+        self.evaluate()
+        return self.argsjson()
+
 class ArgumentsWithProposition(ArgumentsWithStep):
     proposition: str
 

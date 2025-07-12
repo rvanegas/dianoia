@@ -202,20 +202,20 @@ function Conversation({conversation, setConversation, createConversation}: {
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     // console.log(`args ${JSON.stringify(args)}`)
-    const new_args = {
-      ...args,
-      assumptions: [...args.assumptions, argLoc(loc)[index]],
-    }
-    const newArg = [...argLoc(loc).slice(0, index), ...argLoc(loc).slice(index+1)]
-    if (loc == 'argument')
-      new_args.argument = newArg
-    else if (loc == 'counter_argument')
-      new_args.counter_argument = newArg
-    else
-      throw 'bad loc value'
+    // const new_args = {
+    //   ...args,
+    //   assumptions: [...args.assumptions, argLoc(loc)[index]],
+    // }
+    // const newArg = [...argLoc(loc).slice(0, index), ...argLoc(loc).slice(index+1)]
+    // if (loc == 'argument')
+    //   new_args.argument = newArg
+    // else if (loc == 'counter_argument')
+    //   new_args.counter_argument = newArg
+    // else
+    //   throw 'bad loc value'
     // console.log(`new_args ${JSON.stringify(new_args)}`)
-    const url = VITE_API_BASE_URL + '/api/v1/evaluate'
-    let apiPrompt = new_args
+    const url = VITE_API_BASE_URL + '/api/v1/assume'
+    let apiPrompt = {...args, loc, index}
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
