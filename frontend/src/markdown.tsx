@@ -15,7 +15,7 @@ export function developmentMarkdown(args: ArgsType) {
 
   const assumptionsMarkdown = (assumptions: StepType[]) => {
     assumptions.forEach(item => {
-      md += `(${item.index}) `
+      md += `(${item.symbol}) `
       md += `${item.proposition}`
       md += '\n\n'
     })
@@ -23,7 +23,7 @@ export function developmentMarkdown(args: ArgsType) {
 
   const argumentMarkdown = (steps: StepType[]) => {
     steps.forEach(step => {
-      md += `(${step.index}) `
+      md += `(${step.symbol}) `
       md += `${step.proposition} `
 
       let justifier = ''
