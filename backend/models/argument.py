@@ -25,6 +25,10 @@ class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
+    arg: list[Step] | None = None
+
+    def argsjson(self):
+        return self.json(include={"assumptions", "argument", "counter_argument"})
 
     def next_id(self):
         steps = (self.assumptions +
@@ -73,32 +77,11 @@ class Arguments(BaseModel):
         for step in self.counter_argument:
             if len(step.justifiers) != 0:
                 self.add_evaluations(self.counter_argument, step)
-        return self.json()
+        return self.argsjson()
 
-class ArgumentsWithPrompt(Arguments):
+class ArgumentsWithStep(Arguments):
     loc: str
     index: int
-    proposition: str
-
-    def user_justify(self):
-        if self.loc == 'argument':
-            arg = self.argument
-        elif self.loc == 'counter_argument':
-            arg = self.counter_argument
-        else:
-            raise ValueError('invalid loc')
-        next_id = self.next_id()
-        new_step = Step(index=next_id, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
-        conclusion = arg[self.index]
-        arg.insert(self.index, new_step)
-        conclusion.justifiers.append(next_id)
-        self.add_evaluations(arg, conclusion)
-        return self.json()
-
-class ArgumentsWithStepPrompt(Arguments):
-    loc: str
-    index: int
-    arg: list[Step] | None = None
 
     # is there a pydantic way?
     # @model_validator(mode='before')
@@ -132,7 +115,7 @@ class ArgumentsWithStepPrompt(Arguments):
             conclusion = self.insert_proposition(p)
             self.index += 1
         self.add_evaluations(self.arg, conclusion)
-        return self.json(exclude={"arg"})
+        return self.argsjson()
 
     def remove(self):
         # logger.debug(f"r {self.loc} {self.index}")
@@ -151,4 +134,22 @@ class ArgumentsWithStepPrompt(Arguments):
         del self.arg[self.index]
         self.evaluate()
         # return using superclass
-        return self.json(exclude={"arg"})
+        return self.argsjson()
+
+class ArgumentsWithProposition(ArgumentsWithStep):
+    proposition: str
+
+    def user_justify(self):
+        if self.loc == 'argument':
+            arg = self.argument
+        elif self.loc == 'counter_argument':
+            arg = self.counter_argument
+        else:
+            raise ValueError('invalid loc')
+        next_id = self.next_id()
+        new_step = Step(index=next_id, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
+        conclusion = arg[self.index]
+        arg.insert(self.index, new_step)
+        conclusion.justifiers.append(next_id)
+        self.add_evaluations(arg, conclusion)
+        return self.argsjson()
