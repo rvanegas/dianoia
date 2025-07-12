@@ -16,7 +16,8 @@ export function developmentMarkdown(args: ArgsType) {
   const assumptionsMarkdown = (assumptions: StepType[]) => {
     assumptions.forEach(item => {
       md += `(${item.index}) `
-      md += `${item.proposition} `
+      md += `${item.proposition}`
+      md += '\n\n'
     })
   }
 
@@ -38,8 +39,10 @@ export function developmentMarkdown(args: ArgsType) {
     })
   }
 
-  md += '**Assumptions:**\n\n'
-  assumptionsMarkdown(args.assumptions)
+  if (args.assumptions.length != 0) {
+    md += '**Assumptions:**\n\n'
+    assumptionsMarkdown(args.assumptions)
+  }
   md += '**Argument:**\n\n'
   argumentMarkdown(args.argument)
   md += '**Counter-Argument:**\n\n'
@@ -50,8 +53,6 @@ export function developmentMarkdown(args: ArgsType) {
 export function exportMarkdown(theses: ThesesType, args: ArgsType) {
   let md = ''
   md += thesisMarkdown(theses)
-  md += '\n\n'
   md += developmentMarkdown(args)
-  md += '\n\n'
   return md
 }
