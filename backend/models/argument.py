@@ -7,6 +7,10 @@ class Theses(BaseModel):
     thesis: str
     counter_thesis: str
     presupposition: str
+    prompt: str
+
+    def develop(self):
+        return gpt_theses.call(self.json())
 
 class Step(BaseModel):
     symbol: str
@@ -14,12 +18,6 @@ class Step(BaseModel):
     justifiers: list[str]
     truth: float
     valid: float
-
-class ThesesPrompt(Theses):
-    prompt: str
-
-    def develop(self):
-        return gpt_theses.call(self.json())
 
 class Arguments(BaseModel):
     assumptions: list[Step]
