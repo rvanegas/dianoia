@@ -5,7 +5,7 @@ export type ThesesType = {
 }
 
 export type StepType = {
-  index: string
+  symbol: string
   proposition: string
   justifiers: string[]
   truth: number

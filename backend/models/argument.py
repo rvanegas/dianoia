@@ -9,7 +9,7 @@ class Theses(BaseModel):
     presupposition: str
 
 class Step(BaseModel):
-    index: str
+    symbol: str
     proposition: str
     justifiers: list[str]
     truth: float
@@ -30,11 +30,11 @@ class Arguments(BaseModel):
     def argsjson(self):
         return self.json(include={"assumptions", "argument", "counter_argument"})
 
-    def next_id(self):
+    def next_symbol(self):
         steps = (self.assumptions +
             self.argument +
             self.counter_argument)
-        letters = [step.index for step in steps]
+        letters = [step.symbol for step in steps]
         if not all(isinstance(c, str) and len(c) == 1 and
             'A' <= c <= 'Z' for c in letters):
             raise ValueError("All elements must be single lowercase letters A-Z")
@@ -53,7 +53,7 @@ class Arguments(BaseModel):
         return self.argument + self.counter_argument
 
     def add_evaluations(self, arg: list[Step], conclusion: Step):
-        new_arg = [s for s in arg if s.index in conclusion.justifiers]
+        new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
             "assumptions": [s.proposition for s in self.assumptions],
@@ -63,7 +63,7 @@ class Arguments(BaseModel):
         content = gpt_evaluate.call(json.dumps(props))
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
-            arg_index = find_index(arg, lambda x: x.index == step.index)
+            arg_index = find_index(arg, lambda x: x.symbol == step.symbol)
             arg[arg_index].truth = evaluations["truth"][new_arg_index]
             if new_arg_index == len(new_arg) - 1:
                 arg[arg_index].valid = evaluations["valid"]
@@ -99,11 +99,11 @@ class ArgumentsWithStep(Arguments):
             raise ValueError('invalid index')
 
     def insert_proposition(self, new_proposition: str):
-        next_id = self.next_id()
-        new_step = Step(index=next_id, proposition=new_proposition,
+        next_symbol = self.next_symbol()
+        new_step = Step(symbol=next_symbol, proposition=new_proposition,
             justifiers=[], truth=0.0, valid=0.0)
         conclusion = self.arg[self.index]
-        conclusion.justifiers.append(next_id)
+        conclusion.justifiers.append(next_symbol)
         self.arg.insert(self.index, new_step)
         return conclusion
 
@@ -121,14 +121,14 @@ class ArgumentsWithStep(Arguments):
         # logger.debug(f"r {self.loc} {self.index}")
         self.validate_init()
         if self.loc != "assumptions":
-            inferences_from = [s for s in self.arg if s.index in self.arg[self.index].justifiers]
-            inferences_to = [s for s in self.arg if self.arg[self.index].index in s.justifiers]
+            inferences_from = [s for s in self.arg if s.symbol in self.arg[self.index].justifiers]
+            inferences_to = [s for s in self.arg if self.arg[self.index].symbol in s.justifiers]
             premises = []
             for step in inferences_from:
-                if step.index in self.arg[self.index].justifiers:
-                    premises.append(step.index)
+                if step.symbol in self.arg[self.index].justifiers:
+                    premises.append(step.symbol)
             for step in inferences_to:
-                step.justifiers.remove(self.arg[self.index].index)
+                step.justifiers.remove(self.arg[self.index].symbol)
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
@@ -146,10 +146,10 @@ class ArgumentsWithProposition(ArgumentsWithStep):
             arg = self.counter_argument
         else:
             raise ValueError('invalid loc')
-        next_id = self.next_id()
-        new_step = Step(index=next_id, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
+        next_symbol = self.next_symbol()
+        new_step = Step(symbol=next_symbol, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
         conclusion = arg[self.index]
         arg.insert(self.index, new_step)
-        conclusion.justifiers.append(next_id)
+        conclusion.justifiers.append(next_symbol)
         self.add_evaluations(arg, conclusion)
         return self.argsjson()
