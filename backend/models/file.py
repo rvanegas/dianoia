@@ -24,6 +24,7 @@ def create_file(file_data: FileData):
     client.vector_stores.files.create_and_poll(
         vector_store_id=VECTOR_STORE_ID,
         file_id=response.id)
+    expire_old_files()
     return FileRef(file_id=response.id, filename=response.filename)
 
 one_day_in_seconds = 24 * 60 * 60

@@ -15,7 +15,7 @@ class Gpt:
 
     def call(self, prompt: str):
         messages = [{
-            "role": "system",
+            "role": "developer",
             "content": self.system_prompt
         },
         {
