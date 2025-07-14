@@ -1,7 +1,6 @@
 # mypy: disable-error-code=call-overload
 from dataclasses import dataclass
-
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, OPENAI_MODEL
 from core.utils import logger
 from services.openaiclient import client
 
@@ -25,7 +24,7 @@ class Gpt:
             "content": prompt
         }]
         response = client.responses.create(
-            model="gpt-4o",
+            model=OPENAI_MODEL,
             input=messages,
             text=self.response_format
             # tools=[]
