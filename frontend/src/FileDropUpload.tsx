@@ -1,7 +1,12 @@
+import './App.css'
 import axios from 'axios'
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-function FileDropUpload() {
+import type {FileType} from './types'
+
+function FileDropUpload({newFileUploaded}: {
+  newFileUploaded: (newFile: FileType) => void
+}) {
   const onDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     const url = VITE_API_BASE_URL + '/api/v1/upload'
@@ -10,7 +15,8 @@ function FileDropUpload() {
     formData.append('file', files[0])
     try {
       const response = await axios.post(url, formData)
-      console.log(response)
+      const responseObject = JSON.parse(response.data.reply)
+      newFileUploaded(responseObject)
     } catch (error) {
       console.error('Error: ', error)
     }
