@@ -1,18 +1,22 @@
+"""models for theses and arguments"""
 from pydantic import BaseModel
 from core.utils import logger, find_index
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 import json
 
 class Theses(BaseModel):
+    """theses are received and returned from api"""
     thesis: str
     counter_thesis: str
     presupposition: str
     prompt: str
 
     def develop(self):
+        """convert user input into theses using gpt"""
         return gpt_theses.call(self.json())
 
 class Step(BaseModel):
+    """steps in arguments or assumptions"""
     symbol: str
     proposition: str
     justifiers: list[str]
@@ -20,15 +24,18 @@ class Step(BaseModel):
     valid: float
 
 class Arguments(BaseModel):
+    """both argument and counter-argument as received and returned from api"""
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
     arg: list[Step] | None = None
 
     def argsjson(self):
+        """arguments json to return to frontend"""
         return self.json(include={"assumptions", "argument", "counter_argument"})
 
     def next_symbol(self):
+        """picks next available A-Z in a natural order"""
         steps = (self.assumptions +
             self.argument +
             self.counter_argument)
@@ -46,11 +53,16 @@ class Arguments(BaseModel):
             c = chr(i)
             if c not in seen:
                 return c
+        raise RuntimeError("something went wrong")
 
-    def all_arg_steps(self):
-        return self.argument + self.counter_argument
+    # def all_arg_steps(self):
+    #     return self.argument + self.counter_argument
 
     def add_evaluations(self, arg: list[Step], conclusion: Step):
+        """
+        For a given list of steps as premises, and a step as conclusion,
+        use gpt to set "truth" and "valid" values according to evaluate_system_prompt
+        """
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
@@ -60,7 +72,7 @@ class Arguments(BaseModel):
         content = gpt_evaluate.call(json.dumps(props))
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
-            arg_index = find_index(arg, lambda x: x.symbol == step.symbol)
+            arg_index = find_index(arg, lambda x, step=step: x.symbol == step.symbol)
             arg[arg_index].truth = evaluations["truth"][new_arg_index]
             if new_arg_index == len(new_arg) - 1:
                 arg[arg_index].valid = evaluations["valid"]
@@ -68,6 +80,7 @@ class Arguments(BaseModel):
                 arg[arg_index].valid = 1.0
 
     def evaluate(self):
+        """Find all the subarguments and evaluate their numbers using add_evaluations()"""
         for step in self.argument:
             if len(step.justifiers) != 0:
                 self.add_evaluations(self.argument, step)
@@ -77,6 +90,7 @@ class Arguments(BaseModel):
         return self.argsjson()
 
 class ArgumentsWithStep(Arguments):
+    """arguments with a specific step indicated by position"""
     loc: str
     index: int
 
@@ -84,6 +98,7 @@ class ArgumentsWithStep(Arguments):
     # @model_validator(mode='before')
     # @classmethod
     def validate_init(self):
+        """validate that indicated position exists"""
         if self.loc == 'argument':
             self.arg = self.argument
         elif self.loc == 'counter_argument':
@@ -96,6 +111,7 @@ class ArgumentsWithStep(Arguments):
             raise ValueError('invalid index')
 
     def insert_proposition(self, new_proposition: str):
+        """add step and reference to it in indicated justifiers"""
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=new_proposition,
             justifiers=[], truth=0.0, valid=0.0)
@@ -104,7 +120,8 @@ class ArgumentsWithStep(Arguments):
         self.arg.insert(self.index, new_step)
         return conclusion
 
-    def justify(self):
+    def ai_justify(self):
+        """use gpt to add steps to justify indicated conclusion"""
         self.validate_init()
         response = gpt_justify.call(self.json())
         new_propositions = json.loads(response)["propositions"]
@@ -115,6 +132,7 @@ class ArgumentsWithStep(Arguments):
         return self.argsjson()
 
     def remove(self):
+        """remove step and adjust justifiers and evaluations accordingly"""
         self.validate_init()
         if self.loc != "assumptions":
             inferences_from = [s for s in self.arg if s.symbol in self.arg[self.index].justifiers]
@@ -132,18 +150,24 @@ class ArgumentsWithStep(Arguments):
         return self.argsjson()
 
     def assume(self):
+        """move step into assumptions and adjust evaluations accordingly"""
         self.validate_init()
         if self.loc == "assumptions":
             raise "already assumed"
+        if len(self.arg[self.index].justifiers) != 0:
+            raise "cannot assume justified proposition"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
         self.evaluate()
         return self.argsjson()
 
 class ArgumentsWithProposition(ArgumentsWithStep):
+    """arguments with a proposition to make a new step"""
     proposition: str
 
+    # should use insert_proposition()
     def user_justify(self):
+        """add step using proposition attr and adjust justifiers and evaluations accordingly"""
         if self.loc == 'argument':
             arg = self.argument
         elif self.loc == 'counter_argument':
@@ -151,7 +175,8 @@ class ArgumentsWithProposition(ArgumentsWithStep):
         else:
             raise ValueError('invalid loc')
         next_symbol = self.next_symbol()
-        new_step = Step(symbol=next_symbol, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
+        new_step = Step(symbol=next_symbol, proposition=self.proposition,
+            justifiers=[], truth=0.0, valid=0.0)
         conclusion = arg[self.index]
         arg.insert(self.index, new_step)
         conclusion.justifiers.append(next_symbol)
