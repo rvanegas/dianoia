@@ -1,8 +1,9 @@
 """models for theses and arguments"""
-from pydantic import BaseModel
-from core.utils import logger, find_index
-from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 import json
+
+from pydantic import BaseModel
+from core.utils import find_index # , logger
+from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 
 class Theses(BaseModel):
     """theses are received from and returned to frontend"""
@@ -153,9 +154,9 @@ class ArgumentsWithStep(Arguments):
         """move step into assumptions and adjust evaluations accordingly"""
         self.validate_init()
         if self.loc == "assumptions":
-            raise "already assumed"
+            raise ValueError("already assumed")
         if len(self.arg[self.index].justifiers) != 0:
-            raise "cannot assume justified proposition"
+            raise ValueError("cannot assume justified proposition")
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
         self.evaluate()
