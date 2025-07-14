@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, UploadFile
 from core.utils import logger
 from models.argument import (Theses,
     ArgumentsWithStep, ArgumentsWithProposition)
-from models.file import FileData, create_file, expire_old_files
+from models.file import FileData, create_file
 
 router = APIRouter()
 
@@ -39,5 +39,4 @@ async def upload(file: UploadFile = File(...)):
         content=content,
         filename=file.filename)
     create_file(file_data)
-    expire_old_files()
     return {"reply": file.filename}
