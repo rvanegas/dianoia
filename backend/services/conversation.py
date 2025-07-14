@@ -1,14 +1,12 @@
 from dataclasses import dataclass
-from openai import OpenAI
 from config import OPENAI_API_KEY
 from core.utils import logger
+from services.openaiclient import client
 
 from .system_prompt import (
     theses_system_prompt,
     justify_system_prompt,
     evaluate_system_prompt)
-
-client = OpenAI(api_key=OPENAI_API_KEY)
 
 @dataclass
 class Gpt:
