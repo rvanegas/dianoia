@@ -5,7 +5,7 @@ from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 import json
 
 class Theses(BaseModel):
-    """theses are received and returned from api"""
+    """theses are received from and returned to frontend"""
     thesis: str
     counter_thesis: str
     presupposition: str
@@ -24,7 +24,7 @@ class Step(BaseModel):
     valid: float
 
 class Arguments(BaseModel):
-    """both argument and counter-argument as received and returned from api"""
+    """both argument and counter-argument as received from and returned to frontend"""
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
