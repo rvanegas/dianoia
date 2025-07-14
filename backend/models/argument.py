@@ -113,6 +113,8 @@ class ArgumentsWithStep(Arguments):
 
     def insert_proposition(self, new_proposition: str):
         """add step and reference to it in indicated justifiers"""
+        if self.arg == None: # unnecessary if validate_init is in a hook
+            raise RuntimeError("invalid arg")
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=new_proposition,
             justifiers=[], truth=0.0, valid=0.0)

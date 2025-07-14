@@ -1,4 +1,6 @@
+# mypy: disable-error-code=call-overload
 from dataclasses import dataclass
+
 from config import OPENAI_API_KEY
 from core.utils import logger
 from services.openaiclient import client
@@ -10,8 +12,8 @@ from .system_prompt import (
 
 @dataclass
 class Gpt:
-    system_prompt: dict
-    response_format: str
+    system_prompt: str
+    response_format: dict
 
     def call(self, prompt: str):
         messages = [{
