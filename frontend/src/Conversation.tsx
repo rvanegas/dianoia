@@ -38,32 +38,6 @@ function initialSnapshot() : ConversationSnapshot {
   }
 }
 
-function FileDropUpload() {
-  const onDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const url = VITE_API_BASE_URL + '/api/v1/upload'
-    const files = event.dataTransfer.files
-    const formData = new FormData()
-    formData.append('file', files[0])
-    try {
-      await axios.post(url, formData)
-    } catch (error) {
-      console.error('Error: ', error)
-    }
-  }
-
-  return (
-    <div
-      onDragOver={event => event.preventDefault()}
-      onDrop={onDrop}
-      style={{border: '2px dashed #888', padding: 40}}>
-      Drop file here
-    </div>
-  )
-}
-
-
-
 function Conversation({conversation, setConversation, createConversation}: {
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void,
@@ -548,7 +522,6 @@ function Conversation({conversation, setConversation, createConversation}: {
         </div>
       }
       {messagesDiv}
-      <FileDropUpload/>
       {userDiv}
     </>
   )
