@@ -41,6 +41,6 @@ type ConversationType = {
 }
 
 export type FileType = {
+  assistant_id: string
   filename: string
-  vector_store_id: string
 }
