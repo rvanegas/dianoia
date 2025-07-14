@@ -1,3 +1,4 @@
+"""simple tools to import anywhere"""
 import logging
 
 logger = logging.getLogger("dianoia")
@@ -8,7 +9,8 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 def find_index(array, predicate):
+    """like findIndex() in JS"""
     for index, item in enumerate(array):
         if predicate(item):
             return index
-    return -1  # or raise ValueError if preferred
+    return -1
