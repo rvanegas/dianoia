@@ -15,12 +15,10 @@ class Theses(BaseModel):
 
     def develop(self):
         """convert user input into theses using gpt"""
-        if self.prompt:
-            return gpt_theses.call(self.json())
-        elif self.vector_store_id:
-            return gpt_theses.call_assistant('', self.vector_store_id)
-        else:
-            raise ValueError("missing prompt or vector_store_id")
+        return gpt_theses.call(self.gptjson(), self.vector_store_id)
+
+    def gptjson(self):
+        return self.json(include={"thesis", "counter_thesis", "presupposition"})
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
@@ -35,9 +33,10 @@ class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
+    vector_store_id: str | None = None
     arg: list[Step] | None = None
 
-    def argsjson(self):
+    def gptjson(self):
         """arguments json to return to frontend"""
         return self.json(include={"assumptions", "argument", "counter_argument"})
 
@@ -76,7 +75,7 @@ class Arguments(BaseModel):
             "assumptions": [s.proposition for s in self.assumptions],
             "argument": [s.proposition for s in new_arg]
         }
-        content = gpt_evaluate.call(json.dumps(props))
+        content = gpt_evaluate.call(json.dumps(props), self.vector_store_id)
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
             arg_index = find_index(arg, lambda x, step=step: x.symbol == step.symbol)
@@ -94,7 +93,7 @@ class Arguments(BaseModel):
         for step in self.counter_argument:
             if len(step.justifiers) != 0:
                 self.add_evaluations(self.counter_argument, step)
-        return self.argsjson()
+        return self.gptjson()
 
 class ArgumentsWithStep(Arguments):
     """arguments with a specific step indicated by position"""
@@ -132,13 +131,13 @@ class ArgumentsWithStep(Arguments):
     def ai_justify(self):
         """use gpt to add steps to justify indicated conclusion"""
         self.validate_init()
-        response = gpt_justify.call(self.json())
+        response = gpt_justify.call(self.json(), self.vector_store_id)
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
             conclusion = self.insert_proposition(p)
             self.index += 1
         self.add_evaluations(self.arg, conclusion)
-        return self.argsjson()
+        return self.gptjson()
 
     def remove(self):
         """remove step and adjust justifiers and evaluations accordingly"""
@@ -156,7 +155,7 @@ class ArgumentsWithStep(Arguments):
                     step.justifiers.append(premise)
         del self.arg[self.index]
         self.evaluate()
-        return self.argsjson()
+        return self.gptjson()
 
     def assume(self):
         """move step into assumptions and adjust evaluations accordingly"""
@@ -168,7 +167,7 @@ class ArgumentsWithStep(Arguments):
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
         self.evaluate()
-        return self.argsjson()
+        return self.gptjson()
 
 class ArgumentsWithProposition(ArgumentsWithStep):
     """arguments with a proposition to make a new step"""
@@ -190,4 +189,4 @@ class ArgumentsWithProposition(ArgumentsWithStep):
         arg.insert(self.index, new_step)
         conclusion.justifiers.append(next_symbol)
         self.add_evaluations(arg, conclusion)
-        return self.argsjson()
+        return self.gptjson()
