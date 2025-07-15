@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, UploadFile
 from core.utils import logger
 from models.argument import (Theses,
     ArgumentsWithStep, ArgumentsWithProposition)
-from models.file import FileData, create_file
+from services.assistant import FileData, create_file
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ async def remove(args: ArgumentsWithStep):
 
 @router.post("/ai-justify")
 async def ai_justify(args: ArgumentsWithStep):
-    new_args = args.justify()
+    new_args = args.ai_justify()
     return {"reply": new_args}
 
 @router.post("/user-justify")

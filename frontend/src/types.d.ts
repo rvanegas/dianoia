@@ -36,11 +36,12 @@ type ConversationSnapshot = {
 type ConversationType = {
   id: number
   name: string
-  initPrompt: string
+  initPrompt: string | undefined
+  vector_store_id: string | undefined
   snapshots: ConversationSnapshot[]
 }
 
 export type FileType = {
-  assistant_id: string
+  vector_store_id: string
   filename: string
 }
