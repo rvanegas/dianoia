@@ -1,5 +1,6 @@
 """simple tools to import anywhere"""
 import logging
+from datetime import datetime
 
 logger = logging.getLogger("dianoia")
 logger.setLevel(logging.DEBUG)  # or INFO, WARNING, etc.
@@ -14,3 +15,7 @@ def find_index(array, predicate):
         if predicate(item):
             return index
     return -1
+
+def prettytimestamp(timestamp):
+    dt = datetime.fromtimestamp(timestamp)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
