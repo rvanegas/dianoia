@@ -32,43 +32,47 @@ class Gpt:
             response_format=response_format)
         self.assistant_id = response.id
 
-    def call(self, prompt: str):
-        messages = [{
-            "role": "user",
-            "content": "Help me with the argument."
-        }]
-        response_format = {
-            "format": {
-                "type": "json_schema",
-                "name": "response",
-                "strict": True,
-                "schema": self.response_format_base
-            }        
-        }
-        response = client.responses.create(
-            model=OPENAI_MODEL,
-            input=messages,
-            text=response_format
-        )
-        return response.output_text
+    # def call(self, prompt: str):
+    #     messages = [{
+    #         "role": "user",
+    #         "content": "Help me with the argument."
+    #     }]
+    #     response_format = {
+    #         "format": {
+    #             "type": "json_schema",
+    #             "name": "response",
+    #             "strict": True,
+    #             "schema": self.response_format_base
+    #         }        
+    #     }
+    #     response = client.responses.create(
+    #         model=OPENAI_MODEL,
+    #         input=messages,
+    #         text=response_format
+    #     )
+    #     return response.output_text
 
-    def call_assistant(self, prompt: str, vector_store_id: str):
-        logger.debug(f"vs {vector_store_id}")
-        run = client.beta.threads.create_and_run_poll(
-            assistant_id=self.assistant_id,
-            thread={
-                "messages": [{
-                    "role": "user",
-                    "content": self.instructions
-                }],
-                "tool_resources": {
-                    "file_search": {
-                        "vector_store_ids": [vector_store_id]
-                    }
+    def call(self, prompt: str, vector_store_id: str):
+        # logger.debug(f"vs {vector_store_id}")
+        thread={
+            "messages": [{
+                "role": "user",
+                "content": prompt
+            }]
+        }
+        if vector_store_id != None:
+            thread["tool_resources"] = {
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
                 }
-            })
+            }
+        run = client.beta.threads.create_and_run_poll(
+            thread=thread,
+            assistant_id=self.assistant_id,
+        )
         messages = client.beta.threads.messages.list(
             thread_id=run.thread_id)
+        # logger.debug(f"m {messages}")
         for message in reversed(messages.data):
             if message.role == "assistant":
                 return message.content[0].text.value

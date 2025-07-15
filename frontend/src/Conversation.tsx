@@ -118,7 +118,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
-    let apiPrompt = {...args, ...new_args, loc: '', index: 0}
+    let apiPrompt = {...args, ...new_args, loc: '', index: 0,
+      vector_store_id: conversation.vector_store_id,
+    }
     const argMode: ArgMode = 'development'
     let newSnapshot = {
       ...conversation.snapshots[snapshotIndex], argMode,
@@ -179,7 +181,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
-    let apiPrompt = {...args, loc: targetLoc, index: targetIndex, proposition}
+    let apiPrompt = {...args, loc: targetLoc, index: targetIndex, proposition,
+      vector_store_id: conversation.vector_store_id,
+    }
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
@@ -211,19 +215,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
-    let apiPrompt = {...args, loc, index}
-
+    let apiPrompt = {...args, loc, index,
+      vector_store_id: conversation.vector_store_id,
+    }
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-
       if (response.data.errors) {
         throw(response.data.errors)
       }
       if (!responseObject) {
         throw('empty responseObject')
       }
-
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
         lastPrompt, argErrors: initialSnapshot().argErrors,
@@ -274,8 +277,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   const hasLoadedInitPrompt = useRef(false)
   useEffect(() => {
-    console.log('ue', hasLoadedInitPrompt.current, 
-      conversation.initPrompt, conversation.vector_store_id)
+    // console.log('ue', hasLoadedInitPrompt.current,
+    //   conversation.initPrompt, conversation.vector_store_id)
     if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
       hasLoadedInitPrompt.current = true
       handleThesis(conversation.initPrompt)
