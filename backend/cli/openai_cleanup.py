@@ -1,6 +1,6 @@
 import time
 
-from core.utils import logger
+from core.utils import logger, prettytimestamp
 from services.openaiclient import client
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
@@ -10,7 +10,7 @@ def cleanup():
 
     expired_file_ids = []
     for file_obj in client.files.list():
-        logger.debug(f"file {file_obj.id} {file_obj.filename} {file_obj.created_at}")
+        logger.debug(f"file {prettytimestamp(file_obj.created_at)} {file_obj.id} {file_obj.filename}")
         if now - file_obj.created_at >= ONE_DAY_IN_SECONDS:
             logger.debug(f"expired {file_obj.id}")
             expired_file_ids.append(file_obj.id)
@@ -20,7 +20,7 @@ def cleanup():
 
     expired_vector_store_ids = []
     for vector_store in client.vector_stores.list():
-        logger.debug(f"file {vector_store.id} {vector_store.created_at}")
+        logger.debug(f"file {prettytimestamp(vector_store.created_at)} {vector_store.id}")
         if now - vector_store.created_at >= ONE_DAY_IN_SECONDS:
             logger.debug(f"expired {vector_store.id}")
             expired_vector_store_ids.append(vector_store.id)
@@ -30,7 +30,7 @@ def cleanup():
 
     expired_assistant_ids = []
     for assistant in client.beta.assistants.list():
-        logger.debug(f"file {assistant.id} {assistant.created_at}")
+        logger.debug(f"file {prettytimestamp(assistant.created_at)} {assistant.id}")
         if now - assistant.created_at >= ONE_DAY_IN_SECONDS:
             logger.debug(f"expired {assistant.id}")
             expired_assistant_ids.append(assistant.id)
