@@ -12,7 +12,7 @@ from .system_prompt import (
 
 @dataclass
 class Gpt:
-    system_prompt: str
+    instructions: str
     response_format_base: dict
     assistant_id: Optional[str] = None
 
@@ -28,18 +28,14 @@ class Gpt:
         response = client.beta.assistants.create(
             model=OPENAI_MODEL,
             tools=[{"type": "file_search"}],
-            instructions=self.system_prompt,
+            instructions=self.instructions,
             response_format=response_format)
         self.assistant_id = response.id
 
     def call(self, prompt: str):
         messages = [{
-            "role": "developer",
-            "content": self.system_prompt
-        },
-        {
             "role": "user",
-            "content": prompt
+            "content": "Help me with the argument."
         }]
         response_format = {
             "format": {
@@ -58,13 +54,13 @@ class Gpt:
 
     def call_assistant(self, prompt: str, vector_store_id: str):
         logger.debug(f"vs {vector_store_id}")
-        response = client.beta.threads.create_and_run_poll(
+        run = client.beta.threads.create_and_run_poll(
             assistant_id=self.assistant_id,
             thread={
-                # "messages": [{
-                #     "role": "user",
-                #     "content": prompt
-                # }],
+                "messages": [{
+                    "role": "user",
+                    "content": self.instructions
+                }],
                 "tool_resources": {
                     "file_search": {
                         "vector_store_ids": [vector_store_id]
@@ -72,19 +68,14 @@ class Gpt:
                 }
             })
         messages = client.beta.threads.messages.list(
-            thread_id=response.thread_id)
+            thread_id=run.thread_id)
         for message in reversed(messages.data):
             if message.role == "assistant":
                 return message.content[0].text.value
-        raise RuntimeError("")
-
-
-        # "type": "json_schema",
-        # "json_schema": {
-        #     "name": "response",
+        raise RuntimeError("no assistant value found")
 
 gpt_theses = Gpt(
-    system_prompt=theses_system_prompt,
+    instructions=theses_system_prompt,
     response_format_base={
         "type": "object",
         "properties": {
@@ -98,7 +89,7 @@ gpt_theses = Gpt(
 )
 
 gpt_justify = Gpt(
-    system_prompt=justify_system_prompt,
+    instructions=justify_system_prompt,
     response_format_base={
         "type": "object",
         "properties": {
@@ -113,7 +104,7 @@ gpt_justify = Gpt(
 )
 
 gpt_evaluate = Gpt(
-    system_prompt=evaluate_system_prompt,
+    instructions=evaluate_system_prompt,
     response_format_base={
         "type": "object",
         "properties": {
