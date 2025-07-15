@@ -10,11 +10,17 @@ class Theses(BaseModel):
     thesis: str
     counter_thesis: str
     presupposition: str
-    prompt: str
+    prompt: str | None = None
+    vector_store_id: str | None = None
 
     def develop(self):
         """convert user input into theses using gpt"""
-        return gpt_theses.call(self.json())
+        if self.prompt:
+            return gpt_theses.call(self.json())
+        elif self.vector_store_id:
+            return gpt_theses.call_assistant('', self.vector_store_id)
+        else:
+            raise ValueError("missing prompt or vector_store_id")
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
