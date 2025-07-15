@@ -275,16 +275,16 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }, [userMode])
 
-  const hasLoadedInitPrompt = useRef(false)
+  const hasLoadedInit = useRef(false)
   useEffect(() => {
-    // console.log('ue', hasLoadedInitPrompt.current,
+    // console.log('ue', hasLoadedInit.current,
     //   conversation.initPrompt, conversation.vector_store_id)
-    if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
-      hasLoadedInitPrompt.current = true
+    if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInit.current) {
+      hasLoadedInit.current = true
       handleThesis(conversation.initPrompt)
     }
-    else if (conversation.vector_store_id && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
-      hasLoadedInitPrompt.current = true
+    else if (conversation.vector_store_id && snapshotIndex == -1 && !hasLoadedInit.current) {
+      hasLoadedInit.current = true
       handleThesis()
     }
   }, [])
