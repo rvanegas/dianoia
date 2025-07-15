@@ -72,7 +72,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   const handleThesis = async (content?: string) => {
     if (userMode == 'waiting') return
-    if (!(content && !content.trim()) && !conversation.vector_store_id) return
+    if (!(content && content.trim()) && !conversation.vector_store_id) return
     content ||= ''
     setLastPrompt(content)
     setUserMode('waiting')
@@ -275,17 +275,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }, [userMode])
 
-  const hasLoadedInit = useRef(false)
+  const hasLoaded = useRef(false)
   useEffect(() => {
-    // console.log('ue', hasLoadedInit.current,
-    //   conversation.initPrompt, conversation.vector_store_id)
-    if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInit.current) {
-      hasLoadedInit.current = true
-      handleThesis(conversation.initPrompt)
-    }
-    else if (conversation.vector_store_id && snapshotIndex == -1 && !hasLoadedInit.current) {
-      hasLoadedInit.current = true
-      handleThesis()
+    if (snapshotIndex == -1 && !hasLoaded.current) {
+      hasLoaded.current = true
+      if (conversation.initPrompt || conversation.vector_store_id) {
+        handleThesis(conversation.initPrompt)
+      }
     }
   }, [])
 

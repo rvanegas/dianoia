@@ -18,7 +18,7 @@ class Theses(BaseModel):
         return gpt_theses.call(self.gptjson(), self.vector_store_id)
 
     def gptjson(self):
-        return self.json(include={"thesis", "counter_thesis", "presupposition"})
+        return self.json(include={"thesis", "counter_thesis", "presupposition", "prompt"})
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
