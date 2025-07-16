@@ -31,6 +31,11 @@ async def user_justify(args: ArgumentsWithStepAndProposition):
     new_args = args.user_justify()
     return {"reply": new_args}
 
+@router.post("/explain")
+async def user_justify(args: ArgumentsWithStep):
+    new_args, explanation = args.explain()
+    return {"reply": new_args, "explanation": explanation}
+
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
     content = await file.read()
