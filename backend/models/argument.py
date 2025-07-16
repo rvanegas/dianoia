@@ -5,21 +5,6 @@ from pydantic import BaseModel
 from core.utils import find_index # , logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 
-class Theses(BaseModel):
-    """theses are received from and returned to frontend"""
-    thesis: str
-    counter_thesis: str
-    presupposition: str
-    prompt: str | None = None
-    vector_store_id: str | None = None
-
-    def develop(self):
-        """convert user input into theses using gpt"""
-        return gpt_theses.call(self.gptjson(), self.vector_store_id)
-
-    def gptjson(self):
-        return self.json(include={"thesis", "counter_thesis", "presupposition", "prompt"})
-
 class Step(BaseModel):
     """steps in arguments or assumptions"""
     symbol: str
@@ -29,12 +14,18 @@ class Step(BaseModel):
     valid: float
 
 class Arguments(BaseModel):
-    """both argument and counter-argument as received from and returned to frontend"""
+    """theses and arguments as received from and returned to frontend"""
+    thesis: str
+    counter_thesis: str
+    presupposition: str
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
     vector_store_id: str | None = None
     arg: list[Step] | None = None
+
+    def gptjsont(self):
+        return self.json(include={"thesis", "counter_thesis", "presupposition", "proposition"})
 
     def gptjson(self):
         """arguments json to return to frontend"""
@@ -169,9 +160,17 @@ class ArgumentsWithStep(Arguments):
         self.evaluate()
         return self.gptjson()
 
-class ArgumentsWithProposition(ArgumentsWithStep):
-    """arguments with a proposition to make a new step"""
+class ArgumentsWithProposition(Arguments):
+    """arguments with a proposition"""
+
     proposition: str
+
+    def theses(self):
+        """convert user input into theses using gpt"""
+        return gpt_theses.call(self.gptjsont(), self.vector_store_id)
+
+class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithProposition):
+    """arguments with a proposition and location to make a new step"""
 
     # should use insert_proposition()
     def user_justify(self):
