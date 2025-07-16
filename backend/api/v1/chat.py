@@ -1,16 +1,15 @@
 from fastapi import APIRouter, File, UploadFile
 
 from core.utils import logger
-from models.argument import (Theses,
-    ArgumentsWithStep, ArgumentsWithProposition)
+from models.argument import (ArgumentsWithStep, ArgumentsWithProposition, ArgumentsWithStepAndProposition)
 from services.assistant import FileData, create_file
 
 router = APIRouter()
 
 @router.post('/theses')
-async def theses(theses: Theses):
-    new_theses = theses.develop()
-    return {"reply": new_theses}
+async def theses(args: ArgumentsWithProposition):
+    new_args = args.theses()
+    return {"reply": new_args}
 
 @router.post("/assume")
 async def evaluate(args: ArgumentsWithStep):
@@ -28,7 +27,7 @@ async def ai_justify(args: ArgumentsWithStep):
     return {"reply": new_args}
 
 @router.post("/user-justify")
-async def user_justify(args: ArgumentsWithProposition):
+async def user_justify(args: ArgumentsWithStepAndProposition):
     new_args = args.user_justify()
     return {"reply": new_args}
 
