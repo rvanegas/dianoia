@@ -79,9 +79,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     setInputText('')
     const apiPrompt = {
-      ...theses, 
-      ...args,
-      proposition: content,
+      ...theses, ...args, proposition: content,
       vector_store_id: conversation.vector_store_id,
     }
     const path = '/api/v1/theses'
@@ -120,7 +118,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
-    let apiPrompt = {...theses, ...args, ...new_args, loc: '', index: 0,
+    let apiPrompt = {
+      ...theses, ...args, ...new_args, loc: '', index: 0,
       vector_store_id: conversation.vector_store_id,
     }
     const argMode: ArgMode = 'development'
@@ -183,7 +182,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
-    let apiPrompt = {...theses, ...args, loc: targetLoc, index: targetIndex, proposition,
+    let apiPrompt = {
+      ...theses, ...args, loc: targetLoc, index: targetIndex, proposition,
       vector_store_id: conversation.vector_store_id,
     }
     try {
@@ -217,7 +217,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
-    let apiPrompt = {...theses, ...args, loc, index,
+    let apiPrompt = {
+      ...theses, ...args, loc, index,
       vector_store_id: conversation.vector_store_id,
     }
     try {
