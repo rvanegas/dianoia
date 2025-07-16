@@ -160,6 +160,11 @@ class ArgumentsWithStep(Arguments):
         self.evaluate()
         return self.gptjson()
 
+    def explain(self):
+        self.validate_init()
+        assert len(self.arg[self.index].justifiers) != 0
+        return self.gptjson(), "I hereby explain."
+
 class ArgumentsWithProposition(Arguments):
     """arguments with a proposition"""
 

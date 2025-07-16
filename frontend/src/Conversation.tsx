@@ -230,6 +230,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       if (!responseObject) {
         throw('empty responseObject')
       }
+      console.log(response.data.explanation)
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
         lastPrompt, argErrors: initialSnapshot().argErrors,
@@ -365,6 +366,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
                 dispute
               </button>
             </>
+          }
+          {step.justifiers.length == 0 ? undefined :
+            <button
+              key="3"
+              disabled={userMode == 'waiting'}
+              className={smallButtonClassNames}
+              onClick={() => {
+                const prompt = `Explain inference to propositon (${step.symbol})`
+                handleAction('explain', prompt, loc, step_index)
+              }}>
+              explain
+            </button>
           }
         </div>
       )
