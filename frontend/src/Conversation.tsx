@@ -29,10 +29,6 @@ function initialSnapshot() : ConversationSnapshot {
       argument: [],
       counter_argument: [],
     },
-    argErrors: {
-      argument: [],
-      counter_argument: [],
-    },
     lastPrompt: '',
     explanation: '',
     formalization: [],
@@ -52,7 +48,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   const theses = currentSnapshot.theses
   const args = currentSnapshot.args
-  const argErrors = currentSnapshot.argErrors
   const [prompt, setPrompt] = useState<string>('')
 
   const [userMode, setUserMode] = useState<UserMode>('ready')
@@ -96,7 +91,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
         lastPrompt: content,
-        args, argErrors, argMode,
+        args, argMode,
         theses: responseObject,
         formalization: responseObject.formalization,
         explanation: responseObject.explanation,
@@ -129,7 +124,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
     const argMode: ArgMode = 'development'
     let newSnapshot = {
       ...conversation.snapshots[snapshotIndex], argMode,
-      lastPrompt, argErrors: initialSnapshot().argErrors,
+      lastPrompt,
     }
     let responseObject
     try {
@@ -206,7 +201,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
-        lastPrompt, argErrors,
+        lastPrompt,
         args: responseObject,
         formalization: responseObject.formalization,
         explanation: responseObject.explanation,
@@ -243,7 +238,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
-        lastPrompt, argErrors: initialSnapshot().argErrors,
+        lastPrompt,
         explanation: responseObject.explanation,
         formalization: responseObject.formalization,
         args: responseObject,
@@ -397,33 +392,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
     return <div>{argumentSteps}</div>
   }
 
-  const argErrorsNode = (errors: string[]) => errors.map((error, key) => {
-    return (
-      <div key={key}>{error}</div>
-    )
-  })
-
   const argumentsDiv = (
     <>
       <div>
         <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode('argument', args.argument)}</div>
-        {!argErrors.argument || argErrors.argument.length == 0 ? undefined :
-          <>
-            <div className={headingClassNames}>Errors:</div>
-            <div>{argErrorsNode(argErrors.argument)}</div>
-          </>
-        }
-      </div>
-      <div>
         <div className={headingClassNames}>Counter-Argument:</div>
         <div>{argumentNode('counter_argument', args.counter_argument)}</div>
-        {!argErrors.counter_argument || argErrors.counter_argument.length == 0 ? undefined :
-          <>
-            <div className={headingClassNames}>Errors:</div>
-            <div>{argErrorsNode(argErrors.counter_argument)}</div>
-          </>
-        }
       </div>
     </>
   )
