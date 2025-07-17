@@ -4,11 +4,11 @@ from typing import Optional
 from config import OPENAI_API_KEY, OPENAI_MODEL
 from core.utils import logger
 from services.openaiclient import client
-
-from .system_prompt import (
+from services.system_prompt import (
     theses_system_prompt,
     justify_system_prompt,
-    evaluate_system_prompt)
+    evaluate_system_prompt,
+    explain_system_prompt)
 
 @dataclass
 class Gpt:
@@ -99,6 +99,22 @@ gpt_evaluate = Gpt(
             "valid": {"type": "number"}
         },
         "required": ["truth", "valid"],
+        "additionalProperties": False
+    }
+)
+
+gpt_explain = Gpt(
+    instructions=explain_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "formalization": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "explanation": {"type": "string"}
+        },
+        "required": ["formalization", "explanation"],
         "additionalProperties": False
     }
 )
