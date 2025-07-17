@@ -31,6 +31,8 @@ type ConversationSnapshot = {
   argErrors: ArgErrors
   lastPrompt: string
   argMode: ArgMode
+  explanation: string | undefined
+  formalization: string[] | undefined
 }
 
 type ConversationType = {
