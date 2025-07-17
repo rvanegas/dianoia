@@ -98,6 +98,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
         lastPrompt: content,
         args, argErrors, argMode,
         theses: responseObject,
+        formalization: responseObject.formalization,
+        explanation: responseObject.explanation,
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -144,7 +146,12 @@ function Conversation({conversation, setConversation, createConversationFromProp
         if (!responseObject) {
           throw('empty responseObject')
         }
-        apiPrompt = {...apiPrompt, ...responseObject}
+        apiPrompt = {
+          ...apiPrompt, 
+          ...responseObject,
+          formalization: responseObject.formalization,
+          explanation: responseObject.explanation,
+        }
       }
       newSnapshot.args = responseObject
       saveSnapshot(newSnapshot)
@@ -200,7 +207,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
         lastPrompt, argErrors,
-        args: responseObject
+        args: responseObject,
+        formalization: responseObject.formalization,
+        explanation: responseObject.explanation,
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -533,7 +542,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       />
       <button
         className={bigButtonClassNames}
-        disabled={userMode == 'waiting' || userMode == 'ready'}
+        disabled={!(currentSnapshot.argMode == 'thesis' || userMode == 'input')}
         onClick={() => handleEnter(inputText)}>
         Enter
       </button>

@@ -62,17 +62,21 @@ class Arguments(BaseModel):
                 return c
         raise RuntimeError("something went wrong")
 
-    def add_evaluations(self, arg: list[Step], conclusion: Step):
-        """
-        For a given list of steps as premises, and a step as conclusion,
-        use gpt to set "truth" and "valid" values according to evaluate_system_prompt
-        """
+    def subargument(self, arg: list[Step], conclusion: Step):
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
             "assumptions": [s.proposition for s in self.assumptions],
             "argument": [s.proposition for s in new_arg]
         }
+        return new_arg, props
+
+    def add_evaluations(self, arg: list[Step], conclusion: Step):
+        """
+        For a given list of steps as premises, and a step as conclusion,
+        use gpt to set "truth" and "valid" values according to evaluate_system_prompt
+        """
+        new_arg, props = self.subargument(arg, conclusion)
         content = gpt_evaluate.call(json.dumps(props), self.vector_store_id)
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
@@ -154,14 +158,24 @@ class ArgumentsWithStep(Arguments):
         self.evaluate()
         return self.gptjson()
 
+    # def explain(self):
+    #     """explain the 'valid' property and formalize the propositions."""
+    #     assert len(self.arg[self.index].justifiers) != 0
+    #     content = gpt_explain.call(self.json(), self.vector_store_id)
+    #     response = json.loads(content)
+    #     # logger.debug(response)
+    #     self.formalization = response["formalization"]
+    #     self.explanation = response["explanation"]
+    #     return self.gptjson()
+
     def explain(self):
         """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
-        content = gpt_explain.call(self.json(), self.vector_store_id)
-        response = json.loads(content)
-        # logger.debug(response)
-        self.formalization = response["formalization"]
-        self.explanation = response["explanation"]
+        new_arg, props = self.subargument(self.arg, self.arg[self.index])
+        response = gpt_explain.call(json.dumps(props), self.vector_store_id)
+        content = json.loads(response)
+        self.formalization = content["formalization"]
+        self.explanation = content["explanation"]
         return self.gptjson()
 
 class ArgumentsWithProposition(Arguments):
@@ -182,8 +196,8 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=self.proposition,
             justifiers=[], truth=0.0, valid=0.0)
-        conclusion = arg[self.index]
-        arg.insert(self.index, new_step)
+        conclusion = self.arg[self.index]
+        self.arg.insert(self.index, new_step)
         conclusion.justifiers.append(next_symbol)
-        self.add_evaluations(arg, conclusion)
+        self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
