@@ -88,7 +88,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
       if (!responseObject) {
-        throw('empty responseObject')
+        throw new Error('empty responseObject')
       }
       const argMode : ArgMode = 'thesis'
       const newSnapshot = {
@@ -122,10 +122,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
       ...currentSnapshot, ...new_args,
       loc: '', index: 0
     }
-    const argMode: ArgMode = 'development'
     let newSnapshot = {
       ...currentSnapshot,
-      argMode,
       lastPrompt,
     }
     let responseObject
@@ -137,11 +135,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
         const response = await axios.post(url, apiPrompt)
         responseObject = JSON.parse(response.data.reply)
 
-        if (response.data.errors) {
-          throw(response.data.errors)
-        }
         if (!responseObject) {
-          throw('empty responseObject')
+          throw new Error('empty responseObject')
         }
         apiPrompt = {
           ...apiPrompt, 
@@ -160,26 +155,71 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }
 
-  const handleArgue = async () => {
-    const new_args = {
-      assumptions: [],
-      argument: [{
-        symbol: 'A',
-        proposition: currentSnapshot.thesis,
-        justifiers: [],
-        truth: 0.5,
-        valid: 0.5,
-      }],
-      counter_argument: [{
-        symbol: 'B',
-        proposition: currentSnapshot.counter_thesis,
-        justifiers: [],
-        truth: 0.5,
-        valid: 0.5,
-      }],
+
+    // const new_arg = {
+    //   assumptions: []
+    // }
+    // new_arg[argumentAttr] = [{
+    //   symbol: 'A',
+    //   proposition: currentSnapshot.thesis,
+    //   justifiers: [],
+    //   truth: 0.5,
+    //   valid: 0.5,
+    // }]
+
+  const handleArgue = async (thesisAttr: string) => {
+    if (!['thesis', 'counter_thesis'].includes(thesisAttr)) {
+      throw new Error('bad params')
     }
-    await handleAIJustify([['argument', 0], ['counter_argument', 0]], new_args)
+    const argumentAttr = thesisAttr == 'thesis' ? 'argument' : 'counter_argument'
+    const thesisLabel = thesisAttr == 'thesis' ? 'Thesis' : 'Counter-Thesis'
+    const lastPrompt = `Argue for ${thesisLabel}`
+    setPrompt(lastPrompt)
+    setUserMode('waiting')
+    const url = VITE_API_BASE_URL + '/api/v1/argue'
+    const argMode: ArgMode = 'development'
+    let apiPrompt = {
+      ...currentSnapshot, 
+      loc: argumentAttr, index: 0,
+    }
+    try {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+
+      if (!responseObject) {
+        throw new Error('empty responseObject')
+      }
+      const newSnapshot = {
+        ...currentSnapshot,
+        ...responseObject,
+        argMode,
+        lastPrompt
+      }
+      saveSnapshot(newSnapshot)
+      setPrompt('')
+    }
+    catch (error) {
+      console.error('Error: ', error)
+    }
+    finally {
+      setUserMode('ready')
+    }
   }
+
+  //
+  //   const new_args = {
+  //     assumptions: [],
+  //     argument: ,
+  //     counter_argument: [{
+  //       symbol: 'B',
+  //       proposition: currentSnapshot.counter_thesis,
+  //       justifiers: [],
+  //       truth: 0.5,
+  //       valid: 0.5,
+  //     }],
+  //   }
+  //   await handleAIJustify([['argument', 0], ['counter_argument', 0]], new_args)
+  // }
 
   const handleUserJustify = async (proposition: string) => {
     const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
@@ -194,11 +234,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-      if (response.data.errors) {
-        throw(response.data.errors)
-      }
+
       if (!responseObject) {
-        throw('empty responseObject')
+        throw new Error('empty responseObject')
       }
       const newSnapshot = {
         ...currentSnapshot,
@@ -229,11 +267,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-      if (response.data.errors) {
-        throw(response.data.errors)
-      }
+
       if (!responseObject) {
-        throw('empty responseObject')
+        throw new Error('empty responseObject')
       }
       const newSnapshot = {
         ...currentSnapshot,
@@ -429,9 +465,29 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const thesesDiv = (
     <>
       <div className={headingClassNames}>Thesis:</div>
-      <div>{currentSnapshot.thesis}</div>
+      <div>
+        {currentSnapshot.thesis}
+        {currentSnapshot.argument.length != 0 ? undefined :
+          <button
+            disabled={userMode == 'waiting'}
+            className={smallButtonClassNames}
+            onClick={() => handleArgue('thesis')}>
+            argue
+          </button>
+        }
+        </div>
       <div className={headingClassNames}>Counter-Thesis:</div>
-      <div>{currentSnapshot.counter_thesis}</div>
+      <div>
+        {currentSnapshot.counter_thesis}
+        {currentSnapshot.counter_argument.length != 0 ? undefined :
+          <button
+            disabled={userMode == 'waiting'}
+            className={smallButtonClassNames}
+            onClick={() => handleArgue('counter_thesis')}>
+            argue
+          </button>
+        }
+      </div>
       <div className={headingClassNames}>Presupposition:</div>
       <div>{currentSnapshot.presupposition}</div>
     </>
@@ -518,14 +574,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
         onClick={() => handleEnter(inputText)}>
         Enter
       </button>
-      {!(currentSnapshot.argMode == 'thesis' && currentSnapshot.thesis) ? undefined :
-        <button
-          className={bigButtonClassNames}
-          disabled={userMode == 'waiting'}
-          onClick={() => handleArgue()}>
-          Argue
-        </button>
-      }
     </div>
   )
 

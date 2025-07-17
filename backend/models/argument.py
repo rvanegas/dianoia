@@ -2,7 +2,7 @@
 import json
 
 from pydantic import BaseModel
-from core.utils import find_index #, logger
+from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
 
 class Step(BaseModel):
@@ -21,6 +21,7 @@ class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
+    lastPrompt: str | None = None
     explanation: str | None = None
     formalization: list[str] | None = None
     vector_store_id: str | None = None
@@ -51,6 +52,8 @@ class Arguments(BaseModel):
             'A' <= c <= 'Z' for c in letters):
             raise ValueError("All elements must be single lowercase letters A-Z")
         seen = set(letters)
+        if len(seen) == 0:
+            return 'A'
         if len(seen) == 26:
             raise ValueError("All 26 letters are already present")
         if 'Z' not in seen:
@@ -97,6 +100,30 @@ class Arguments(BaseModel):
                 self.add_evaluations(self.counter_argument, step)
         return self.gptjson()
 
+class ArgumentsWithLoc(Arguments):
+    """arguments with a specific thesis indicated"""
+    loc: str
+
+    def model_post_init(self, __context):
+        """validate that indicated loc exists, and set self.arg"""
+        super().model_post_init(__context)
+        assert self.loc in ["argument", "counter_argument"]
+        self.arg = getattr(self, self.loc)
+
+    def argue(self):
+        """just copy thesis into argument"""
+        assert len(self.arg) == 0
+        if self.loc == "argument":
+            thesisAttr = "thesis"
+        elif self.loc == "counter_argument":
+            thesisAttr = "counter_thesis"
+        new_proposition = getattr(self, thesisAttr)
+        next_symbol = self.next_symbol()
+        new_step = Step(symbol=next_symbol, proposition=new_proposition,
+            justifiers=[], truth=0.0, valid=0.0)
+        self.arg.append(new_step)
+        return self.gptjson()
+
 class ArgumentsWithStep(Arguments):
     """arguments with a specific step indicated by position"""
     loc: str
@@ -106,8 +133,10 @@ class ArgumentsWithStep(Arguments):
     def model_post_init(self, __context):
         """validate that indicated position exists, and set self.arg"""
         super().model_post_init(__context)
+        # logger.debug(f"l {self.loc}")
         assert self.loc in ['assumptions', 'argument', 'counter_argument']
         self.arg = getattr(self, self.loc)
+        # logger.debug(f"o {len(self.arg)} {self.index}")
         assert len(self.arg) > self.index
 
     def insert_proposition(self, new_proposition: str):
