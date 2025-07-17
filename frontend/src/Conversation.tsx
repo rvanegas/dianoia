@@ -108,42 +108,27 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }
 
-  const handleAIJustifySimple = async (loc: string, index: number) => {
-    await handleAIJustify([[loc, index]])
-  }
-
-  const handleAIJustify = async (steps: [string, number][], new_args: object = {}) =>
+  const handleAIJustify = async (loc: string, index: number) =>
   {
-    const lastPrompt = 'Justify propositions'
+    const lastPrompt = `AI Justify proposition ${argLoc(loc)[index].symbol}`
     setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
-    let apiPrompt = {
-      ...currentSnapshot, ...new_args,
-      loc: '', index: 0
-    }
-    let newSnapshot = {
+    const apiPrompt = {
       ...currentSnapshot,
-      lastPrompt,
+      loc, index
     }
-    let responseObject
     try {
-      for (let [loc, index] of steps) {
-        apiPrompt.loc = loc
-        apiPrompt.index = index
-        // console.log('a', apiPrompt)
-        const response = await axios.post(url, apiPrompt)
-        responseObject = JSON.parse(response.data.reply)
-
-        if (!responseObject) {
-          throw new Error('empty responseObject')
-        }
-        apiPrompt = {
-          ...apiPrompt, 
-          ...responseObject
-        }
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+      if (!responseObject) {
+        throw new Error('empty responseObject')
       }
-      newSnapshot = {...newSnapshot, ...responseObject}
+      const newSnapshot = {
+        ...currentSnapshot,
+        ...responseObject,
+        lastPrompt,
+      }
       saveSnapshot(newSnapshot)
       setPrompt('')
     }
@@ -154,18 +139,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
       setUserMode('ready')
     }
   }
-
-
-    // const new_arg = {
-    //   assumptions: []
-    // }
-    // new_arg[argumentAttr] = [{
-    //   symbol: 'A',
-    //   proposition: currentSnapshot.thesis,
-    //   justifiers: [],
-    //   truth: 0.5,
-    //   valid: 0.5,
-    // }]
 
   const handleArgue = async (thesisAttr: string) => {
     if (!['thesis', 'counter_thesis'].includes(thesisAttr)) {
@@ -205,21 +178,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
       setUserMode('ready')
     }
   }
-
-  //
-  //   const new_args = {
-  //     assumptions: [],
-  //     argument: ,
-  //     counter_argument: [{
-  //       symbol: 'B',
-  //       proposition: currentSnapshot.counter_thesis,
-  //       justifiers: [],
-  //       truth: 0.5,
-  //       valid: 0.5,
-  //     }],
-  //   }
-  //   await handleAIJustify([['argument', 0], ['counter_argument', 0]], new_args)
-  // }
 
   const handleUserJustify = async (proposition: string) => {
     const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
@@ -359,7 +317,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
-            onClick={() => handleAIJustifySimple(loc, step_index)}>
+            onClick={() => handleAIJustify(loc, step_index)}>
             ai-justify
           </button>
           <button
