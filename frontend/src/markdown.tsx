@@ -1,16 +1,16 @@
-import type { ThesesType, StepType, ArgsType } from './types'
+import type {StepType, ConversationSnapshot} from './types'
 
-export function thesisMarkdown(theses: ThesesType) {
+export function thesisMarkdown(currentSnapshot: ConversationSnapshot) {
   let md = '**Thesis:**\n\n'
-  md += theses.thesis + '\n\n'
+  md += currentSnapshot.thesis + '\n\n'
   md += '**Counter-Thesis:**\n\n'
-  md += theses.counter_thesis + '\n\n'
+  md += currentSnapshot.counter_thesis + '\n\n'
   md += '**Presupposition:**\n\n'
-  md += theses.presupposition + '\n\n'
+  md += currentSnapshot.presupposition + '\n\n'
   return md
 }
 
-export function developmentMarkdown(args: ArgsType) {
+export function developmentMarkdown(currentSnapshot: ConversationSnapshot) {
   let md = ''
 
   const assumptionsMarkdown = (assumptions: StepType[]) => {
@@ -39,20 +39,20 @@ export function developmentMarkdown(args: ArgsType) {
     })
   }
 
-  if (args.assumptions.length != 0) {
+  if (currentSnapshot.assumptions.length != 0) {
     md += '**Assumptions:**\n\n'
-    assumptionsMarkdown(args.assumptions)
+    assumptionsMarkdown(currentSnapshot.assumptions)
   }
   md += '**Argument:**\n\n'
-  argumentMarkdown(args.argument)
+  argumentMarkdown(currentSnapshot.argument)
   md += '**Counter-Argument:**\n\n'
-  argumentMarkdown(args.counter_argument)
+  argumentMarkdown(currentSnapshot.counter_argument)
   return md
 }
 
-export function exportMarkdown(theses: ThesesType, args: ArgsType) {
+export function exportMarkdown(currentSnapshot: ConversationSnapshot) {
   let md = ''
-  md += thesisMarkdown(theses)
-  md += developmentMarkdown(args)
+  md += thesisMarkdown(currentSnapshot)
+  md += developmentMarkdown(currentSnapshot)
   return md
 }
