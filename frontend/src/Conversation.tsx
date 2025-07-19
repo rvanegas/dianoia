@@ -59,6 +59,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
   // export button
   const [copied, setCopied] = useState<boolean>(false)
 
+  // input reference 
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
     setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
@@ -274,6 +277,10 @@ function Conversation({conversation, setConversation, createConversationFromProp
   useEffect(() => {
     if (userMode == 'waiting') {
       bottomRef.current?.scrollIntoView({behavior: 'smooth'})
+    }
+    
+    if (inputRef.current && userMode == 'ready' || userMode == 'input') {
+      inputRef.current.focus()
     }
   }, [userMode])
 
@@ -519,7 +526,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const userDiv = (
     <div className="p-4 flex gap-2 w-[100%] flex-wrap">
       <input
-        className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
+        ref={inputRef}
+        className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-2 focus:outline-indigo-500 dark:bg-zinc-800 "
         value={inputText}
         disabled={!(currentSnapshot.argMode == 'thesis' || userMode == 'input')}
         onChange={e => setInputText(e.target.value)}
@@ -530,11 +538,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
           }
         }}
         placeholder={placeholderText}
+        tabIndex={1}
       />
       <button
         className={bigButtonClassNames}
         disabled={!(currentSnapshot.argMode == 'thesis' || userMode == 'input')}
-        onClick={() => handleEnter(inputText)}>
+        onClick={() => handleEnter(inputText)}
+        tabIndex={2}>
         Enter
       </button>
     </div>
