@@ -62,10 +62,14 @@ function Conversation({conversation, setConversation, createConversationFromProp
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const saveSnapshot = (newSnap: ConversationSnapshot) => {
-    const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
+  const saveSnapshot = (newSnap: ConversationSnapshot, newIndex: boolean = true) => {
+    const endShift = newIndex ? 1 : 0
+    const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + endShift)
+    console.log('e', endShift)
+    console.log('t', truncatedSnapshots.map(s => s.argument.length))
+    console.log('n', newSnap)
     setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
-    setSnapshotIndex(prev => prev + 1)
+    setSnapshotIndex(prev => prev + endShift)
   }
 
   // this is just an abbreviation to keep typescript happy
@@ -215,6 +219,25 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }
 
+  const evaluateSteps = async () => {
+    const url = VITE_API_BASE_URL + '/api/v1/evaluate'
+    try {
+      const response = await axios.post(url, currentSnapshot)
+      const responseObject = JSON.parse(response.data.reply)
+      if (!responseObject) {
+        throw new Error('empty responseObject')
+      }
+      const newSnapshot = {
+        ...currentSnapshot,
+        ...responseObject,
+      }
+      saveSnapshot(newSnapshot, false)
+    }
+    catch (error) {
+      console.error('Error: ', error)
+    }
+  }
+
   const handleAction = async (
     action: ActionType, lastPrompt: string, loc: string, index: number
   ) => {
@@ -239,6 +262,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
+      if (action == 'remove' || action == 'assume') {
+        evaluateSteps()
+      }
     }
     catch (error) {
       console.error('Error: ', error)
