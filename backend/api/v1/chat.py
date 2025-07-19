@@ -21,7 +21,7 @@ async def argue(args: ArgumentsWithLoc):
     return {"reply": new_args}
 
 @router.post("/assume")
-async def evaluate(args: ArgumentsWithStep):
+async def assume(args: ArgumentsWithStep):
     new_args = args.assume()
     return {"reply": new_args}
 
@@ -41,8 +41,13 @@ async def user_justify(args: ArgumentsWithStepAndProposition):
     return {"reply": new_args}
 
 @router.post("/explain")
-async def user_justify(args: ArgumentsWithStep):
+async def explain(args: ArgumentsWithStep):
     new_args = args.explain()
+    return {"reply": new_args}
+
+@router.post("/evaluate")
+async def evalutate(args: ArgumentsWithStep):
+    new_args = args.evalutate()
     return {"reply": new_args}
 
 @router.post("/upload")
