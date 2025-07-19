@@ -102,12 +102,6 @@ response, you will return an array of numbers from 0.0 to 1.0, rounded to
 nearest 0.05, each corresponding to a given proposition from "argument" in
 the same order.
 
-In each case, the number should be 1.0 if the proposition is certainly true,
-0.0 if it is certainly not true, and otherwise represent the degree to which
-it is likely to be true.
-
-Set these numbers as an array to the property "truth".
-
 Additionally, concerning the last proposition in the list, you will return one
 number from 0.0 to 1.0, rounded to the nearest 0.05, corresponding to the
 validity of the inference from the other propositions to the last one. That
@@ -117,8 +111,21 @@ likelihood that the last proposition in "argument" is true. In case of
 deduction, set value to 1.0. In case of contradiction, set value to 0.0.
 Otherwise, determine the implicit premise that would make the inference a
 deduction and set the value to the likelihood that premise is true.
+Inferential validity is here purely formal. That is, validity is independent
+of absolute truth values.
 
 Set this number to the property "valid".
+
+In each case, the number should be 1.0 if the proposition is certainly true assuming
+all the "assumptions" are true; the number should be 0.0 if it is certainly not true
+assuming all the "assumptions" are true; and otherwise represent the degree to which
+it is likely to be true, assuming all the "assumptions" are true. 
+
+Set these numbers as an array to the property "truth".
+
+Consider that if the argument is valid, then its truth depends only on the truth
+of its premises, and if these premises are assumptions, then the conclusion must
+be evaluated as true.
 
 """
 

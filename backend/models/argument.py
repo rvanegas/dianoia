@@ -188,6 +188,7 @@ class ArgumentsWithStep(Arguments):
             raise ValueError("already assumed")
         if len(self.arg[self.index].justifiers) != 0:
             raise ValueError("cannot assume justified proposition")
+        self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
         self.evaluate()
@@ -196,7 +197,7 @@ class ArgumentsWithStep(Arguments):
     def explain(self):
         """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
-        props = self.subargument(self.arg, self.arg[self.index])
+        props, new_arg = self.subargument(self.arg, self.arg[self.index])
         logger.debug(f"props {props}")
         response = gpt_explain.call(json.dumps(props), self.vector_store_id)
         content = json.loads(response)
