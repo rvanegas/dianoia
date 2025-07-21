@@ -26,6 +26,7 @@ function initialSnapshot() : ConversationSnapshot {
     argument: [],
     counter_argument: [],
     lastPrompt: '',
+    evaluationsPending: false,
     explanation: '',
     formalization: [],
     argMode: 'thesis',
@@ -63,13 +64,26 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const inputRef = useRef<HTMLInputElement>(null)
 
   const saveSnapshot = (newSnap: ConversationSnapshot, newIndex: boolean = true) => {
+    // newIndex = true
     const endShift = newIndex ? 1 : 0
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + endShift)
+    const newSnapshots = [...truncatedSnapshots, newSnap]
+    // console.log('s', newSnap)
     console.log('e', endShift)
     console.log('t', truncatedSnapshots.map(s => s.argument.length))
-    console.log('n', newSnap)
-    setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
-    setSnapshotIndex(prev => prev + endShift)
+    console.log('r',
+      endShift,
+      snapshotIndex,
+      conversation.snapshots.length,
+      truncatedSnapshots.length,
+      newSnapshots.length)
+    if (newIndex) {
+      setConversation({...conversation, snapshots: newSnapshots})
+      setSnapshotIndex(prev => prev + endShift)
+    }
+    else {
+      setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
+    }
   }
 
   // this is just an abbreviation to keep typescript happy
@@ -165,16 +179,17 @@ function Conversation({conversation, setConversation, createConversationFromProp
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-
       if (!responseObject) {
         throw new Error('empty responseObject')
       }
+      // console.log('o', responseObject)
       const newSnapshot = {
         ...currentSnapshot,
         ...responseObject,
         argMode,
         lastPrompt
       }
+      // console.log('o2', newSnapshot)
       saveSnapshot(newSnapshot)
       setPrompt('')
     }
@@ -220,6 +235,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   }
 
   const evaluateSteps = async () => {
+    console.log('eval')
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     try {
       const response = await axios.post(url, currentSnapshot)
@@ -230,6 +246,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const newSnapshot = {
         ...currentSnapshot,
         ...responseObject,
+        evaluationsPending: false,
       }
       saveSnapshot(newSnapshot, false)
     }
@@ -251,7 +268,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-
       if (!responseObject) {
         throw new Error('empty responseObject')
       }
@@ -260,11 +276,11 @@ function Conversation({conversation, setConversation, createConversationFromProp
         ...responseObject,
         lastPrompt
       }
+      if (action == 'remove' || action == 'assume') {
+        newSnapshot.evaluationsPending = true
+      }
       saveSnapshot(newSnapshot)
       setPrompt('')
-      if (action == 'remove' || action == 'assume') {
-        evaluateSteps()
-      }
     }
     catch (error) {
       console.error('Error: ', error)
@@ -324,6 +340,15 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
     }
   }, [snapshotIndex])
+
+  // useEffect(() => {
+  //   if (currentSnapshot.evaluationsPending) {
+  //     evaluateSteps()
+  //   }
+  // }, [currentSnapshot.evaluationsPending])
+
+  // console.log('x', conversation.snapshots.length,
+  //   currentSnapshot.counter_argument.length)
 
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
@@ -421,15 +446,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
     return <div>{argumentSteps}</div>
   }
 
-  const argumentsDiv = (
-    <>
-      <div>
-        <div className={headingClassNames}>Argument:</div>
-        <div>{argumentNode('argument', currentSnapshot.argument)}</div>
-        <div className={headingClassNames}>Counter-Argument:</div>
-        <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
-      </div>
-    </>
+  const argumentDiv = () => (
+    <div>
+      <div className={headingClassNames}>Argument:</div>
+      <div>{argumentNode('argument', currentSnapshot.argument)}</div>
+    </div>
+  )
+
+  const counterArgumentDiv = () => (
+    <div>
+      <div className={headingClassNames}>Counter-Argument:</div>
+      <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
+    </div>
   )
 
   const assumptionsDiv = (
@@ -525,7 +553,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
           <div>{conversation.id}{snapshotId}</div>
           {!currentSnapshot.thesis ? undefined : thesesDiv}
           {currentSnapshot.assumptions.length == 0 ? undefined : assumptionsDiv}
-          {currentSnapshot.argument.length == 0 ? undefined : argumentsDiv}
+          {currentSnapshot.argument.length == 0 ? undefined : argumentDiv()}
+          {currentSnapshot.counter_argument.length == 0 ? undefined : counterArgumentDiv()}
           {!currentSnapshot.explanation ? undefined : explanationDiv()}
           {!currentSnapshot.lastPrompt ? undefined : lastPromptDiv}
           {!prompt ? undefined : promptDiv}
@@ -597,6 +626,11 @@ function Conversation({conversation, setConversation, createConversationFromProp
             onClick={handleCopy}
             className={bigButtonClassNames}>
             {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button
+            onClick={evaluateSteps}
+            className={bigButtonClassNames}>
+            Eval
           </button>
         </div>
       }
