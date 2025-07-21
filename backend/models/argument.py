@@ -128,8 +128,11 @@ class ArgumentsWithLoc(Arguments):
         else:
             raise ValueError("invalid loc")
         new_proposition = getattr(self, thesis_attr)
+        logger.debug(f"np {new_proposition}")
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
+        logger.debug(f"a {self.argument}")
+        logger.debug(f"ca {self.counter_argument}")
         return self.gptjson()
 
 class ArgumentsWithStep(Arguments):
@@ -190,7 +193,9 @@ class ArgumentsWithStep(Arguments):
             raise ValueError("cannot assume justified proposition")
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
+        logger.debug(f"L1 {len(self.argument)}")
         del self.arg[self.index]
+        logger.debug(f"L2 {len(self.argument)}")
         # self.evaluate()
         return self.gptjson()
 

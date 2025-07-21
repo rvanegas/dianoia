@@ -18,6 +18,7 @@ type ConversationSnapshot = {
   assumptions: StepType[]
   lastPrompt: string
   argMode: ArgMode
+  evaluationsPending: boolean
   explanation: string | undefined
   formalization: string[] | undefined
   vector_store_id: string | undefined // ongoing context
