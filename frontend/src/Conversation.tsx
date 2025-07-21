@@ -220,7 +220,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
   }
 
   const evaluateSteps = async () => {
-    console.log('eval')
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     try {
       const response = await axios.post(url, currentSnapshot)
