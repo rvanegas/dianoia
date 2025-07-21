@@ -64,26 +64,11 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const inputRef = useRef<HTMLInputElement>(null)
 
   const saveSnapshot = (newSnap: ConversationSnapshot, newIndex: boolean = true) => {
-    // newIndex = true
     const endShift = newIndex ? 1 : 0
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + endShift)
     const newSnapshots = [...truncatedSnapshots, newSnap]
-    // console.log('s', newSnap)
-    console.log('e', endShift)
-    console.log('t', truncatedSnapshots.map(s => s.argument.length))
-    console.log('r',
-      endShift,
-      snapshotIndex,
-      conversation.snapshots.length,
-      truncatedSnapshots.length,
-      newSnapshots.length)
-    if (newIndex) {
-      setConversation({...conversation, snapshots: newSnapshots})
-      setSnapshotIndex(prev => prev + endShift)
-    }
-    else {
-      setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
-    }
+    setSnapshotIndex(prev => prev + endShift)
+    setConversation({...conversation, snapshots: newSnapshots})
   }
 
   // this is just an abbreviation to keep typescript happy
@@ -341,14 +326,11 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }, [snapshotIndex])
 
-  // useEffect(() => {
-  //   if (currentSnapshot.evaluationsPending) {
-  //     evaluateSteps()
-  //   }
-  // }, [currentSnapshot.evaluationsPending])
-
-  // console.log('x', conversation.snapshots.length,
-  //   currentSnapshot.counter_argument.length)
+  useEffect(() => {
+    if (currentSnapshot.evaluationsPending) {
+      evaluateSteps()
+    }
+  }, [currentSnapshot.evaluationsPending])
 
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
@@ -373,6 +355,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
       else {
         justifier = 'from ' + step.justifiers.join(', ')
         value += `, ${step.valid}`
+      }
+      if (currentSnapshot.evaluationsPending) {
+        value = <span className="line-through">{value}</span>
       }
       return (
         <div key={step_index}>
@@ -626,11 +611,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
             onClick={handleCopy}
             className={bigButtonClassNames}>
             {copied ? 'Copied' : 'Copy'}
-          </button>
-          <button
-            onClick={evaluateSteps}
-            className={bigButtonClassNames}>
-            Eval
           </button>
         </div>
       }
