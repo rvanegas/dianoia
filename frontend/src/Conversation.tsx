@@ -242,7 +242,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const handleAction = async (
     action: ActionType, lastPrompt: string, loc: string, index: number
   ) => {
-    setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
     let apiPrompt = {
@@ -262,6 +261,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       if (action == 'remove' || action == 'assume') {
         newSnapshot.evaluationsPending = true
+      }
+      else {
+        setPrompt(lastPrompt)
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
