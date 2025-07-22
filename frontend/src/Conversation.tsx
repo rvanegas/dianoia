@@ -1,6 +1,8 @@
 import './App.css'
 
 import {useEffect, useRef, useState} from 'react'
+import {Menu} from '@headlessui/react';
+import {ChevronDown } from 'lucide-react';
 import axios from 'axios'
 
 import type {StepType, ArgMode, ConversationSnapshot,
@@ -34,6 +36,29 @@ function initialSnapshot() : ConversationSnapshot {
     file_ids: [],
   }
 }
+
+const actionOptions = [
+  {
+    label: 'Move to Assumptions',
+    value: 'assume',
+  },
+  {
+    label: 'Remove from Argument',
+    value: 'remove',
+  },
+  {
+    label: 'Request Justifying Propositions from LLM',
+    value: 'ai-justify',
+  },
+  {
+    label: 'Introduce Justifying Proposition',
+    value: 'user-justify',
+  },
+  {
+    label: 'Create New Conversation with this Proposition',
+    value: 'dispute',
+  },
+]
 
 function Conversation({
   conversation,
@@ -369,6 +394,29 @@ function Conversation({
     </div>
   )
 
+  const actionsMenu = () => (
+    <Menu as="div" className="relative inline-block text-left">
+      <Menu.Button className="inline-flex items-center px-3 py-2 bg-white border rounded shadow-sm hover:bg-gray-50">
+        <ChevronDown className="ml-2 w-4 h-4" />
+      </Menu.Button>
+
+      <Menu.Items className="absolute right-0 mt-2 w-72 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg focus:outline-none z-50">
+        {actionOptions.map((option) => (
+          <Menu.Item key={option.value}>
+            {({ active }) => (
+              <button className="flex items-start w-full px-4 py-3 text-left">
+                <div className="ml-3">
+                  {active}
+                  <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                </div>
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+  )
+
   const argumentNode = (loc: string, argument: StepType[]) => {
     const argumentSteps = argument.map((step, step_index) => {
 
@@ -391,7 +439,7 @@ function Conversation({
 
       return (
         <div key={step_index}>
-          ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
+          {actionsMenu()} ({step.symbol}) {step.proposition} {scoreSpan()}
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
