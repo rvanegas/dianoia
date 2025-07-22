@@ -165,7 +165,7 @@ class ArgumentsWithStep(Arguments):
         for p in new_propositions:
             conclusion = self.insert_proposition(p)
             self.index += 1
-        self.add_evaluations(self.arg, conclusion)
+        # self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
 
     def remove(self):
@@ -229,5 +229,5 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
-        self.add_evaluations(self.arg, conclusion)
+        # self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
