@@ -164,7 +164,6 @@ function Conversation({conversation, setConversation, createConversationFromProp
     const argumentAttr = thesisAttr == 'thesis' ? 'argument' : 'counter_argument'
     const thesisLabel = thesisAttr == 'thesis' ? 'Thesis' : 'Counter-Thesis'
     const lastPrompt = `Argue for ${thesisLabel}`
-    setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/argue'
     const argMode: ArgMode = 'development'
@@ -178,14 +177,12 @@ function Conversation({conversation, setConversation, createConversationFromProp
       if (!responseObject) {
         throw new Error('empty responseObject')
       }
-      // console.log('o', responseObject)
       const newSnapshot = {
         ...currentSnapshot,
         ...responseObject,
         argMode,
         lastPrompt
       }
-      // console.log('o2', newSnapshot)
       saveSnapshot(newSnapshot)
       setPrompt('')
     }
@@ -365,22 +362,27 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   const argumentNode = (loc: string, argument: StepType[]) => {
     const argumentSteps = argument.map((step, step_index) => {
-      let justifier = ''
-      let value = `${step.truth}`
-      if (step.justifiers.length == 0) {
-        justifier = 'premise'
+
+      const scoreSpan = () => {
+        let justifier = ''
+        let value = `${step.truth}`
+        if (step.justifiers.length == 0) {
+          justifier = 'premise'
+        }
+        else {
+          justifier = 'from ' + step.justifiers.join(', ')
+          value += `, ${step.valid}`
+        }
+        const valueSpan =
+          <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
+              {value}
+          </span>
+        return <span>[{justifier}; {valueSpan}]</span>
       }
-      else {
-        justifier = 'from ' + step.justifiers.join(', ')
-        value += `, ${step.valid}`
-      }
-      const valueSpan = 
-        <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
-          {value}
-        </span>
+
       return (
         <div key={step_index}>
-          ({step.symbol}) {step.proposition} [{justifier}; {valueSpan}]
+          ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
