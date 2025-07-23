@@ -20,7 +20,7 @@ def cleanup():
 
     expired_vector_store_ids = []
     for vector_store in client.vector_stores.list():
-        logger.debug(f"file {prettytimestamp(vector_store.created_at)} {vector_store.id}")
+        logger.debug(f"vector_store {prettytimestamp(vector_store.created_at)} {vector_store.id}")
         if now - vector_store.created_at >= OPENAI_OBJECTS_TTL:
             logger.debug(f"expired {vector_store.id}")
             expired_vector_store_ids.append(vector_store.id)
@@ -30,7 +30,7 @@ def cleanup():
 
     expired_assistant_ids = []
     for assistant in client.beta.assistants.list():
-        logger.debug(f"file {prettytimestamp(assistant.created_at)} {assistant.id}")
+        logger.debug(f"assistant {prettytimestamp(assistant.created_at)} {assistant.id}")
         if now - assistant.created_at >= OPENAI_OBJECTS_TTL:
             logger.debug(f"expired {assistant.id}")
             expired_assistant_ids.append(assistant.id)
