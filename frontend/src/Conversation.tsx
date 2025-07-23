@@ -396,18 +396,31 @@ function Conversation({
 
   const actionsMenu = () => (
     <Menu as="div" className="relative inline-block text-left">
-      <Menu.Button className="inline-flex items-center px-3 py-2 bg-white border rounded shadow-sm hover:bg-gray-50">
-        <ChevronDown className="ml-2 w-4 h-4" />
+      <Menu.Button className="flex items-center py-1 px-2 bg-white border rounded shadow-sm hover:bg-gray-50 hover:dark:bg-zinc-800 dark:bg-zinc-900 dark:border-zinc-800">
+        <ChevronDown className=" w-4 h-4" />
       </Menu.Button>
 
-      <Menu.Items className="absolute right-0 mt-2 w-72 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg focus:outline-none z-50">
+      <Menu.Items
+        className={`
+          absolute left-0 mt-2 w-72 origin-top-right bg-white border border-gray-200
+          divide-y divide-gray-100 rounded-md shadow-lg focus:outline-indigo-500 z-50
+          focus:outline-2 dark:bg-zinc-900 dark:divide-zinc-800 dark:border-zinc-700
+        `}
+      >
         {actionOptions.map((option) => (
           <Menu.Item key={option.value}>
             {({ active }) => (
-              <button className="flex items-start w-full px-4 py-3 text-left">
+              <button
+                className={`
+                  flex items-start w-full px-4 py-3 text-left
+                  ${active ? 'bg-gray-100 dark:bg-zinc-800 text-indigo-400'
+                    : 'text-gray-900 dark:text-slate-300'}
+                `}
+                onClick={() => console.log(option.value)}
+              >
                 <div className="ml-3">
                   {active}
-                  <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                  <div className="text-sm font-medium">{option.label}</div>
                 </div>
               </button>
             )}
