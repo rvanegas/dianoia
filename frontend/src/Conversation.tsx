@@ -65,16 +65,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const inputRef = useRef<HTMLInputElement>(null)
 
   const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false) => {
-    let newSnapshots
+    const oldSnaps = conversation.snapshots
+    let newSnaps
     if (inPlace) {
-      newSnapshots = conversation.snapshots.toSpliced(snapshotIndex, 1, newSnap)
+      newSnaps = [...oldSnaps.slice(0, snapshotIndex), newSnap,
+        oldSnaps.slice(snapshotIndex + 1)]
     }
     else {
-      newSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1).concat(newSnap)
+      newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
       snapshotRenderCount.current += 1
       setSnapshotIndex(prev => prev + 1)
     }
-    setConversation({...conversation, snapshots: newSnapshots})
+    setConversation({...conversation, snapshots: newSnaps})
   }
 
   // this is just an abbreviation to keep typescript happy
