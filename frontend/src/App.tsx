@@ -100,7 +100,7 @@ function App() {
               }
             `}
             onClick={() => selectConversation(index)}>
-            Select {conv.id}
+            {conv.name || 'New Thesis'}
           </button>
         ))}
         {files.map((file, index) => (

@@ -34,7 +34,11 @@ function initialSnapshot() : ConversationSnapshot {
   }
 }
 
-function Conversation({conversation, setConversation, createConversationFromProposition}: {
+function Conversation({
+  conversation,
+  setConversation,
+  createConversationFromProposition
+}: {
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void,
   createConversationFromProposition: (proposition: string) => void
@@ -66,7 +70,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   // this saves new versions of argument. if inplace is true, then only annotations
   // should change
-  const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false) => {
+  const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false, convName: string = '') => {
     const oldSnaps = conversation.snapshots
     let newSnaps
     if (inPlace) {
@@ -78,7 +82,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
       snapshotRenderCount.current += 1
       setSnapshotIndex(prev => prev + 1)
     }
-    setConversation({...conversation, snapshots: newSnaps})
+    const newConversation = {...conversation, snapshots: newSnaps}
+    if (convName) newConversation.name = convName
+    setConversation(newConversation)
   }
 
   // this is just an abbreviation to keep typescript happy
@@ -113,7 +119,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         lastPrompt: content,
         argMode,
       }
-      saveSnapshot(newSnapshot)
+      saveSnapshot(newSnapshot, false, responseObject.name)
       setPrompt('')
     }
     catch (error) {
