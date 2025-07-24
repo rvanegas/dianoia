@@ -103,6 +103,7 @@ function App() {
             {conv.name || 'New Thesis'}
           </button>
         ))}
+        <FileDropUpload newFileUploaded={newFileUploaded}/>
         {files.map((file, index) => (
           <button
             key={index}
@@ -112,7 +113,6 @@ function App() {
             Create from {file.filename}
           </button>
         ))}
-        <FileDropUpload newFileUploaded={newFileUploaded}/>
       </div>
       <div
         className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900"
