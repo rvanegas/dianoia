@@ -18,9 +18,9 @@ theses_system_prompt = instructions + """
 
 ### Task
 
-You will begin by extracting a thesis, a counter-thesis, and a presupposition
-from the given context. This may be a brief statement in the "proposition"
-property, or it may be a document in the context.
+You will begin by extracting a thesis, a counter-thesis, a presupposition, and
+a name from the given context. This may be a brief statement in
+the "proposition" property, or it may be a document in the context.
 
 Theses and a presupposition may already have been chosen, in which case
 interpret the proposition as directions to further refine these values.
@@ -38,6 +38,10 @@ true. These is the proposition which must be true for the thesis and
 counter-thesis to be genuinely contraries. The presupposition represents the
 logical space within which the thesis and counter-thesis can stand in
 opposition.
+
+The name is a roughly twenty character name derived from the thesis with which
+to name the whole conversation. Avoid words, such as "debate" or "thesis",
+that would common to all such names.
 
 Critically, you must derive the presupposition entirely from the logical
 forms of the thesis and counter-thesis, without introducing any new concepts,
