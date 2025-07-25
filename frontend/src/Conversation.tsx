@@ -3,7 +3,8 @@ import './App.css'
 import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
+import type {StepType, ArgMode, ConversationSnapshot,
+  ConversationType} from './types'
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
@@ -30,7 +31,7 @@ function initialSnapshot() : ConversationSnapshot {
     explanation: '',
     formalization: [],
     argMode: 'thesis',
-    vector_store_id: undefined,
+    file_ids: [],
   }
 }
 
@@ -94,15 +95,13 @@ function Conversation({
 
   const handleThesis = async (content?: string) => {
     if (userMode == 'waiting') return
-    if (!(content && content.trim()) && !conversation.vector_store_id) return
-    content ||= ''
+    if (!(content && content.trim())) return
     setPrompt(content)
     setUserMode('waiting')
     setInputText('')
     const apiPrompt = {
       ...currentSnapshot,
       proposition: content,
-      vector_store_id: conversation.vector_store_id
     }
     const path = '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
@@ -234,12 +233,14 @@ function Conversation({
     }
   }
 
+  // verify that user hasn't moved away and potentially replaced 
+  // contents of this snapshot. saveSnapshot() is then called 
+  // with inPlace = true
   const evaluateSteps = async () => {
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     try {
       const currentSnapshotRenderCount = snapshotRenderCount.current
       const response = await axios.post(url, currentSnapshot)
-      // verify that user hasn't moved away and potentially replaced contents of this snapshot
       if (currentSnapshotRenderCount != snapshotRenderCount.current) return
       const responseObject = JSON.parse(response.data.reply)
       if (!responseObject) {
@@ -341,7 +342,7 @@ function Conversation({
     }
     if (snapshotIndex == 0 && !hasCalledTheses.current) {
       hasCalledTheses.current = true
-      if (conversation.initPrompt || conversation.vector_store_id) {
+      if (conversation.initPrompt) {
         handleThesis(conversation.initPrompt)
       }
     }
@@ -557,12 +558,19 @@ function Conversation({
 
   const snapshotId = snapshotIndex < 1 ? '' : `.${snapshotIndex}`
 
+  const associatedFileNames =
+    currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0
+      ? currentSnapshot.file_ids.join(', ')
+      : <span className="text-zinc-400 italic">None</span>;
+
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
           <div className={headingClassNames}>Id:</div>
           <div>{conversation.id}{snapshotId}</div>
+          <div className={headingClassNames}>Files:</div>
+          <div>{associatedFileNames}</div>
           {!currentSnapshot.thesis ? undefined : thesesDiv}
           {currentSnapshot.assumptions.length == 0 ? undefined : assumptionsDiv}
           {currentSnapshot.argument.length == 0 ? undefined : argumentDiv()}
