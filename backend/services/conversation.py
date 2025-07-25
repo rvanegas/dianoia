@@ -4,8 +4,8 @@ from typing import Optional
 import threading
 import time
 
-from config import OPENAI_API_KEY, OPENAI_MODEL
-from core.utils import logger
+from config import OPENAI_MODEL
+# from core.utils import logger
 from services.openaiclient import client
 from services.system_prompt import (
     theses_system_prompt,
