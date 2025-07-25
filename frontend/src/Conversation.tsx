@@ -566,7 +566,14 @@ function Conversation({
       <div>
         {currentSnapshot.file_ids.map(file_id => {
           const file = files.find(f => f.file_id === file_id)
-          return <div key={file_id}>{file ? file.filename : file_id}</div>
+          return (
+            <span 
+              key={file_id} 
+              className="inline-block bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded mr-2 mb-1 text-sm"
+            >
+              {file ? file.filename : file_id}
+            </span>
+          )
         })}
       </div>
     </>
