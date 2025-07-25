@@ -42,7 +42,7 @@ function FileDropUpload({newFileUploaded}: {
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 w-full">
       <button
         onClick={() => setShowDropZone(prev => !prev)}
         className="px-4 py-2 ml-2 mt-2 mb-2 text-white bg-indigo-500 border-none rounded-xl flex items-center gap-2"
@@ -61,13 +61,16 @@ function FileDropUpload({newFileUploaded}: {
         <div
           onDragOver={e => e.preventDefault()}
           onDrop={onDrop}
-          className="py-4 px-10 mt-3 border-2 border-dashed border-gray-500 text-center">
-          Drop file here or{' '}
-          <span
-            onClick={() => fileInputRef.current?.click()}
-            style={{textDecoration: 'underline', color: 'blue', cursor: 'pointer'}}>
-            click to choose
-          </span>
+          className="py-4 px-10 mt-3 ml-2 mr-2 border-2 border-dashed border-gray-500 flex flex-col items-center justify-center">
+          <div>Drop file here</div>
+          <div>
+            or{' '}
+            <span
+              onClick={() => fileInputRef.current?.click()}
+              style={{textDecoration: 'underline', color: 'blue', cursor: 'pointer'}}>
+              click to choose
+            </span>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
