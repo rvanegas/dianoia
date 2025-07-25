@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
 import type {StepType, ArgMode, ConversationSnapshot,
-  ConversationType} from './types'
+  ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
@@ -38,11 +38,13 @@ function initialSnapshot() : ConversationSnapshot {
 function Conversation({
   conversation,
   setConversation,
-  createConversationFromProposition
+  createConversationFromProposition,
+  files
 }: {
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void,
-  createConversationFromProposition: (proposition: string) => void
+  createConversationFromProposition: (proposition: string) => void,
+  files: FileType[]
 }) {
   const snapshotRenderCount = useRef(0)
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
@@ -558,10 +560,17 @@ function Conversation({
 
   const snapshotId = snapshotIndex < 1 ? '' : `.${snapshotIndex}`
 
-  const associatedFileNames =
-    currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0
-      ? currentSnapshot.file_ids.join(', ')
-      : <span className="text-zinc-400 italic">None</span>;
+  const renderAssociatedFileNames = () => (
+    <>
+      <div className={headingClassNames}>Files:</div>
+      <div>
+        {currentSnapshot.file_ids.map(file_id => {
+          const file = files.find(f => f.file_id === file_id)
+          return <div key={file_id}>{file ? file.filename : file_id}</div>
+        })}
+      </div>
+    </>
+  );
 
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
@@ -569,15 +578,14 @@ function Conversation({
         <div className="max-w text-left my-2 self-start">
           <div className={headingClassNames}>Id:</div>
           <div>{conversation.id}{snapshotId}</div>
-          <div className={headingClassNames}>Files:</div>
-          <div>{associatedFileNames}</div>
-          {!currentSnapshot.thesis ? undefined : thesesDiv}
-          {currentSnapshot.assumptions.length == 0 ? undefined : assumptionsDiv}
-          {currentSnapshot.argument.length == 0 ? undefined : argumentDiv()}
-          {currentSnapshot.counter_argument.length == 0 ? undefined : counterArgumentDiv()}
-          {!currentSnapshot.explanation ? undefined : explanationDiv()}
-          {!currentSnapshot.lastPrompt ? undefined : lastPromptDiv}
-          {!prompt ? undefined : promptDiv}
+          {currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0 && renderAssociatedFileNames()}
+          {currentSnapshot.thesis && thesesDiv}
+          {currentSnapshot.assumptions.length > 0 && assumptionsDiv}
+          {currentSnapshot.argument.length > 0 && argumentDiv()}
+          {currentSnapshot.counter_argument.length > 0 && counterArgumentDiv()}
+          {currentSnapshot.explanation && explanationDiv()}
+          {currentSnapshot.lastPrompt && lastPromptDiv}
+          {prompt && promptDiv}
         </div>
       </div>
       {loadingIndicator}

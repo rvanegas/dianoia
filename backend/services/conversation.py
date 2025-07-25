@@ -75,6 +75,7 @@ class Gpt:
         for message in reversed(messages.data):
             if message.role == "assistant":
                 return message.content[0].text.value
+        logger.error(f"No assistant value found. Messages returned: {messages.data}")
         raise RuntimeError("no assistant value found")
 
 gpt_theses = Gpt(
