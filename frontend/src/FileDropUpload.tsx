@@ -42,10 +42,10 @@ function FileDropUpload({newFileUploaded}: {
   }
 
   return (
-    <div className='mt-4'>
+    <div className="mt-4">
       <button
         onClick={() => setShowDropZone(prev => !prev)}
-        className="flex items-center gap-2 py-2 px-3 border-gray-600 bg-neutral-100 rounded cursor-pointer"
+        className="px-4 py-2 ml-2 mt-2 mb-2 text-white bg-indigo-500 border-none rounded-xl flex items-center gap-2"
         disabled={isUploading}
       >
         <Upload size={18} />

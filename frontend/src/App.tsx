@@ -84,13 +84,16 @@ function App() {
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
       <div className={`
-        flex flex-col items-start px-2 w-[250px] bg-slate-200 dark:bg-zinc-800
+        flex flex-col items-start w-[250px] bg-slate-200 dark:bg-zinc-800
         fixed lg:relative h-full z-40 transition-all duration-300 max-lg:pt-15
         ${paneOpened ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
+        <h1 className="text-xl font-bold text-zinc-700 dark:text-zinc-300 ml-2 mt-4 mb-2">
+          Dianoia
+        </h1>
         <button
-        tabIndex={3}
-          className='w-[90%] px-2 py-2 m-4 text-white bg-indigo-500 border-none rounded-xl'
+          tabIndex={3}
+          className='px-4 py-2 ml-2 mt-2 mb-4 text-white bg-indigo-500 border-none rounded-xl'
           onClick={() => createConversation()}>
           New
         </button>
@@ -98,11 +101,11 @@ function App() {
           <button
             key={index}
             className={`
-              w-[100%] text-left rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none
+              w-[100%] text-left p-2 text-zinc-700 dark:text-zinc-300 border-none
               hover:bg-slate-300 dark:hover:bg-zinc-700
               ${
                 conv.id == currConvIndex + 1 ?
-                'border-indigo-500 border-solid border-2' : 'border-none'
+                'bg-slate-300 dark:bg-zinc-700' : ''
               }
             `}
             onClick={() => selectConversation(index)}>
@@ -113,11 +116,12 @@ function App() {
         {files.map((file, index) => (
           <div
             key={index}
-            className="w-[100%] flex items-center justify-between rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none hover:bg-slate-300 dark:hover:bg-zinc-700"
+            className={`w-[100%] flex items-center justify-between 
+              rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none`}
           >
             <span className="flex-1 text-left">{file.filename}</span>
             <button
-              className="ml-2 p-1 hover:bg-indigo-100 rounded"
+              className="ml-2 p-1 hover:bg-slate-300 dark:hover:bg-zinc-700 rounded"
               title="Associate file to conversation"
               onClick={() => associateFileToConversation(file.file_id)}
             >
