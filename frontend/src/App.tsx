@@ -6,6 +6,7 @@ import type {ConversationType, FileType} from './types'
 
 import Conversation from './Conversation'
 import FileDropUpload from './FileDropUpload'
+import { ChevronsRight } from 'lucide-react'
 
 const initialState: ConversationType = {
   id: 1,
@@ -45,9 +46,9 @@ function App() {
     createConversation({initPrompt: proposition})
   }
 
-  const createConversationFromFile = (index: number) => {
-    createConversation({vector_store_id: files[index].vector_store_id})
-  }
+  // const createConversationFromFile = (index: number) => {
+  //   createConversation({vector_store_id: files[index].vector_store_id})
+  // }
 
   const selectConversation = (index: number) => {
     setCurrConvIndex(index)
@@ -55,6 +56,14 @@ function App() {
 
   const newFileUploaded = (newFile: FileType) => {
     setFiles(f => {f.push(newFile)})
+  }
+
+  // Add file to current conversation's file_ids
+  const associateFileToConversation = (file: FileType) => {
+    setConversations(c => {
+      const conv = c[currConvIndex]
+      console.log('a', conv.name, file.filename)
+    })
   }
 
   useEffect(() => {
@@ -105,13 +114,19 @@ function App() {
         ))}
         <FileDropUpload newFileUploaded={newFileUploaded}/>
         {files.map((file, index) => (
-          <button
+          <div
             key={index}
-            className="w-[100%] text-left rounded-md p-2 text-zinc-700 dark:text-zinc-300
-              border-none hover:bg-slate-300 dark:hover:bg-zinc-700"
-            onClick={() => createConversationFromFile(index)}>
-            Create from {file.filename}
-          </button>
+            className="w-[100%] flex items-center justify-between rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none hover:bg-slate-300 dark:hover:bg-zinc-700"
+          >
+            <span className="flex-1 text-left">{file.filename}</span>
+            <button
+              className="ml-2 p-1 hover:bg-indigo-100 rounded"
+              title="Associate file to conversation"
+              onClick={() => associateFileToConversation(file)}
+            >
+              <ChevronsRight size={18} />
+            </button>
+          </div>
         ))}
       </div>
       <div
