@@ -116,7 +116,13 @@ function App() {
             className={`w-[100%] flex items-center justify-between 
               rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none`}
           >
-            <span className="flex-1 text-left">{file.filename}</span>
+            <span 
+              className="flex-1 text-left overflow-hidden max-h-12" 
+              style={{textOverflow: 'ellipsis'}}
+              title={file.filename}
+            >
+              {file.filename}
+            </span>
             <button
               className="ml-2 p-1 hover:bg-slate-300 dark:hover:bg-zinc-700 rounded"
               onClick={() => associateFileToConversation(file.file_id)}
