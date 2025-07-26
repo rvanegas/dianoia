@@ -1,9 +1,29 @@
 """models for theses and arguments"""
 import json
+import re
 
 from pydantic import BaseModel
 from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
+
+
+def clean_citations(proposition: str) -> str:
+    """
+    Clean citations from propositions by replacing non-ASCII brackets with ASCII brackets
+    and keeping only the filename, removing numbers and dagger symbols.
+    
+    Example: "Mice are small【4:0†small.txt】." -> "Mice are small [small.txt]."
+    """
+    # Pattern to match citations like 【4:0†small.txt】 or similar
+    # This matches the non-ASCII brackets 【】 and captures the filename
+    pattern = r'【[^】]*?([^†]+\.txt)】'
+    
+    def replace_citation(match):
+        filename = match.group(1)
+        return f' [{filename}]'
+    
+    return re.sub(pattern, replace_citation, proposition)
+
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
@@ -163,7 +183,9 @@ class ArgumentsWithStep(Arguments):
         response = gpt_justify.call(self.json(), self.file_ids)
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
-            conclusion = self.insert_proposition(p)
+            # Clean citations from the proposition
+            cleaned_proposition = clean_citations(p)
+            conclusion = self.insert_proposition(cleaned_proposition)
             self.index += 1
         # self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
