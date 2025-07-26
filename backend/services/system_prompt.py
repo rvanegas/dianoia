@@ -39,9 +39,10 @@ counter-thesis to be genuinely contraries. The presupposition represents the
 logical space within which the thesis and counter-thesis can stand in
 opposition.
 
-The name is a roughly twenty character name derived from the thesis with which
-to name the whole conversation. Avoid words, such as "debate" or "thesis",
-that would common to all such names.
+The name is a roughly 25 character description derived from the thesis with which
+to describe the conversation. Avoid words, such as "debate" or "thesis",
+that would be common to all descriptions. The name should be unique to the
+conversation. 
 
 Critically, you must derive the presupposition entirely from the logical
 forms of the thesis and counter-thesis, without introducing any new concepts,
