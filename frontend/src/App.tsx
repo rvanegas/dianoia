@@ -41,10 +41,6 @@ function App() {
     createConversation(proposition)
   }
 
-  // const createConversationFromFile = (index: number) => {
-  //   createConversation({vector_store_id: files[index].vector_store_id})
-  // }
-
   const selectConversation = (index: number) => {
     setCurrConvIndex(index)
   }
@@ -60,12 +56,13 @@ function App() {
       if (currentSnapshot && !currentSnapshot.file_ids.includes(file_id)) {
         currentSnapshot.file_ids.push(file_id)
       }
+      setPaneOpened(false)
     })
   }
 
   useEffect(() => {
     if (paneOpened) {
-      setPaneOpened(!paneOpened)
+      setPaneOpened(false)
     }
   }, [currConvIndex])
 
@@ -122,7 +119,6 @@ function App() {
             <span className="flex-1 text-left">{file.filename}</span>
             <button
               className="ml-2 p-1 hover:bg-slate-300 dark:hover:bg-zinc-700 rounded"
-              title="Associate file to conversation"
               onClick={() => associateFileToConversation(file.file_id)}
             >
               <ChevronsRight size={18} />
