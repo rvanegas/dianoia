@@ -394,41 +394,80 @@ function Conversation({
     </div>
   )
 
-  const actionsMenu = () => (
-    <Menu as="div" className="relative inline-block text-left">
-      <Menu.Button className="flex items-center py-1 px-2 bg-white border rounded shadow-sm hover:bg-gray-50 hover:dark:bg-zinc-800 dark:bg-zinc-900 dark:border-zinc-800">
-        <ChevronDown className=" w-4 h-4" />
-      </Menu.Button>
+  // ActionsMenu component with proper hooks
+  const ActionsMenu = () => {
+    const [showAbove, setShowAbove] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
-      <Menu.Items
-        className={`
-          absolute left-0 mt-2 w-72 origin-top-right bg-white border border-gray-200
-          divide-y divide-gray-100 rounded-md shadow-lg focus:outline-indigo-500 z-50
-          focus:outline-2 dark:bg-zinc-900 dark:divide-zinc-800 dark:border-zinc-700
-        `}
-      >
-        {actionOptions.map((option) => (
-          <Menu.Item key={option.value}>
-            {({ active }) => (
-              <button
-                className={`
-                  flex items-start w-full px-4 py-3 text-left
-                  ${active ? 'bg-gray-100 dark:bg-zinc-800 text-indigo-400'
-                    : 'text-gray-900 dark:text-slate-300'}
-                `}
-                onClick={() => console.log(option.value)}
-              >
-                <div className="ml-3">
-                  {active}
-                  <div className="text-sm font-medium">{option.label}</div>
-                </div>
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
-  )
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const threshold = viewportHeight * 0.5; // Show above if button is within 300px of bottom
+        
+        setShowAbove(rect.top > threshold);
+      }
+    };
+
+    useEffect(() => {
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition);
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition);
+      };
+    }, []);
+
+    return (
+      <Menu as="div" className="relative inline-block text-left">
+        <Menu.Button 
+          ref={buttonRef}
+          className="flex items-center py-1 px-2 bg-white border rounded shadow-sm hover:bg-gray-50 hover:dark:bg-zinc-800 dark:bg-zinc-900 dark:border-zinc-800"
+        >
+          <ChevronDown className=" w-4 h-4" />
+        </Menu.Button>
+
+        <Menu.Items
+          className={`
+            absolute left-0 w-72 origin-top-right bg-white border border-gray-200
+            divide-y divide-gray-100 rounded-md shadow-lg focus:outline-indigo-500 z-50
+            focus:outline-2 dark:bg-zinc-900 dark:divide-zinc-800 dark:border-zinc-700
+            ${showAbove 
+              ? 'bottom-full mb-2' 
+              : 'top-full mt-2'
+            }
+          `}
+          style={{
+            maxHeight: 'calc(100vh - 2rem)',
+            overflowY: 'auto'
+          }}
+        >
+          {actionOptions.map((option) => (
+            <Menu.Item key={option.value}>
+              {({ active }) => (
+                <button
+                  className={`
+                    flex items-start w-full px-4 py-3 text-left
+                    ${active ? 'bg-gray-100 dark:bg-zinc-800 text-indigo-400'
+                      : 'text-gray-900 dark:text-slate-300'}
+                  `}
+                  onClick={() => console.log(option.value)}
+                >
+                  <div className="ml-3">
+                    {active}
+                    <div className="text-sm font-medium">{option.label}</div>
+                  </div>
+                </button>
+              )}
+            </Menu.Item>
+          ))}
+        </Menu.Items>
+      </Menu>
+    );
+  };
+
+  const actionsMenu = () => <ActionsMenu />
 
   const argumentNode = (loc: string, argument: StepType[]) => {
     const argumentSteps = argument.map((step, step_index) => {
