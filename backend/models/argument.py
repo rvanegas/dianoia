@@ -21,8 +21,11 @@ def clean_citations(proposition: str) -> str:
     def replace_citation(match):
         filename = match.group(1)
         return f' [{filename}]'
-    
-    return re.sub(pattern, replace_citation, proposition)
+
+    replaced = re.sub(pattern, replace_citation, proposition)
+    logger.debug(f"proposition: {proposition}")
+    logger.debug(f"replaced...: {replaced}")
+    return replaced
 
 
 class Step(BaseModel):
