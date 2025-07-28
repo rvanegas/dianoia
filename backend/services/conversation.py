@@ -69,11 +69,13 @@ class Gpt:
 
             # Check if we have a valid vector store for these file IDs
             if file_ids_key in self._vector_store_registry:
+                logger.debug(f"vector store registry hit for {file_ids_key}")
                 vs_info = self._vector_store_registry[file_ids_key]
                 if not vs_info.is_expired():
                     return vs_info.vector_store_id
                 else:
                     # Remove expired entry
+                    logger.debug(f"vector store registry expired for {file_ids_key}")
                     del self._vector_store_registry[file_ids_key]
 
             # Create new vector store
