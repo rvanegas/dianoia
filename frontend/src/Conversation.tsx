@@ -1,6 +1,7 @@
 import './App.css'
 
 import {useEffect, useRef} from 'react'
+import { ChevronRight } from 'lucide-react'
 
 import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
@@ -10,7 +11,35 @@ import ThesisActions from './ThesisActions'
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
-const headingClassNames = `text-lg font-bold`
+
+// Reusable FlexTable component
+const FlexTable = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex flex-col">
+    {children}
+  </div>
+)
+
+const FlexRow = ({ 
+  label, 
+  children, 
+  chevron 
+}: { 
+  label?: string
+  children?: React.ReactNode
+  chevron?: React.ReactNode
+}) => (
+  <div className="flex">
+    <div className="w-[40px] flex-shrink-0">{chevron}</div>
+    <div className={label ? "text-lg font-bold text-left" : "text-left"}>{label || children}</div>
+  </div>
+)
+
+// Section wrapper component
+const Section = ({ children }: { children: React.ReactNode }) => (
+  <div className="mb-2">
+    {children}
+  </div>
+)
 
 function Conversation({
   conversation,
@@ -131,6 +160,28 @@ function Conversation({
 
   const argumentNode = (loc: string, argument: StepType[]) => {
     const argumentSteps = argument.map((step, step_index) => {
+      const actions = (
+        <PropositionActions
+          step={step}
+          stepIndex={step_index}
+          loc={loc}
+          argumentLength={argument.length}
+          userMode={userMode}
+          onAIJustify={handleAIJustify}
+          onUserJustify={(loc, stepIndex) => {
+            setUserMode('input')
+            setTargetLoc(loc)
+            setTargetIndex(stepIndex)
+          }}
+          onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+          onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+          onDispute={handleDispute}
+          onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+          setUserMode={setUserMode}
+          setTargetLoc={setTargetLoc}
+          setTargetIndex={setTargetIndex}
+        />
+      )
 
       const scoreSpan = () => {
         let justifier = ''
@@ -144,61 +195,35 @@ function Conversation({
         }
         const valueSpan =
           <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
-              {value}
+            {value}
           </span>
         return <span>[{justifier}; {valueSpan}]</span>
       }
 
       return (
-        <div key={step_index} className="flex items-start gap-2">
-          <PropositionActions
-            step={step}
-            stepIndex={step_index}
-            loc={loc}
-            argumentLength={argument.length}
-            userMode={userMode}
-            onAIJustify={handleAIJustify}
-            onUserJustify={(loc, stepIndex) => {
-              setUserMode('input')
-              setTargetLoc(loc)
-              setTargetIndex(stepIndex)
-            }}
-            onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
-            onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
-            onDispute={handleDispute}
-            onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
-            setUserMode={setUserMode}
-            setTargetLoc={setTargetLoc}
-            setTargetIndex={setTargetIndex}
-          />
-          <div className="flex-1">
-            ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
-          </div>
-        </div>
+        <FlexRow 
+          key={step_index}
+          chevron={actions}
+        >
+          ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
+        </FlexRow>
       )
     })
     return <div>{argumentSteps}</div>
   }
 
   const argumentDiv = () => (
-    <div className="pl-6">
-      <div className={headingClassNames}>Argument:</div>
-      <div>{argumentNode('argument', currentSnapshot.argument)}</div>
-    </div>
+    <div>{argumentNode('argument', currentSnapshot.argument)}</div>
   )
 
   const counterArgumentDiv = () => (
-    <div className="pl-6">
-      <div className={headingClassNames}>Counter-Argument:</div>
-      <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
-    </div>
+    <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
   )
 
   const assumptionsDiv = (
-    <div className="pl-6">
-      <div className={headingClassNames}>Assumptions:</div>
-      {currentSnapshot.assumptions.map((step, step_index) => (
-        <div key={step_index} className="flex items-start gap-2">
+    <div>
+      {currentSnapshot.assumptions.map((step, step_index) => {
+        const actions = (
           <PropositionActions
             step={step}
             stepIndex={step_index}
@@ -219,17 +244,22 @@ function Conversation({
             setTargetLoc={setTargetLoc}
             setTargetIndex={setTargetIndex}
           />
-          <div className="flex-1">
+        )
+
+        return (
+          <FlexRow 
+            key={step_index}
+            chevron={actions}
+          >
             ({step.symbol}) {step.proposition}
-          </div>
-        </div>
-      ))}
+          </FlexRow>
+        )
+      })}
     </div>
   )
 
   const thesesDiv = (
-    <div className="pl-6">
-      <div className={headingClassNames}>Thesis:</div>
+    <div>
       <div>
         {currentSnapshot.argument.length == 0 ? (
           <div className="flex items-start gap-2">
@@ -246,7 +276,6 @@ function Conversation({
           <div>{currentSnapshot.thesis}</div>
         )}
       </div>
-      <div className={headingClassNames}>Counter-Thesis:</div>
       <div>
         {currentSnapshot.counter_argument.length == 0 ? (
           <div className="flex items-start gap-2">
@@ -263,7 +292,6 @@ function Conversation({
           <div>{currentSnapshot.counter_thesis}</div>
         )}
       </div>
-      <div className={headingClassNames}>Presupposition:</div>
       <div>{currentSnapshot.presupposition}</div>
     </div>
   )
@@ -271,16 +299,14 @@ function Conversation({
 
 
   const lastPromptDiv = (
-    <div className="pl-6">
-      <div className={headingClassNames}>LastPrompt:</div>
-      <div>{currentSnapshot.lastPrompt}</div>
+    <div>
+      {currentSnapshot.lastPrompt}
     </div>
   )
 
   const promptDiv = (
-    <div className="pl-6">
-      <div className={headingClassNames}>Prompt:</div>
-      <div>{prompt}</div>
+    <div>
+      {prompt}
     </div>
   )
 
@@ -288,9 +314,7 @@ function Conversation({
     if (!currentSnapshot.formalization || currentSnapshot.formalization.length == 0) return
     return (
       <>
-        <div className={headingClassNames}>Formalization:</div>
         <div>{currentSnapshot.formalization.map((prop, key) => (<div key={key}>{prop}</div>))}</div>
-        <div className={headingClassNames}>Explanation:</div>
         <div>{currentSnapshot.explanation}</div>
       </>
     )
@@ -299,42 +323,107 @@ function Conversation({
   const snapshotId = snapshotIndex < 1 ? '' : `.${snapshotIndex}`
 
   const renderAssociatedFileNames = () => (
-    <>
-      <div className={headingClassNames}>Files:</div>
-      <div>
-        {currentSnapshot.file_ids.map(file_id => {
-          const file = files.find(f => f.file_id === file_id)
-          return (
-            <span 
-              key={file_id} 
-              className="inline-block bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded mr-2 mb-1 text-sm"
-            >
-              {file ? file.filename : file_id}
-            </span>
-          )
-        })}
-      </div>
-    </>
+    <div>
+      {currentSnapshot.file_ids.map(file_id => {
+        const file = files.find(f => f.file_id === file_id)
+        return (
+          <span 
+            key={file_id} 
+            className="inline-block bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded mr-2 mb-1 text-sm"
+          >
+            {file ? file.filename : file_id}
+          </span>
+        )
+      })}
+    </div>
   );
 
   const messagesDiv = (
-    <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
-      <div className="p-3 prose dark:prose-invert max-w-none">
-        <div className="max-w text-left my-2 self-start">
-          <div className="pl-6">
-            <div className={headingClassNames}>Id:</div>
-            <div>{conversation.id}{snapshotId}</div>
-          </div>
-          {currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0 && renderAssociatedFileNames()}
-          {currentSnapshot.thesis && thesesDiv}
-          {currentSnapshot.assumptions.length > 0 && assumptionsDiv}
-          {currentSnapshot.argument.length > 0 && argumentDiv()}
-          {currentSnapshot.counter_argument.length > 0 && counterArgumentDiv()}
-          {currentSnapshot.explanation && explanationDiv()}
-          {currentSnapshot.lastPrompt && lastPromptDiv}
-          {prompt && promptDiv}
-        </div>
-      </div>
+    <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide">
+      <FlexTable>
+        <Section>
+          <FlexRow label="Id:" />
+          <FlexRow>{conversation.id}{snapshotId}</FlexRow>
+        </Section>
+        {currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0 && (
+          <Section>
+            <FlexRow label="Files:" />
+            <FlexRow>{renderAssociatedFileNames()}</FlexRow>
+          </Section>
+        )}
+        {currentSnapshot.thesis && (
+          <Section>
+            <FlexRow label="Thesis:" />
+            <FlexRow
+              chevron={
+                currentSnapshot.argument.length == 0 ? (
+                  <ThesisActions
+                    thesisType="thesis"
+                    userMode={userMode}
+                    onArgue={handleArgue}
+                  />
+                ) : undefined
+              }
+            >
+              {currentSnapshot.thesis}
+            </FlexRow>
+          </Section>
+        )}
+        {currentSnapshot.counter_thesis && (
+          <Section>
+            <FlexRow label="Counter-Thesis:" />
+            <FlexRow
+              chevron={
+                currentSnapshot.counter_argument.length == 0 ? (
+                  <ThesisActions
+                    thesisType="counter_thesis"
+                    userMode={userMode}
+                    onArgue={handleArgue}
+                  />
+                ) : undefined
+              }
+            >
+              {currentSnapshot.counter_thesis}
+            </FlexRow>
+          </Section>
+        )}
+        {currentSnapshot.assumptions.length > 0 && (
+          <Section>
+            <FlexRow label="Assumptions:" />
+            {assumptionsDiv}
+          </Section>
+        )}
+        {currentSnapshot.argument.length > 0 && (
+          <Section>
+            <FlexRow label="Argument:" />
+            {argumentDiv()}
+          </Section>
+        )}
+        {currentSnapshot.counter_argument.length > 0 && (
+          <Section>
+            <FlexRow label="Counter-Argument:" />
+            {counterArgumentDiv()}
+          </Section>
+        )}
+        {currentSnapshot.explanation && (
+          <Section>
+            <FlexRow label="Explanation:" />
+            <FlexRow>{explanationDiv()}</FlexRow>
+          </Section>
+        )}
+        {currentSnapshot.lastPrompt && (
+          <Section>
+            <FlexRow label="LastPrompt:" />
+            <FlexRow>{currentSnapshot.lastPrompt}</FlexRow>
+          </Section>
+        )}
+        {prompt && (
+          <Section>
+            <FlexRow label="Prompt:" />
+            <FlexRow>{prompt}</FlexRow>
+          </Section>
+        )}
+      </FlexTable>
       {loadingIndicator}
     </div>
   )
