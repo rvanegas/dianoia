@@ -102,39 +102,70 @@ evaluate_system_prompt = instructions + """
 
 ### Task
 
+For the purposes of this task, we define "valid" to accord with its sense in
+mathematical logic, not its more general and equivocal sense in debate or
+rhetoric. Validity is strict formal validity, _not_ soundness. The validity
+of an argument is not affected by the truth of its premises or conclusion.
+
 You will receive two lists of propositions, "assumptions" and "argument". In
 response, you will return an array of numbers from 0.0 to 1.0, rounded to
 nearest 0.05, each corresponding to a given proposition from "argument" in
-the same order.
+the same order. This array is returned as the "truth" property.
 
 Additionally, concerning the last proposition in the list, you will return one
 number from 0.0 to 1.0, rounded to the nearest 0.05, corresponding to the
 validity of the inference from the other propositions to the last one. That
-is, assuming the other propositions in "argument", and all those
+is, assuming that the other propositions in "argument", and all those
 in "assumptions", are certainly true, then this number represents the
 likelihood that the last proposition in "argument" is true. In case of
 deduction, set value to 1.0. In case of contradiction, set value to 0.0.
 Otherwise, determine the implicit premise that would make the inference a
-deduction and set the value to the likelihood that premise is true.
-Inferential validity is here purely formal. That is, validity is independent
-of absolute truth values.
+deduction. This number is returned as the "valid" property.
 
-Set this number to the property "valid".
+### Considerations
 
-In each case, the number should be 1.0 if the proposition is certainly true assuming
-all the "assumptions" are true; the number should be 0.0 if it is certainly not true
-assuming all the "assumptions" are true; and otherwise represent the degree to which
-it is likely to be true, assuming all the "assumptions" are true. 
+For each proposition in "argument", the number returned in the "truth" array
+should be 1.0 if the proposition is certainly true given the assumptions, 0.0
+if it is certainly false given the assumptions, or a value representing the
+degree of likelihood given the assumptions.
 
-Set these numbers as an array to the property "truth".
+### Examples
 
-If the argument is deductive, that is, formally valid, then the "valid" property of the last proposition
-should be 1.0, even if the premises are false or the conclusion is false..
+# valid but not sound
 
-Consider that if the argument is deductive, that is, formally valid, then its truth depends only on the truth
-of its premises, and if these premises are assumptions, then the conclusion must
-be evaluated as true. Thus, if the premises have a high "truth" value and the argument's validity
-has a high value, then the conclusion should be evaluated as having a high "truth" value.
+(A) Socrates is a god.
+(B) All gods are immortal.
+(C) Socrates is immortal.
+
+truth: [0.0, 1.0, 0.0]
+valid: 1.0
+
+# valid and sound
+
+(A) Socrates is a man.
+(B) All men are mortal.
+(C) Socrates is mortal.
+
+truth: [1.0, 1.0, 1.0]
+valid: 1.0
+
+# partly valid
+
+(A) Socrates is a man.
+(B) Most men are mortal.
+(C) Socrates is mortal.
+
+truth: [1.0, 1.0, 1.0]
+valid: 0.7
+
+# deductively invalid though true, adbuctively reasonable
+
+(A) Socrates is mortal.
+(B) All men are mortal
+(C) Socrates is a man.
+
+truth: [1.0, 1.0, 1.0]
+valid: 0.2
 
 """
 
@@ -157,7 +188,7 @@ Your response will return a formalization of the argument and an explanation
 of its inferential validity.
 
 The "formalization" will express each proposition of the argument in symbolic
-logic, using concise mathematical logic notation. Also include predicate and
+logic, using concise mathematical logical notation. Also include predicate and
 constant definitions, where appropriate. The formalization should be
 self-explanatory, and intelligible independently of the explanatory text.
 Each formal proposition should be prefixed with the "symbol" property of the
@@ -165,19 +196,18 @@ proposition being formalized. The formalization should include exactly one
 line for every proposition. None should be omitted, none added.
 
 The "explanation" will provide a detailed explanation for the validity of the
-argument's conclusion inferred from its premises. Consider implications of
-assumptions, logical structuring, and whether the premises are sufficient to
-support the conclusion. If the argument is already fully deductive, say so.
-If it is not, then recommend what additional premise would make the inference
-fully deductive.
+argument's conclusion inferred from its premises, not its truth. Consider
+implications of assumptions, logical structuring, and whether the premises
+are sufficient to support the conclusion. If the argument is already fully
+deductive, say so. If it is not, then recommend what additional premise would
+make the inference fully deductive. Do not recommend a premise that would beg
+the question, that is, do not recommend a premise that is identical to the
+conclusion, or implied by the conclusion.
 
-Limit concern to the inferential validity, and not to the truth of the
-premises or the conclusion.
-
-# Ascii representation for various logical forms.
+# ASCII representation for various logical forms.
 
 Conjunction: P and Q
-Disjunciton: P or Q
+Disjunction: P or Q
 Negation: not P
 Conditional: if P then Q
 Biconditional: P if and only if Q
@@ -192,8 +222,10 @@ Actuality modal: Act: P
 Obligation modal: Ought: P
 Permission modal: Permitted: P
 
-Do not use synonyms when the above forms are adequate. For example, don't
-return "P implies Q" when "if P then Q" is available.
+Use only single letters for variables, names, propositions, and predicates.
+
+Do not use synonymous expressions when the above forms are adequate. For example,
+don't return "P implies Q" when "if P then Q" is available.
 
 # Example
 

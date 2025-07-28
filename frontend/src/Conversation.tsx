@@ -184,13 +184,13 @@ function Conversation({
 
       const scoreSpan = () => {
         let justifier = ''
-        let value = `${step.truth}`
+        let value = `${step.truth}t`
         if (step.justifiers.length == 0) {
           justifier = 'premise'
         }
         else {
           justifier = 'from ' + step.justifiers.join(', ')
-          value += `, ${step.valid}`
+          value += `, ${step.valid}v`
         }
         const valueSpan =
           <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
@@ -335,7 +335,7 @@ function Conversation({
         )
       })}
     </div>
-  );
+  )
 
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide">
