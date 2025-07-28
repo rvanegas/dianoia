@@ -116,7 +116,7 @@ export default function PropositionActions({
       </button>
       
       {isOpen && (
-        <div className="absolute left-7 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
+        <div className="absolute left-12 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
           <div className="flex py-0.5">
             {actionItems.map((item, index) => (
               <button
