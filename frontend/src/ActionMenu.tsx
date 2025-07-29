@@ -48,7 +48,7 @@ export default function ActionMenu({
       </button>
       
       {isOpen && (
-        <div className="absolute left-10 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
+        <div className="absolute left-7 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
           <div className="flex">
             {filteredItems.map((item, index) => (
               <button
