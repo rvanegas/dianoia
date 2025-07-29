@@ -6,7 +6,7 @@ import type {ConversationType, FileType} from './types'
 
 import Conversation from './Conversation'
 import FileDropUpload from './FileDropUpload'
-import { ChevronsRight } from 'lucide-react'
+import { ChevronsRight, PanelLeft } from 'lucide-react'
 
 const initialState: ConversationType = {
   id: 1,
@@ -68,13 +68,13 @@ function App() {
 
   const paneButton = (
     <button
-      className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-md'
+      className='lg:hidden fixed top-4 left-4 z-50 p-2 text-zinc-700 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-700 rounded-md'
       onClick={(e) => {
         e.stopPropagation()
         setPaneOpened(!paneOpened)
       }}
     >
-      {'\u2630'}
+      <PanelLeft size={20} />
     </button>
   )
 

@@ -1,7 +1,7 @@
 import './App.css'
 import axios from 'axios'
 import {useRef, useState} from 'react'
-import {Upload} from 'lucide-react'
+
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 import type {FileType} from './types'
@@ -48,7 +48,6 @@ function FileDropUpload({newFileUploaded}: {
         className="px-4 py-2 ml-2 mt-2 mb-2 text-white bg-indigo-500 border-none rounded-xl flex items-center gap-2"
         disabled={isUploading}
       >
-        <Upload size={18} />
         Upload File
       </button>
       {isUploading && (
