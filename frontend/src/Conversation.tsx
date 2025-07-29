@@ -68,6 +68,8 @@ function Conversation({
     setPrompt,
     copied,
     setCopied,
+    evaluatingMode,
+    setEvaluatingMode,
     inputRef,
     saveSnapshot,
     argLoc
@@ -91,7 +93,8 @@ function Conversation({
     targetIndex,
     argLoc,
     saveSnapshot,
-    createConversationFromProposition
+    createConversationFromProposition,
+    setEvaluatingMode
   )
 
   const {
@@ -144,10 +147,10 @@ function Conversation({
     }
   }, [currentSnapshot.evaluationsPending])
 
-  const loadingIndicator = userMode != 'waiting' ? undefined : (
+  const loadingIndicator = userMode != 'waiting' && !evaluatingMode ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
-        Dianoia is thinking
+        {userMode == 'waiting' ? 'Dianoia is thinking' : 'Dianoia is evaluating scores'}
       </span>
       <span className="typing-indicator">
         <span className="typing-dot"></span>

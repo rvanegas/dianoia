@@ -51,6 +51,9 @@ export function useConversationState(
   // export button
   const [copied, setCopied] = useState<boolean>(false)
 
+  // evaluating mode for score evaluation
+  const [evaluatingMode, setEvaluatingMode] = useState<boolean>(false)
+
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -95,6 +98,8 @@ export function useConversationState(
     setPrompt,
     copied,
     setCopied,
+    evaluatingMode,
+    setEvaluatingMode,
     inputRef,
     saveSnapshot,
     argLoc
@@ -111,7 +116,8 @@ export function useConversationActions(
   targetIndex: number,
   argLoc: (loc: string) => any[],
   saveSnapshot: (newSnap: ConversationSnapshot, inPlace?: boolean, convName?: string) => void,
-  createConversationFromProposition: (proposition: string) => void
+  createConversationFromProposition: (proposition: string) => void,
+  setEvaluatingMode: (mode: boolean) => void
 ) {
   const handleThesis = async (content?: string) => {
     if (userMode == 'waiting') return
@@ -259,6 +265,7 @@ export function useConversationActions(
   const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     try {
+      setEvaluatingMode(true)
       const currentSnapshotRenderCount = snapshotRenderCount.current
       const response = await axios.post(url, currentSnapshot)
       if (currentSnapshotRenderCount != snapshotRenderCount.current) return
@@ -275,6 +282,9 @@ export function useConversationActions(
     }
     catch (error) {
       console.error('Error: ', error)
+    }
+    finally {
+      setEvaluatingMode(false)
     }
   }
 
