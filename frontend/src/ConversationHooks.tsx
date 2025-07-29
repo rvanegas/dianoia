@@ -6,6 +6,15 @@ import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './
 type UserMode = 'waiting' | 'ready' | 'input'
 type ActionType = 'remove' | 'assume' | 'explain'
 
+// Type for API operation information
+type ApiOperationInfo = {
+  url: string;
+  data: any;
+  onSuccess: (responseObject: any) => void;
+  onFinally?: () => void;
+  operationName: string;
+}
+
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 function initialSnapshot() : ConversationSnapshot {
@@ -119,33 +128,66 @@ export function useConversationActions(
   createConversationFromProposition: (proposition: string) => void,
   setEvaluatingMode: (mode: boolean) => void
 ) {
+  // State for tracking retry information
+  const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
+
   // Reusable error handler
-  const handleApiError = (error: any) => {
+  const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
+    // Handle HTTP errors (like 422 AssistantResponseError)
     if (error.response?.status === 422 && error.response?.data?.detail) {
       console.log('AssistantResponseError detected:', error.response.data.detail)
+      if (operationInfo) {
+        setLastFailedOperation(operationInfo)
+      }
     }
+    // Handle other types of errors (JSON parsing, network, etc.)
+    else if (operationInfo) {
+      console.log('API Error detected:', error.message)
+      setLastFailedOperation(operationInfo)
+    }
+    
     console.error('Error: ', error)
   }
 
   // Reusable API call wrapper
-  const makeApiCall = async (
-    url: string, 
-    data: any, 
-    onSuccess: (responseObject: any) => void,
-    onFinally?: () => void
-  ) => {
+  const makeApiCall = async (operationInfo: ApiOperationInfo) => {
     try {
-      const response = await axios.post(url, data)
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
+      const response = await axios.post(operationInfo.url, operationInfo.data)
+      
+      // Check if response data exists
+      if (!response.data || !response.data.reply) {
+        throw new Error('Invalid response format: missing reply data')
       }
-      onSuccess(responseObject)
+      
+      // Parse JSON response
+      let responseObject
+      try {
+        responseObject = JSON.parse(response.data.reply)
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`)
+      }
+      
+      // Check if parsed object is valid
+      if (!responseObject) {
+        throw new Error('Empty response object')
+      }
+      
+      operationInfo.onSuccess(responseObject)
+      // Clear any previous failed operation on success
+      setLastFailedOperation(null)
     } catch (error: any) {
-      handleApiError(error)
+      handleApiError(error, operationInfo)
     } finally {
-      onFinally?.()
+      operationInfo.onFinally?.()
     }
+  }
+
+  // Retry function
+  const retryLastOperation = async () => {
+    if (!lastFailedOperation) return
+    
+    setUserMode('waiting')
+    await makeApiCall(lastFailedOperation)
   }
 
   const handleThesis = async (content?: string) => {
@@ -162,9 +204,7 @@ export function useConversationActions(
     const url = VITE_API_BASE_URL + '/api/v1/theses'
     
     await makeApiCall(
-      url,
-      apiPrompt,
-      (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject) => {
         const argMode: ArgMode = 'thesis'
         const newSnapshot = {
           ...currentSnapshot,
@@ -174,8 +214,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot, false, responseObject.name)
         setPrompt('')
-      },
-      () => setUserMode('ready')
+      }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis' }
     )
   }
 
@@ -191,9 +230,7 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      url,
-      apiPrompt,
-      (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject) => {
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
@@ -202,8 +239,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
         setPrompt('')
-      },
-      () => setUserMode('ready')
+      }, onFinally: () => setUserMode('ready'), operationName: 'AI Justify' }
     )
   }
 
@@ -224,9 +260,7 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      url,
-      apiPrompt,
-      (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject) => {
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
@@ -235,8 +269,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
         setPrompt('')
-      },
-      () => setUserMode('ready')
+      }, onFinally: () => setUserMode('ready'), operationName: 'Argue' }
     )
   }
 
@@ -253,9 +286,7 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      url,
-      apiPrompt,
-      (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject) => {
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
@@ -264,8 +295,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
         setPrompt('')
-      },
-      () => setUserMode('ready')
+      }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' }
     )
   }
 
@@ -290,15 +320,30 @@ export function useConversationActions(
         evaluationsPending: false,
       }
       saveSnapshot(newSnapshot, true)
+      // Clear any previous failed operation on success
+      setLastFailedOperation(null)
     } catch (error: any) {
-      handleApiError(error)
+      handleApiError(error, {
+        url,
+        data: currentSnapshot,
+        onSuccess: (responseObject) => {
+          const newSnapshot = {
+            ...currentSnapshot,
+            ...responseObject,
+            evaluationsPending: false,
+          }
+          saveSnapshot(newSnapshot, true)
+        },
+        onFinally: () => setEvaluatingMode(false),
+        operationName: 'Evaluate'
+      })
     } finally {
       setEvaluatingMode(false)
     }
   }
 
   const handleAction = async (
-    action: ActionType, lastPrompt: string, loc: string, index: number
+    action: ActionType, lastPrompt: string, loc: string, index: number, errorLabel: string
   ) => {
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
@@ -308,9 +353,7 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      url,
-      apiPrompt,
-      (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject) => {
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
@@ -323,8 +366,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
         setPrompt('')
-      },
-      () => setUserMode('ready')
+      }, onFinally: () => setUserMode('ready'), operationName: errorLabel }
     )
   }
 
@@ -339,7 +381,9 @@ export function useConversationActions(
     handleUserJustify,
     evaluateSteps,
     handleAction,
-    handleDispute
+    handleDispute,
+    retryLastOperation,
+    lastFailedOperation
   }
 }
 
@@ -370,4 +414,4 @@ export function useConversationNavigation(
     handleUndo,
     handleRedo
   }
-} 
+}

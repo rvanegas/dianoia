@@ -120,6 +120,7 @@ class Gpt:
         messages = client.beta.threads.messages.list(
             thread_id=run.thread_id)
         # logger.debug(f"m {messages}")
+        # raise AssistantResponseError("no assistant value found")
         for message in reversed(messages.data):
             if message.role == "assistant":
                 return message.content[0].text.value
