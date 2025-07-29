@@ -151,11 +151,8 @@ class ArgumentsWithLoc(Arguments):
         else:
             raise ValueError("invalid loc")
         new_proposition = getattr(self, thesis_attr)
-        logger.debug(f"np {new_proposition}")
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
-        logger.debug(f"a {self.argument}")
-        logger.debug(f"ca {self.counter_argument}")
         return self.gptjson()
 
 class ArgumentsWithStep(Arguments):
@@ -216,16 +213,13 @@ class ArgumentsWithStep(Arguments):
             raise ValueError("cannot assume justified proposition")
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
-        logger.debug(f"L1 {len(self.argument)}")
         del self.arg[self.index]
-        logger.debug(f"L2 {len(self.argument)}")
         return self.gptjson()
 
     def explain(self):
         """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
         props, new_arg = self.subargument(self.arg, self.arg[self.index])
-        logger.debug(f"props {props}")
         response = gpt_explain.call(json.dumps(props), self.file_ids)
         content = json.loads(response)
         self.formalization = content["formalization"]
