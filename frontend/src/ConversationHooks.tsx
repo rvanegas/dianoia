@@ -119,73 +119,92 @@ export function useConversationActions(
   createConversationFromProposition: (proposition: string) => void,
   setEvaluatingMode: (mode: boolean) => void
 ) {
+  // Reusable error handler
+  const handleApiError = (error: any) => {
+    if (error.response?.status === 422 && error.response?.data?.detail) {
+      console.log('AssistantResponseError detected:', error.response.data.detail)
+    }
+    console.error('Error: ', error)
+  }
+
+  // Reusable API call wrapper
+  const makeApiCall = async (
+    url: string, 
+    data: any, 
+    onSuccess: (responseObject: any) => void,
+    onFinally?: () => void
+  ) => {
+    try {
+      const response = await axios.post(url, data)
+      const responseObject = JSON.parse(response.data.reply)
+      if (!responseObject) {
+        throw new Error('empty responseObject')
+      }
+      onSuccess(responseObject)
+    } catch (error: any) {
+      handleApiError(error)
+    } finally {
+      onFinally?.()
+    }
+  }
+
   const handleThesis = async (content?: string) => {
     if (userMode == 'waiting') return
     if (!(content && content.trim())) return
     setPrompt(content)
     setUserMode('waiting')
     setInputText('')
+    
     const apiPrompt = {
       ...currentSnapshot,
       proposition: content,
     }
-    const path = '/api/v1/theses'
-    const url = VITE_API_BASE_URL + path
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const argMode : ArgMode = 'thesis'
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        lastPrompt: content,
-        argMode,
-      }
-      saveSnapshot(newSnapshot, false, responseObject.name)
-      setPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
+    const url = VITE_API_BASE_URL + '/api/v1/theses'
+    
+    await makeApiCall(
+      url,
+      apiPrompt,
+      (responseObject) => {
+        const argMode: ArgMode = 'thesis'
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          lastPrompt: content,
+          argMode,
+        }
+        saveSnapshot(newSnapshot, false, responseObject.name)
+        setPrompt('')
+      },
+      () => setUserMode('ready')
+    )
   }
 
-  const handleAIJustify = async (loc: string, index: number) =>
-  {
+  const handleAIJustify = async (loc: string, index: number) => {
     const lastPrompt = `AI Justify proposition ${argLoc(loc)[index].symbol}`
     setPrompt(lastPrompt)
     setUserMode('waiting')
+    
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
     const apiPrompt = {
       ...currentSnapshot,
       loc, index
     }
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        evaluationsPending: true,
-        lastPrompt,
-      }
-      saveSnapshot(newSnapshot)
-      setPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
+    
+    await makeApiCall(
+      url,
+      apiPrompt,
+      (responseObject) => {
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          evaluationsPending: true,
+          lastPrompt,
+        }
+        saveSnapshot(newSnapshot)
+        setPrompt('')
+      },
+      () => setUserMode('ready')
+    )
   }
 
   const handleArgue = async (thesisAttr: string) => {
@@ -196,67 +215,58 @@ export function useConversationActions(
     const thesisLabel = thesisAttr == 'thesis' ? 'Thesis' : 'Counter-Thesis'
     const lastPrompt = `Argue for ${thesisLabel}`
     setUserMode('waiting')
+    
     const url = VITE_API_BASE_URL + '/api/v1/argue'
     const argMode: ArgMode = 'development'
-    let apiPrompt = {
+    const apiPrompt = {
       ...currentSnapshot, 
       loc: argumentAttr, index: 0,
     }
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        argMode,
-        lastPrompt
-      }
-      saveSnapshot(newSnapshot)
-      setPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
+    
+    await makeApiCall(
+      url,
+      apiPrompt,
+      (responseObject) => {
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          argMode,
+          lastPrompt
+        }
+        saveSnapshot(newSnapshot)
+        setPrompt('')
+      },
+      () => setUserMode('ready')
+    )
   }
 
   const handleUserJustify = async (proposition: string) => {
     const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
     setPrompt(lastPrompt)
     setUserMode('waiting')
+    
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
-    let apiPrompt = {
+    const apiPrompt = {
       ...currentSnapshot, 
       loc: targetLoc, index: targetIndex,
       proposition
     }
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        evaluationsPending: true,
-        lastPrompt
-      }
-      saveSnapshot(newSnapshot)
-      setPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
+    
+    await makeApiCall(
+      url,
+      apiPrompt,
+      (responseObject) => {
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          evaluationsPending: true,
+          lastPrompt
+        }
+        saveSnapshot(newSnapshot)
+        setPrompt('')
+      },
+      () => setUserMode('ready')
+    )
   }
 
   // verify that user hasn't moved away and potentially replaced 
@@ -264,6 +274,7 @@ export function useConversationActions(
   // with inPlace = true
   const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
+    
     try {
       setEvaluatingMode(true)
       const currentSnapshotRenderCount = snapshotRenderCount.current
@@ -279,11 +290,9 @@ export function useConversationActions(
         evaluationsPending: false,
       }
       saveSnapshot(newSnapshot, true)
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
+    } catch (error: any) {
+      handleApiError(error)
+    } finally {
       setEvaluatingMode(false)
     }
   }
@@ -293,36 +302,30 @@ export function useConversationActions(
   ) => {
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
-    let apiPrompt = {
+    const apiPrompt = {
       ...currentSnapshot,
       loc, index
     }
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        lastPrompt
-      }
-      if (action == 'remove' || action == 'assume') {
-        newSnapshot.evaluationsPending = true
-      }
-      else {
-        setPrompt(lastPrompt)
-      }
-      saveSnapshot(newSnapshot)
-      setPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
+    
+    await makeApiCall(
+      url,
+      apiPrompt,
+      (responseObject) => {
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          lastPrompt
+        }
+        if (action == 'remove' || action == 'assume') {
+          newSnapshot.evaluationsPending = true
+        } else {
+          setPrompt(lastPrompt)
+        }
+        saveSnapshot(newSnapshot)
+        setPrompt('')
+      },
+      () => setUserMode('ready')
+    )
   }
 
   const handleDispute = async (step: StepType) => {
