@@ -35,13 +35,13 @@ export default function ActionMenu({
       onMouseEnter={() => !isDisabled && setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-              <button
-          disabled={isDisabled}
-          onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center justify-center px-1 h-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-        </button>
+      <button
+        disabled={isDisabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center justify-center px-1 h-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+      </button>
       
       {isOpen && (
         <div className="absolute left-10 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
@@ -49,7 +49,10 @@ export default function ActionMenu({
             {filteredItems.map((item, index) => (
               <button
                 key={index}
-                onClick={item.onClick}
+                onClick={() => {
+                  item.onClick()
+                  setIsOpen(false)
+                }}
                 className="px-2 h-6 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 whitespace-nowrap"
               >
                 {item.label}
@@ -60,4 +63,4 @@ export default function ActionMenu({
       )}
     </div>
   )
-} 
+}
