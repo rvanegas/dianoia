@@ -28,7 +28,7 @@ const FlexRow = ({
   chevron?: React.ReactNode
 }) => (
   <div className="flex">
-    <div className="w-[40px] flex-shrink-0">{chevron}</div>
+    <div className="w-[20px] flex-shrink-0">{chevron}</div>
     <div className={label ? "text-lg font-bold text-left" : "text-left"}>{label || children}</div>
   </div>
 )
