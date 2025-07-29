@@ -188,9 +188,8 @@ class ArgumentsWithStep(Arguments):
         for p in new_propositions:
             # Clean citations from the proposition
             cleaned_proposition = clean_citations(p)
-            conclusion = self.insert_proposition(cleaned_proposition)
+            self.insert_proposition(cleaned_proposition)
             self.index += 1
-        # self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
 
     def remove(self):
@@ -207,7 +206,6 @@ class ArgumentsWithStep(Arguments):
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
-        # self.evaluate()
         return self.gptjson()
 
     def assume(self):
@@ -221,7 +219,6 @@ class ArgumentsWithStep(Arguments):
         logger.debug(f"L1 {len(self.argument)}")
         del self.arg[self.index]
         logger.debug(f"L2 {len(self.argument)}")
-        # self.evaluate()
         return self.gptjson()
 
     def explain(self):
@@ -254,5 +251,4 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
-        # self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
