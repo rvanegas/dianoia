@@ -38,7 +38,11 @@ export default function ActionMenu({
       <button
         disabled={isDisabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center justify-center px-1 h-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
+        className={`inline-flex items-center justify-center px-1 h-6 disabled:opacity-25 disabled:cursor-not-allowed ${
+          isOpen 
+            ? 'text-gray-600 bg-gray-100' 
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+        }`}
       >
         <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
       </button>
