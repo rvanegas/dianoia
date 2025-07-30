@@ -1,0 +1,163 @@
+import threading
+import time
+import uuid
+from queue import Queue
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from datetime import datetime
+
+from core.utils import logger
+
+
+@dataclass
+class AgentTask:
+    """Represents a task for an agent to process"""
+    id: str
+    agent_type: str  # 'builder', 'evaluator', 'formalizer'
+    conversation_id: str
+    data: Dict[str, Any]
+    status: str = 'pending'  # 'pending', 'running', 'completed', 'failed'
+    priority: int = 0
+    created_at: float = None
+    completed_at: Optional[float] = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = time.time()
+
+
+class AgentCoordinator:
+    """Manages background agent tasks using threading"""
+    
+    def __init__(self):
+        self.task_queue = Queue()
+        self.workers = []
+        self.running = True
+        self.agent_results = {}  # Store results by conversation_id
+        self.task_history = {}   # Store task history by task_id
+        
+        # Start background workers
+        self._start_workers()
+        logger.info("AgentCoordinator initialized with background workers")
+    
+    def _start_workers(self):
+        """Start background worker threads for each agent type"""
+        agent_types = ['builder', 'evaluator', 'formalizer']
+        
+        for agent_type in agent_types:
+            worker = threading.Thread(
+                target=self._worker_loop, 
+                args=(agent_type,),
+                name=f"agent_worker_{agent_type}"
+            )
+            worker.daemon = True
+            worker.start()
+            self.workers.append(worker)
+            logger.info(f"Started worker thread for {agent_type} agent")
+    
+    def _worker_loop(self, agent_type: str):
+        """Main worker loop for processing tasks"""
+        logger.info(f"Worker {agent_type} started")
+        
+        while self.running:
+            try:
+                # Get task from queue with timeout
+                task = self.task_queue.get(timeout=1)
+                
+                # Check if this task is for our agent type
+                if task.agent_type == agent_type:
+                    logger.info(f"Worker {agent_type} processing task {task.id}")
+                    self._process_task(task)
+                else:
+                    # Put back in queue for different agent
+                    self.task_queue.put(task)
+                    
+            except Exception as e:
+                # Queue timeout or other error, continue
+                continue
+        
+        logger.info(f"Worker {agent_type} stopped")
+    
+    def _process_task(self, task: AgentTask):
+        """Process a single task"""
+        try:
+            task.status = 'running'
+            task.completed_at = None
+            self._update_task(task)
+            
+            # For now, just simulate processing
+            # TODO: Implement actual agent logic
+            time.sleep(2)  # Simulate work
+            
+            # Simulate result
+            task.result = {
+                'agent_type': task.agent_type,
+                'processed_at': time.time(),
+                'message': f"Task {task.id} processed by {task.agent_type} agent"
+            }
+            
+            task.status = 'completed'
+            task.completed_at = time.time()
+            
+            # Store result by conversation_id
+            if task.conversation_id not in self.agent_results:
+                self.agent_results[task.conversation_id] = []
+            self.agent_results[task.conversation_id].append(task.result)
+            
+            logger.info(f"Task {task.id} completed successfully")
+            
+        except Exception as e:
+            task.status = 'failed'
+            task.error = str(e)
+            task.completed_at = time.time()
+            logger.error(f"Task {task.id} failed: {e}")
+        
+        finally:
+            self._update_task(task)
+    
+    def _update_task(self, task: AgentTask):
+        """Update task in history"""
+        self.task_history[task.id] = task
+    
+    def queue_task(self, agent_type: str, task_type: str, conversation_id: str, 
+                   data: Dict[str, Any], priority: int = 0) -> str:
+        """Queue a new task for processing"""
+        task_id = str(uuid.uuid4())
+        
+        task = AgentTask(
+            id=task_id,
+            agent_type=agent_type,
+            conversation_id=conversation_id,
+            data=data,
+            priority=priority
+        )
+        
+        self.task_queue.put(task)
+        self.task_history[task_id] = task
+        
+        logger.info(f"Queued task {task_id} for {agent_type} agent")
+        return task_id
+    
+    def get_task_status(self, task_id: str) -> Optional[AgentTask]:
+        """Get the status of a specific task"""
+        return self.task_history.get(task_id)
+    
+    def get_conversation_results(self, conversation_id: str) -> list:
+        """Get all results for a conversation"""
+        return self.agent_results.get(conversation_id, [])
+    
+    def get_active_tasks(self) -> list:
+        """Get all active tasks"""
+        return [task for task in self.task_history.values() 
+                if task.status in ['pending', 'running']]
+    
+    def stop(self):
+        """Stop all workers"""
+        self.running = False
+        logger.info("AgentCoordinator stopping all workers")
+
+
+# Global coordinator instance
+coordinator = AgentCoordinator() 
