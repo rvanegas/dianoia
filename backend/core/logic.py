@@ -88,8 +88,8 @@ class PropVar(Formula):
     name: str
 
     def __post_init__(self):
-        if not re.fullmatch(r"[P-Z]", self.name):
-            raise ValueError(f"Proposition variable {self.name!r} must be P–Z")
+        if not re.fullmatch(r"[A-Z]", self.name):
+            raise ValueError(f"Proposition variable {self.name!r} must be A–Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {"type": "propvar", "name": self.name}
@@ -98,7 +98,7 @@ class PropVar(Formula):
         return self.name
 
     def to_ascii(self) -> str:
-        return self.name.lower()
+        return self.name
 
 
 @dataclass(frozen=True)
@@ -131,7 +131,7 @@ class Not(Formula):
         return f"¬{self.formula.to_unicode()}"
 
     def to_ascii(self) -> str:
-        return f"~{self.formula.to_ascii()}"
+        return f"not {self.formula.to_ascii()}"
 
 
 @dataclass(frozen=True)
@@ -153,7 +153,7 @@ class BinaryOp(Formula):
         return f"({self.left.to_unicode()} {sym} {self.right.to_unicode()})"
 
     def to_ascii(self) -> str:
-        sym = {"and": "/\\", "or": "\\/", "implies": "->"}[self.op.value]
+        sym = {"and": "and", "or": "or", "implies": "->"}[self.op.value]
         return f"({self.left.to_ascii()} {sym} {self.right.to_ascii()})"
 
 
