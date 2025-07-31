@@ -121,7 +121,7 @@ class AgentCoordinator:
         """Update task in history"""
         self.task_history[task.id] = task
     
-    def queue_task(self, agent_type: str, task_type: str, conversation_id: str, 
+    def queue_task(self, agent_type: str, conversation_id: str, 
                    data: Dict[str, Any], priority: int = 0) -> str:
         """Queue a new task for processing"""
         task_id = str(uuid.uuid4())
