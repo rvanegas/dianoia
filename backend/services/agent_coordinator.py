@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from core.utils import logger
+from services.agents import AGENTS
 
 
 @dataclass
@@ -87,15 +88,31 @@ class AgentCoordinator:
             task.completed_at = None
             self._update_task(task)
             
-            # For now, just simulate processing
-            # TODO: Implement actual agent logic
-            time.sleep(2)  # Simulate work
+            # Get the appropriate agent
+            agent = AGENTS.get(task.agent_type)
+            if not agent:
+                raise ValueError(f"Unknown agent type: {task.agent_type}")
             
-            # Simulate result
+            # Process the task based on agent type
+            if task.agent_type == 'builder':
+                result = agent.build_argument(task.data)
+            elif task.agent_type == 'evaluator':
+                result = agent.evaluate_propositions(task.data)
+            elif task.agent_type == 'formalizer':
+                result = agent.formalize_proposition(task.data)
+            elif task.agent_type == 'rewriter':
+                result = agent.rewrite_proposition(task.data)
+            else:
+                raise ValueError(f"Unknown agent type: {task.agent_type}")
+            
+            # Convert agent result to task result
             task.result = {
-                'agent_type': task.agent_type,
-                'processed_at': time.time(),
-                'message': f"Task {task.id} processed by {task.agent_type} agent"
+                'agent_type': result.agent_type,
+                'operation': result.operation,
+                'data': result.data,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning,
+                'processed_at': time.time()
             }
             
             task.status = 'completed'
@@ -106,7 +123,7 @@ class AgentCoordinator:
                 self.agent_results[task.conversation_id] = []
             self.agent_results[task.conversation_id].append(task.result)
             
-            logger.info(f"Task {task.id} completed successfully")
+            logger.info(f"Task {task.id} completed successfully by {task.agent_type} agent")
             
         except Exception as e:
             task.status = 'failed'
@@ -121,7 +138,7 @@ class AgentCoordinator:
         """Update task in history"""
         self.task_history[task.id] = task
     
-    def queue_task(self, agent_type: str, task_type: str, conversation_id: str, 
+    def queue_task(self, agent_type: str, conversation_id: str, 
                    data: Dict[str, Any], priority: int = 0) -> str:
         """Queue a new task for processing"""
         task_id = str(uuid.uuid4())
