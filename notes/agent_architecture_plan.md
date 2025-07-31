@@ -20,7 +20,9 @@ Transform dianoia from a reactive system into a proactive, intelligent argumenta
 - **Evaluation Agent**: Continuously assesses truth/validity of all propositions
 - **Formalization Agent**: Suggests formalizations and alternative phrasings
 
-### 2. Threading-Based Agent Coordination
+### 2. Continuous Background Agent Iteration
+
+**Vision**: Agents continuously examine every proposition and try to improve them in various ways (formalization, rewriting, justifying, evaluating). User interactions consist of selecting from among the various options generated in the background.
 
 ```python
 class AgentCoordinator:
@@ -29,6 +31,8 @@ class AgentCoordinator:
         self.workers = []
         self.running = True
         self.agent_results = {}  # Store results by conversation_id
+        self.iteration_limits = IterationLimits()
+        self.conversation_states = {}  # Track what agents have tried
         
     def start_workers(self):
         # Start background worker threads for each agent type
@@ -38,18 +42,54 @@ class AgentCoordinator:
             worker.start()
             self.workers.append(worker)
     
-    def _worker_loop(self, agent_type):
+    def _worker_loop(self, agent_type: str):
         while self.running:
             try:
                 task = self.task_queue.get(timeout=1)
-                if task['agent_type'] == agent_type:
-                    result = self._process_task(task)
-                    self._store_result(task['conversation_id'], result)
+                if task.agent_type == agent_type:
+                    self._process_task(task)
                 else:
                     # Put back in queue for different agent
                     self.task_queue.put(task)
             except:
                 continue
+    
+    def iterate_on_conversation(self, conversation_id: str):
+        """Each agent continuously improves every proposition"""
+        conv_state = self.conversation_states.get(conversation_id, {})
+        
+        # Builder Agent: Try to justify every proposition
+        for prop in self._get_all_propositions(conversation_id):
+            if self._should_justify_proposition(prop, conv_state):
+                self.queue_task('builder', 'justify_proposition', conversation_id, {
+                    'proposition': prop,
+                    'target_loc': prop.location,
+                    'target_index': prop.index
+                })
+        
+        # Evaluator Agent: Re-evaluate every argument
+        for arg in self._get_all_arguments(conversation_id):
+            if self._should_evaluate_argument(arg, conv_state):
+                self.queue_task('evaluator', 'evaluate_argument', conversation_id, {
+                    'argument': arg,
+                    'assumptions': self._get_assumptions(conversation_id)
+                })
+        
+        # Formalizer Agent: Suggest formalizations for every proposition
+        for prop in self._get_all_propositions(conversation_id):
+            if self._should_formalize_proposition(prop, conv_state):
+                self.queue_task('formalizer', 'formalize_proposition', conversation_id, {
+                    'proposition': prop.text
+                })
+
+class IterationLimits:
+    """Hard limits to prevent runaway iteration"""
+    MAX_JUSTIFICATIONS_PER_PROPOSITION = 3
+    MAX_EVALUATIONS_PER_ARGUMENT = 2
+    MAX_FORMALIZATIONS_PER_PROPOSITION = 5
+    MAX_ITERATIONS_PER_CONVERSATION = 100
+    COOLDOWN_PERIOD = 30  # seconds between iterations
+    MAX_CONCURRENT_TASKS_PER_CONVERSATION = 5
 ```
 
 ### 3. Browser-Based State Management
@@ -112,19 +152,98 @@ interface ConversationSnapshot {
 }
 ```
 
-### 4. Agent Implementation Strategy
+### 4. Agent Decision Logic and Continuous Improvement
+
+#### **Agent Decision Making**
+```python
+class AgentDecisionLogic:
+    def should_justify_proposition(self, proposition, conv_state):
+        """Builder agent decides if proposition needs justification"""
+        return (
+            not proposition.has_justification() and
+            proposition.justification_count < self.limits.MAX_JUSTIFICATIONS_PER_PROPOSITION and
+            not self._recently_worked_on(proposition, conv_state) and
+            self._has_work_capacity(conv_state)
+        )
+    
+    def should_evaluate_argument(self, argument, conv_state):
+        """Evaluator agent decides if argument needs evaluation"""
+        return (
+            argument.has_justifiers() and
+            argument.evaluation_count < self.limits.MAX_EVALUATIONS_PER_ARGUMENT and
+            not self._recently_evaluated(argument, conv_state)
+        )
+    
+    def should_formalize_proposition(self, proposition, conv_state):
+        """Formalizer agent decides if proposition needs formalization"""
+        return (
+            not proposition.has_formalization() and
+            proposition.formalization_count < self.limits.MAX_FORMALIZATIONS_PER_PROPOSITION and
+            not self._recently_formalized(proposition, conv_state)
+        )
+```
+
+#### **Continuous Background Iteration**
+- **Builder Agent**: Continuously tries to justify every proposition until limits reached
+- **Evaluator Agent**: Re-evaluates every argument with justifiers until limits reached  
+- **Formalizer Agent**: Suggests formalizations for every proposition until limits reached
+- **Cooldown Periods**: Prevent agents from working on same item repeatedly
+- **Hard Limits**: Prevent runaway iteration and resource exhaustion
+
+### 5. User Experience: Selection-Based Interaction
+
+#### **Background Agent Work**
+- Agents work continuously in background
+- No user waiting or blocking
+- Multiple options generated for each proposition
+- User sees suggestions as they become available
+
+#### **User Selection Interface**
+```typescript
+interface PropositionOptions {
+    proposition_id: string;
+    original_text: string;
+    justifications: Array<{
+        id: string;
+        text: string;
+        confidence: number;
+        agent_reasoning: string;
+    }>;
+    formalizations: Array<{
+        id: string;
+        formula: string;
+        unicode: string;
+        confidence: number;
+        reasoning: string;
+    }>;
+    evaluations: Array<{
+        truth_score: number;
+        validity_score: number;
+        confidence: number;
+    }>;
+}
+```
+
+#### **User Workflow**
+1. **Create conversation** → Agents start working immediately
+2. **See suggestions** → Multiple options appear for each proposition
+3. **Select preferences** → Choose best justifications, formalizations, etc.
+4. **Conversation updates** → Selected options become part of argument
+5. **Continuous improvement** → Agents continue working on remaining items
+
+### 6. Agent Implementation Strategy
 
 #### **Argument Builder Agent**
-- **Trigger**: New thesis/counter-thesis creation, or periodic background analysis
+- **Continuous Trigger**: Scans all propositions for justification opportunities
 - **Capabilities**:
   - Generate multi-step argument chains (not just 1-2 propositions)
   - Identify logical gaps and suggest bridging propositions
   - Create alternative argument paths
   - Suggest counter-arguments to existing steps
-- **Output**: New propositions with suggested placements in argument structure
+- **Output**: Multiple justification options for user selection
 
 #### **Evaluation Agent**
-- **Trigger**: New propositions added, or periodic re-evaluation
+- **Continuous Trigger**: Re-evaluates all arguments with justifiers
 - **Capabilities**:
   - Continuous truth/validity assessment
   - Confidence scoring
@@ -133,7 +252,7 @@ interface ConversationSnapshot {
 - **Output**: Updated evaluation scores and recommendations
 
 #### **Formalization Agent**
-- **Trigger**: New propositions, user requests, or background analysis
+- **Continuous Trigger**: Suggests formalizations for all propositions
 - **Capabilities**:
   - Suggest formal logical representations using `core/logic.py` constraints
   - Recommend alternative phrasings based on formalization choices
@@ -176,32 +295,39 @@ class BackgroundTaskManager:
 ### 7. Implementation Phases
 
 #### **Phase 1: Foundation (Week 1)**
-- [ ] Implement threading-based task queue system
-- [ ] Create agent coordination framework
-- [ ] Extend data models for agent tasks
-- [ ] Add basic agent result storage
+- [x] Implement threading-based task queue system
+- [x] Create agent coordination framework
+- [x] Extend data models for agent tasks
+- [x] Add basic agent result storage
+- [x] Implement real agent logic with LLM integration
 
-#### **Phase 2: Core Agents (Week 2-3)**
-- [ ] Implement Argument Builder Agent
-- [ ] Implement Evaluation Agent
-- [ ] Basic agent communication
-- [ ] Agent result persistence
+#### **Phase 2: Continuous Iteration (Week 2)**
+- [ ] Add iteration limits and tracking system
+- [ ] Implement agent decision logic
+- [ ] Add conversation state tracking
+- [ ] Implement cooldown periods
+- [ ] Add hard limits per proposition/argument
 
-#### **Phase 3: Advanced Features (Week 4-5)**
-- [ ] Implement Formalization Agent with `core/logic.py` integration
+#### **Phase 3: Background Agent Work (Week 3)**
+- [ ] Implement continuous background iteration
+- [ ] Add agent scanning for work opportunities
+- [ ] Implement automatic task queuing
+- [ ] Add agent-to-agent coordination
+- [ ] Implement conversation state management
+
+#### **Phase 4: User Selection Interface (Week 4)**
+- [ ] Implement suggestion aggregation system
+- [ ] Add multiple options display for each proposition
+- [ ] Implement user selection workflow
+- [ ] Add conversation update based on selections
+- [ ] Implement real-time suggestion updates
+
+#### **Phase 5: Advanced Features (Week 5-6)**
+- [ ] Integrate `core/logic.py` formalization constraints
 - [ ] Add sophisticated agent reasoning with formal logic awareness
-- [ ] Implement user approval workflow for suggestions
-- [ ] Add formalization recommendation system with multiple options
-- [ ] Implement natural language rewrite based on formalization choices
-- [ ] Add agent learning from user feedback
-
-#### **Phase 4: Optimization (Week 6)**
-- [ ] Performance optimization
-- [ ] Advanced coordination strategies
-- [ ] Agent performance metrics
-- [ ] Error handling and recovery
-- [ ] Formal logic inference pattern recognition
-- [ ] Advanced formalization constraint validation
+- [ ] Implement agent learning from user feedback
+- [ ] Add performance optimization
+- [ ] Implement advanced coordination strategies
 
 ### 8. Technical Implementation
 
