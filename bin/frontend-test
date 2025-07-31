@@ -1,4 +1,3 @@
 #!/bin/bash
-source "$(dirname "$0")/dev-env"
 cd $HOME/src/dianoia/frontend
 npm run test 
