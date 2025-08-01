@@ -14,7 +14,7 @@ from services.agents import AGENTS
 class AgentTask:
     """Represents a task for an agent to process"""
     id: str
-    agent_type: str  # 'builder', 'evaluator', 'formalizer'
+    agent_type: str  # 'builder', 'evaluator', 'formalizer', 'rewriter'
     conversation_id: str
     data: Dict[str, Any]
     status: str = 'pending'  # 'pending', 'running', 'completed', 'failed'
@@ -45,7 +45,7 @@ class AgentCoordinator:
     
     def _start_workers(self):
         """Start background worker threads for each agent type"""
-        agent_types = ['builder', 'evaluator', 'formalizer']
+        agent_types = ['builder', 'evaluator', 'formalizer', 'rewriter']
         
         for agent_type in agent_types:
             worker = threading.Thread(
