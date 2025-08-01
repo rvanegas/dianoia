@@ -30,9 +30,7 @@ class ArgumentBuilderAgent:
             # Extract the argument structure from conversation data
             loc = conversation_data.get('loc', 'argument')
             index = conversation_data.get('index', 0)
-            available_formalizations = conversation_data.get('available_formalizations', [])
-            user_endorsed_formalization = conversation_data.get('user_endorsed_formalization')
-            
+
             # Infer the proposition from loc and index
             proposition = self._get_proposition_at_location(conversation_data, loc, index)
             if not proposition:
