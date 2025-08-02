@@ -72,13 +72,22 @@ async def get_task_status(task_id: str) -> Dict[str, Any]:
 
 @router.get("/results/{conversation_id}")
 async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
-    """Get all agent results for a conversation"""
-    results = coordinator.get_conversation_results(conversation_id)
+    """Get all agent results for a conversation, grouped by agent type"""
+    all_results = coordinator.get_conversation_results(conversation_id)
+    
+    # Group results by agent type
+    results_by_agent = {}
+    for result in all_results:
+        agent_type = result.get('agent_type', 'unknown')
+        if agent_type not in results_by_agent:
+            results_by_agent[agent_type] = []
+        results_by_agent[agent_type].append(result)
     
     return {
         "conversation_id": conversation_id,
-        "results": results,
-        "count": len(results)
+        "results_by_agent": results_by_agent,
+        "total_count": len(all_results),
+        "agent_types": list(results_by_agent.keys())
     }
 
 

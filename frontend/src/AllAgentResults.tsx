@@ -1,0 +1,191 @@
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+type AgentResult = {
+  agent_type: string
+  operation: string
+  data: any
+  confidence: number
+  reasoning: string
+  processed_at: number
+}
+
+type AgentResultsProps = {
+  conversationId: number
+  sessionId: string
+}
+
+type ResultsByAgent = {
+  [agentType: string]: AgentResult[]
+}
+
+export default function AllAgentResults({ conversationId, sessionId }: AgentResultsProps) {
+  const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchResults = async () => {
+    try {
+      const url = `${VITE_API_BASE_URL}/api/v1/agents/results/${sessionId}:${conversationId}`
+      
+      const response = await axios.get(url)
+      
+      const newResultsByAgent = response.data.results_by_agent || {}
+      
+      // Only update if we have new results
+      if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
+        setResultsByAgent(newResultsByAgent)
+      }
+      setError(null)
+    } catch (err: any) {
+      console.error('Error fetching agent results:', err)
+      setError(err.message)
+    }
+  }
+
+  useEffect(() => {
+    // Initial fetch
+    fetchResults()
+    
+    // Set up polling every 2 seconds
+    const interval = setInterval(fetchResults, 2000)
+    
+    return () => {
+      clearInterval(interval)
+    }
+  }, [conversationId, sessionId])
+
+  // Don't show anything if no results
+  if (Object.keys(resultsByAgent).length === 0) {
+    return null
+  }
+
+  const renderBuilderResults = (results: AgentResult[]) => {
+    return (
+      <div className="space-y-3">
+        {results.map((result, index) => (
+          <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <span className="font-medium text-blue-700 flex items-center">
+                <span className="mr-2">🔨</span>
+                Argument Builder
+              </span>
+              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {result.confidence.toFixed(2)} confidence
+              </span>
+            </div>
+            <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
+              💭 {result.reasoning}
+            </div>
+            {result.data?.justifications && result.data.justifications.length > 0 && (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  💡 Suggested Justifications:
+                </div>
+                <ul className="space-y-2">
+                  {result.data.justifications.map((justification: any, jIndex: number) => (
+                    <li key={jIndex} className="text-sm text-gray-700 p-2 bg-green-50 rounded border border-green-200">
+                      {justification.propositions?.join(', ') || 'No propositions'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const renderEvaluatorResults = (results: AgentResult[]) => {
+    return (
+      <div className="space-y-3">
+        {results.map((result, index) => (
+          <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <span className="font-medium text-purple-700 flex items-center">
+                <span className="mr-2">🔍</span>
+                Argument Evaluator
+              </span>
+              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {result.confidence.toFixed(2)} confidence
+              </span>
+            </div>
+            <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
+              💭 {result.reasoning}
+            </div>
+            {result.data?.evaluation && (
+              <div className="mt-3 space-y-2">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="bg-blue-50 p-2 rounded">
+                    <span className="font-medium">Validity:</span> {(result.data.evaluation.argument_validity * 100).toFixed(0)}%
+                  </div>
+                  <div className="bg-green-50 p-2 rounded">
+                    <span className="font-medium">Soundness:</span> {(result.data.evaluation.argument_soundness * 100).toFixed(0)}%
+                  </div>
+                  <div className="bg-yellow-50 p-2 rounded">
+                    <span className="font-medium">Strength:</span> {(result.data.evaluation.overall_strength * 100).toFixed(0)}%
+                  </div>
+                </div>
+                {result.data.evaluation.logical_issues && result.data.evaluation.logical_issues.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-red-700 mb-2">
+                      ⚠️ Logical Issues:
+                    </div>
+                    <ul className="space-y-1">
+                      {result.data.evaluation.logical_issues.map((issue: string, iIndex: number) => (
+                        <li key={iIndex} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
+                          {issue}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {result.data.evaluation.recommendations && result.data.evaluation.recommendations.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-blue-700 mb-2">
+                      💡 Recommendations:
+                    </div>
+                    <ul className="space-y-1">
+                      {result.data.evaluation.recommendations.map((rec: string, rIndex: number) => (
+                        <li key={rIndex} className="text-sm text-blue-700 p-2 bg-blue-50 rounded border border-blue-200">
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 space-y-6">
+      <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>
+      {error && (
+        <div className="text-red-600 mb-2 p-2 bg-red-50 rounded border border-red-200">
+          Error loading results: {error}
+        </div>
+      )}
+      
+      {Object.entries(resultsByAgent).map(([agentType, results]) => (
+        <div key={agentType} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="text-md font-semibold mb-3 text-gray-800">
+            {agentType === 'builder' && '🔨 Argument Builder'}
+            {agentType === 'evaluator' && '🔍 Argument Evaluator'}
+            {agentType === 'formalizer' && '📐 Formalization Agent'}
+            {agentType === 'rewriter' && '✏️ Rewriter Agent'}
+          </h4>
+          
+          {agentType === 'builder' && renderBuilderResults(results)}
+          {agentType === 'evaluator' && renderEvaluatorResults(results)}
+        </div>
+      ))}
+    </div>
+  )
+} 
