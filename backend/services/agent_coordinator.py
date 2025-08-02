@@ -124,6 +124,8 @@ class AgentCoordinator:
             self.agent_results[task.conversation_id].append(task.result)
             
             logger.info(f"Task {task.id} completed successfully by {task.agent_type} agent")
+            logger.info(f"Stored result for conversation_id: {task.conversation_id}")
+            logger.info(f"Total results for this conversation: {len(self.agent_results[task.conversation_id])}")
             
         except Exception as e:
             task.status = 'failed'
@@ -163,7 +165,12 @@ class AgentCoordinator:
     
     def get_conversation_results(self, conversation_id: str) -> list:
         """Get all results for a conversation"""
-        return self.agent_results.get(conversation_id, [])
+        from core.utils import logger
+        logger.info(f"Getting results for conversation_id: {conversation_id}")
+        logger.info(f"Available conversation_ids: {list(self.agent_results.keys())}")
+        results = self.agent_results.get(conversation_id, [])
+        logger.info(f"Found {len(results)} results for conversation {conversation_id}")
+        return results
     
     def get_active_tasks(self) -> list:
         """Get all active tasks"""

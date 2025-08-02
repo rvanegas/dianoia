@@ -73,7 +73,11 @@ async def get_task_status(task_id: str) -> Dict[str, Any]:
 @router.get("/results/{conversation_id}")
 async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
     """Get all agent results for a conversation"""
+    from core.utils import logger
+    
+    logger.info(f"Getting results for conversation: {conversation_id}")
     results = coordinator.get_conversation_results(conversation_id)
+    logger.info(f"Found {len(results)} results for conversation {conversation_id}")
     
     return {
         "conversation_id": conversation_id,
