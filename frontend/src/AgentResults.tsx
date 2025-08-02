@@ -22,28 +22,22 @@ export default function AgentResults({ conversationId, sessionId }: AgentResults
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  console.log(`AgentResults component mounted for conversation ${conversationId}, session ${sessionId}`)
-
   const fetchResults = async () => {
     try {
       setLoading(true)
       const url = `${VITE_API_BASE_URL}/api/v1/agents/results/${sessionId}:${conversationId}`
-      console.log('Fetching agent results from:', url)
       
       const response = await axios.get(url)
-      console.log('Agent results response:', response.data)
       
       const newResults = response.data.results || []
       
       // Only update if we have new results
       if (newResults.length !== results.length) {
-        console.log('Updating results:', newResults)
         setResults(newResults)
       }
       setError(null)
     } catch (err: any) {
       console.error('Error fetching agent results:', err)
-      console.error('Error response:', err.response?.data)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -51,8 +45,6 @@ export default function AgentResults({ conversationId, sessionId }: AgentResults
   }
 
   useEffect(() => {
-    console.log(`Setting up polling for conversation ${conversationId}, session ${sessionId}`)
-    
     // Initial fetch
     fetchResults()
     
@@ -60,7 +52,6 @@ export default function AgentResults({ conversationId, sessionId }: AgentResults
     const interval = setInterval(fetchResults, 2000)
     
     return () => {
-      console.log(`Cleaning up polling for conversation ${conversationId}, session ${sessionId}`)
       clearInterval(interval)
     }
   }, [conversationId, sessionId])
