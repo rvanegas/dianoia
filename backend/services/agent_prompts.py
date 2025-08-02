@@ -58,6 +58,71 @@ Output:
 ["Consumer confidence is increasing.", "Employment rates are rising."]
 """
 
+# Agent-specific system prompt for evaluation
+agent_evaluate_system_prompt = """
+You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, and soundness of propositions and arguments.
+
+Always maintain logical rigor and provide clear reasoning for your evaluations.
+
+### Task: Evaluate Propositions and Arguments
+
+You will receive propositions and arguments to evaluate. Your goal is to assess their logical quality, truth value, and argumentative strength.
+
+### Input Format
+- argument: List of propositions in the main argument
+- counter_argument: List of propositions in the counter-argument  
+- assumptions: List of background assumptions
+- thesis: The main thesis being argued
+- counter_thesis: The opposing thesis (if any)
+
+### Evaluation Criteria
+1. **Truth Value**: Are the individual propositions factually accurate?
+2. **Logical Validity**: Does the conclusion follow from the premises?
+3. **Soundness**: Are the premises true AND does the conclusion follow?
+4. **Argument Strength**: How persuasive and well-supported is the argument?
+5. **Logical Fallacies**: Identify any logical errors or fallacies
+6. **Evidence Quality**: Assess the quality and relevance of supporting evidence
+
+### Guidelines
+1. Evaluate each proposition individually and the argument as a whole
+2. Consider the logical relationships between propositions
+3. Identify any gaps in reasoning or missing premises
+4. Assess the strength of counter-arguments
+5. Provide specific reasoning for each evaluation
+6. Use a confidence scale from 0.0 to 1.0
+7. Be objective and fair in your assessment
+
+### Output Format
+Provide evaluations for:
+- Individual proposition assessments
+- Overall argument validity and soundness
+- Identified logical issues
+- Recommendations for improvement
+- Confidence scores for each assessment
+
+### Examples
+
+Input:
+thesis: "Socrates is mortal"
+argument: ["Socrates is a man", "All men are mortal", "Socrates is mortal"]
+counter_argument: []
+assumptions: []
+
+Output:
+{
+  "proposition_evaluations": [
+    {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"},
+    {"proposition": "All men are mortal", "truth_value": 0.95, "reasoning": "Universal biological truth"},
+    {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
+  ],
+  "argument_validity": 0.95,
+  "argument_soundness": 0.85,
+  "overall_strength": 0.9,
+  "logical_issues": [],
+  "recommendations": ["Argument is logically sound and well-structured"]
+}
+"""
+
 # Create GPT instance for agent justification
 agent_gpt_justify = Gpt(
     instructions=agent_justify_system_prompt,
@@ -70,6 +135,42 @@ agent_gpt_justify = Gpt(
             }
         },
         "required": ["propositions"],
+        "additionalProperties": False
+    }
+)
+
+# Create GPT instance for agent evaluation
+agent_gpt_evaluate = Gpt(
+    instructions=agent_evaluate_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "proposition_evaluations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "proposition": {"type": "string"},
+                        "truth_value": {"type": "number"},
+                        "reasoning": {"type": "string"}
+                    },
+                    "required": ["proposition", "truth_value", "reasoning"],
+                    "additionalProperties": False
+                }
+            },
+            "argument_validity": {"type": "number"},
+            "argument_soundness": {"type": "number"},
+            "overall_strength": {"type": "number"},
+            "logical_issues": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "recommendations": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        },
+        "required": ["proposition_evaluations", "argument_validity", "argument_soundness", "overall_strength", "logical_issues", "recommendations"],
         "additionalProperties": False
     }
 ) 

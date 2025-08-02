@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from dataclasses import dataclass
 
 from services.conversation import gpt_justify, gpt_evaluate
-from services.agent_prompts import agent_gpt_justify
+from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate
 from core.utils import logger
 
 
@@ -86,13 +86,68 @@ class ArgumentBuilderAgent:
 
 
 class EvaluationAgent:
-    """Agent that evaluates truth and validity of propositions (STUB)"""
+    """Agent that evaluates truth and validity of propositions"""
     
     def __init__(self):
         self.name = "evaluator"
     
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
-        pass
+        """Evaluate the truth, validity, and soundness of propositions and arguments"""
+        try:
+            logger.info(f"EvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            logger.debug(f"EvaluationAgent starting task with data: {conversation_data}")
+            
+            # Get file_ids from task data
+            file_ids = conversation_data.get('file_ids', [])
+            
+            # Pass the data directly to the agent for evaluation
+            evaluation_response = agent_gpt_evaluate.call(json.dumps(conversation_data), file_ids)
+            evaluation_result = json.loads(evaluation_response)
+            
+            # Log key evaluation metrics
+            proposition_count = len(evaluation_result.get("proposition_evaluations", []))
+            argument_validity = evaluation_result.get("argument_validity", 0.0)
+            argument_soundness = evaluation_result.get("argument_soundness", 0.0)
+            overall_strength = evaluation_result.get("overall_strength", 0.0)
+            logical_issues = evaluation_result.get("logical_issues", [])
+            recommendations = evaluation_result.get("recommendations", [])
+            
+            logger.info(f"EvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}, Soundness: {argument_soundness:.2f}, Strength: {overall_strength:.2f}")
+            if logical_issues:
+                logger.info(f"EvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
+            if recommendations:
+                logger.info(f"EvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            
+            result = AgentResult(
+                agent_type=self.name,
+                operation="evaluate_propositions",
+                data={
+                    "evaluation": evaluation_result,
+                    "proposition_count": proposition_count,
+                    "argument_validity": argument_validity,
+                    "argument_soundness": argument_soundness,
+                    "overall_strength": overall_strength,
+                    "logical_issues": logical_issues,
+                    "recommendations": recommendations
+                },
+                confidence=overall_strength,
+                reasoning=f"Evaluated {proposition_count} propositions with {len(logical_issues)} issues identified"
+            )
+            
+            logger.debug(f"EvaluationAgent task completed successfully. Output: {result}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Evaluator agent error: {e}")
+            result = AgentResult(
+                agent_type=self.name,
+                operation="evaluate_propositions",
+                data={"error": str(e)},
+                confidence=0.0,
+                reasoning=f"Error in proposition evaluation: {e}"
+            )
+            logger.debug(f"EvaluationAgent task failed. Output: {result}")
+            return result
 
 class FormalizationAgent:
     """Agent that suggests formalizations using core/logic.py constraints (STUB)"""
