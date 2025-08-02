@@ -145,7 +145,7 @@ class Arguments(BaseModel):
                 conversation_id=self.conversation_id,
                 data=task_data
             )
-            logger.info(f"Queued builder task for conversation {self.conversation_id}")
+            logger.debug(f"Queued builder task for conversation {self.conversation_id}")
             logger.debug(f"Task data: {task_data}")
 
 class ArgumentsWithLoc(Arguments):
