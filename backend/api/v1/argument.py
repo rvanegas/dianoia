@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Query, Depends
 from functools import wraps
 from uuid import UUID
 
@@ -14,117 +14,77 @@ from services.conversation import AssistantResponseError
 
 router = APIRouter()
 
+def get_conversation_handler(operation_name: str):
+    """Dependency that returns a conversation handler function"""
+    def handler(session_id: str = Query(..., description="Session UUID"),
+            conversation_id: int = Query(..., description="Conversation ID")):
+        def conversation_handler(args):
+            try:
+                conversation_identifier = f"{session_id}:{conversation_id}"
+                args.conversation_id = conversation_identifier
+                logger.info(f"{operation_name} operation for conversation: {conversation_identifier}")
+                return args
+            except Exception as e:
+                logger.error(f"{operation_name} error: {e}")
+                raise HTTPException(status_code=422, detail=str(e))
+        return conversation_handler
+    return handler
+
 @router.post('/theses')
-async def theses(args: ArgumentsWithProposition, 
-                session_id: str = Query(..., description="Session UUID"),
-                conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Theses operation for conversation: {conversation_identifier}")
-        result = args.theses()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Theses error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def theses(args: ArgumentsWithProposition,
+        handler = Depends(get_conversation_handler("Theses"))):
+    args = handler(args)
+    result = args.theses()
+    return {"reply": result}
 
 @router.post('/argue')
-async def argue(args: ArgumentsWithLoc, 
-               session_id: str = Query(..., description="Session UUID"),
-               conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Argue operation for conversation: {conversation_identifier}")
-        result = args.argue()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Argue error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def argue(args: ArgumentsWithLoc,
+        handler = Depends(get_conversation_handler("Argue"))):
+    args = handler(args)
+    result = args.argue()
+    return {"reply": result}
 
 @router.post("/assume")
-async def assume(args: ArgumentsWithStep, 
-                session_id: str = Query(..., description="Session UUID"),
-                conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Assume operation for conversation: {conversation_identifier}")
-        result = args.assume()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Assume error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def assume(args: ArgumentsWithStep,
+        handler = Depends(get_conversation_handler("Assume"))):
+    args = handler(args)
+    result = args.assume()
+    return {"reply": result}
 
 @router.post("/remove")
-async def remove(args: ArgumentsWithStep, 
-                session_id: str = Query(..., description="Session UUID"),
-                conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Remove operation for conversation: {conversation_identifier}")
-        result = args.remove()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Remove error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def remove(args: ArgumentsWithStep,
+        handler = Depends(get_conversation_handler("Remove"))):
+    args = handler(args)
+    result = args.remove()
+    return {"reply": result}
 
 @router.post("/ai-justify")
-async def ai_justify(args: ArgumentsWithStep, 
-                    session_id: str = Query(..., description="Session UUID"),
-                    conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"AI justify operation for conversation: {conversation_identifier}")
-        result = args.ai_justify()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"AI justify error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def ai_justify(args: ArgumentsWithStep,
+        handler = Depends(get_conversation_handler("AI justify"))):
+    args = handler(args)
+    result = args.ai_justify()
+    return {"reply": result}
 
 @router.post("/user-justify")
-async def user_justify(args: ArgumentsWithStepAndProposition, 
-                      session_id: str = Query(..., description="Session UUID"),
-                      conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"User justify operation for conversation: {conversation_identifier}")
-        result = args.user_justify()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"User justify error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def user_justify(args: ArgumentsWithStepAndProposition,
+        handler = Depends(get_conversation_handler("User justify"))):
+    args = handler(args)
+    result = args.user_justify()
+    return {"reply": result}
 
 @router.post("/explain")
-async def explain(args: ArgumentsWithStep, 
-                session_id: str = Query(..., description="Session UUID"),
-                conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Explain operation for conversation: {conversation_identifier}")
-        result = args.explain()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Explain error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def explain(args: ArgumentsWithStep,
+        handler = Depends(get_conversation_handler("Explain"))):
+    args = handler(args)
+    result = args.explain()
+    return {"reply": result}
 
 @router.post("/evaluate")
-async def evaluate(args: Arguments, 
-                 session_id: str = Query(..., description="Session UUID"),
-                 conversation_id: int = Query(..., description="Conversation ID")):
-    try:
-        conversation_identifier = f"{session_id}:{conversation_id}"
-        args.conversation_id = conversation_identifier
-        logger.info(f"Evaluate operation for conversation: {conversation_identifier}")
-        result = args.evaluate()
-        return {"reply": result}
-    except AssistantResponseError as e:
-        logger.error(f"Evaluate error: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+async def evaluate(args: Arguments,
+        handler = Depends(get_conversation_handler("Evaluate"))):
+    args = handler(args)
+    result = args.evaluate()
+    return {"reply": result}
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
