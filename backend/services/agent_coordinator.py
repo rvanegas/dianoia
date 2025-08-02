@@ -115,17 +115,13 @@ class AgentCoordinator:
                 'processed_at': time.time()
             }
             
-            task.status = 'completed'
-            task.completed_at = time.time()
-            
             # Store result by conversation_id
             if task.conversation_id not in self.agent_results:
                 self.agent_results[task.conversation_id] = []
             self.agent_results[task.conversation_id].append(task.result)
             
-            logger.info(f"Task {task.id} completed successfully by {task.agent_type} agent")
-            logger.info(f"Stored result for conversation_id: {task.conversation_id}")
-            logger.info(f"Total results for this conversation: {len(self.agent_results[task.conversation_id])}")
+            task.status = 'completed'
+            task.completed_at = time.time()
             
         except Exception as e:
             task.status = 'failed'
