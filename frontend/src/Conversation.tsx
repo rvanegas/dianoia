@@ -7,6 +7,7 @@ import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
 import PropositionActions from './PropositionActions'
 import ThesisActions from './ThesisActions'
+import AgentResults from './AgentResults'
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
@@ -453,6 +454,7 @@ function Conversation({
           </Section>
         )}
       </FlexTable>
+      <AgentResults conversationId={conversation.id} sessionId={sessionId} />
       {loadingIndicator}
       {retryButton}
     </div>
