@@ -29,36 +29,11 @@ class ArgumentBuilderAgent:
         try:
             logger.debug(f"ArgumentBuilderAgent starting task with data: {conversation_data}")
             
-            # Extract the argument structure from conversation data
-            loc = conversation_data.get('loc', 'argument')
-            index = conversation_data.get('index', 0)
-
-            # Infer the proposition from loc and index
-            proposition = self._get_proposition_at_location(conversation_data, loc, index)
-            if not proposition:
-                raise ValueError(f"No proposition found at {loc}[{index}]")
+            # Get file_ids from task data
+            file_ids = conversation_data.get('file_ids', [])
             
-            # Create the argument structure for gpt_justify
-            arg_data = {
-                'assumptions': conversation_data.get('assumptions', []),
-                'argument': conversation_data.get('argument', []),
-                'counter_argument': conversation_data.get('counter_argument', []),
-                'loc': loc,
-                'index': index
-            }
-            
-            # Generate justifications with optional formalization guidance
-            justifications = []
-            
-            basic_prompt = {
-                "proposition": proposition,
-                "target_loc": loc,
-                "target_index": index,
-                "argument": conversation_data.get('argument', []),
-                "counter_argument": conversation_data.get('counter_argument', []),
-                "assumptions": conversation_data.get('assumptions', []),
-            }
-            basic_response = agent_gpt_justify.call(json.dumps(basic_prompt), conversation_data.get('file_ids'))
+            # Pass the data directly to the agent without taking it apart
+            basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
             basic_propositions = json.loads(basic_response)["propositions"]
             
             basic_justification = {
@@ -68,19 +43,17 @@ class ArgumentBuilderAgent:
                 "confidence": 0.8,
                 "reasoning": "Generated justification without formalization guidance"
             }
-            justifications.append(basic_justification)
+            justifications = [basic_justification]
             
             result = AgentResult(
                 agent_type=self.name,
                 operation="build_argument",
                 data={
                     "justifications": justifications,
-                    "target_loc": loc,
-                    "target_index": index,
                     "total_justifications": len(justifications)
                 },
                 confidence=0.8,
-                reasoning=f"Generated {len(justifications)} justification options (basic + formalization-guided)"
+                reasoning=f"Generated {len(justifications)} justification options"
             )
             
             logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
