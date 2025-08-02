@@ -329,25 +329,15 @@ export function useConversationActions(
     try {
       setEvaluatingMode(true)
       const currentSnapshotRenderCount = snapshotRenderCount.current
-      const response = await axios.post(url, currentSnapshot)
-      if (currentSnapshotRenderCount != snapshotRenderCount.current) return
-      const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject) {
-        throw new Error('empty responseObject')
-      }
-      const newSnapshot = {
-        ...currentSnapshot,
-        ...responseObject,
-        evaluationsPending: false,
-      }
-      saveSnapshot(newSnapshot, true)
-      // Clear any previous failed operation on success
-      setLastFailedOperation(null)
-    } catch (error: any) {
-      handleApiError(error, {
+      
+      await makeApiCall({
         url,
         data: currentSnapshot,
         onSuccess: (responseObject) => {
+          if (currentSnapshotRenderCount != snapshotRenderCount.current) return
+          if (!responseObject) {
+            throw new Error('empty responseObject')
+          }
           const newSnapshot = {
             ...currentSnapshot,
             ...responseObject,
@@ -358,7 +348,8 @@ export function useConversationActions(
         onFinally: () => setEvaluatingMode(false),
         operationName: 'Evaluate'
       })
-    } finally {
+    } catch (error: any) {
+      // Error handling is already done in makeApiCall
       setEvaluatingMode(false)
     }
   }
