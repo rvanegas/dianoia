@@ -8,8 +8,9 @@ router = APIRouter()
 
 
 class AgentTaskRequest(BaseModel):
+    session_id: str
+    conversation_id: int
     agent_type: str  # 'builder', 'evaluator', 'formalizer'
-    conversation_id: str
     data: Dict[str, Any]
     priority: int = 0
 
@@ -32,10 +33,13 @@ async def trigger_agent_task(request: AgentTaskRequest) -> AgentTaskResponse:
             detail=f"Invalid agent_type. Must be one of: {valid_agent_types}"
         )
     
+    # Construct conversation identifier
+    conversation_identifier = f"{request.session_id}:{request.conversation_id}"
+    
     # Queue the task
     task_id = coordinator.queue_task(
         agent_type=request.agent_type,
-        conversation_id=request.conversation_id,
+        conversation_id=conversation_identifier,
         data=request.data,
         priority=request.priority
     )

@@ -1,4 +1,4 @@
-import {useRef, useState} from 'react'
+import {useState, useRef, useEffect, useMemo} from 'react'
 import axios from 'axios'
 
 import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
@@ -16,6 +16,16 @@ type ApiOperationInfo = {
 }
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+// Generate session UUID once per browser session (module-level)
+let sessionId: string | null = null
+
+function getSessionId(): string {
+  if (!sessionId) {
+    sessionId = crypto.randomUUID()
+  }
+  return sessionId
+}
 
 function initialSnapshot() : ConversationSnapshot {
   return {
@@ -38,6 +48,9 @@ export function useConversationState(
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void
 ) {
+  // Get the session UUID (generated once per browser session)
+  const sessionId = getSessionId()
+
   const snapshotRenderCount = useRef(0)
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
   const lastSnapshot = conversation.snapshots[snapshotIndex]
@@ -111,7 +124,8 @@ export function useConversationState(
     setEvaluatingMode,
     inputRef,
     saveSnapshot,
-    argLoc
+    argLoc,
+    sessionId
   }
 }
 
@@ -126,7 +140,9 @@ export function useConversationActions(
   argLoc: (loc: string) => any[],
   saveSnapshot: (newSnap: ConversationSnapshot, inPlace?: boolean, convName?: string) => void,
   createConversationFromProposition: (proposition: string) => void,
-  setEvaluatingMode: (mode: boolean) => void
+  setEvaluatingMode: (mode: boolean) => void,
+  conversationId: number,
+  sessionId: string
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
@@ -152,7 +168,12 @@ export function useConversationActions(
   // Reusable API call wrapper
   const makeApiCall = async (operationInfo: ApiOperationInfo) => {
     try {
-      const response = await axios.post(operationInfo.url, operationInfo.data)
+      // Add session_id and conversation_id as query parameters
+      const url = new URL(operationInfo.url)
+      url.searchParams.set('session_id', sessionId)
+      url.searchParams.set('conversation_id', conversationId.toString())
+      
+      const response = await axios.post(url.toString(), operationInfo.data)
       
       // Check if response data exists
       if (!response.data || !response.data.reply) {
