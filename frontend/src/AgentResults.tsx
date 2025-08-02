@@ -77,11 +77,6 @@ export default function AgentResults({ conversationId, sessionId }: AgentResults
           Error loading results: {error}
         </div>
       )}
-      {loading && (
-        <div className="text-blue-600 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
-          🔄 Loading agent suggestions...
-        </div>
-      )}
       <div className="space-y-3">
         {results.map((result, index) => (
           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
