@@ -5,6 +5,7 @@ import re
 from pydantic import BaseModel
 from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
+from services.agent_coordinator import coordinator
 
 def clean_citations(proposition: str) -> str:
     """
@@ -132,6 +133,19 @@ class Arguments(BaseModel):
                 self.add_evaluations(self.counter_argument + self.assumptions, step)
         return self.gptjson()
 
+    def queue_builder_task(self, data: dict):
+        """Queue a task for the builder agent"""
+        if self.conversation_id:
+            coordinator.queue_task(
+                agent_type='builder',
+                conversation_id=self.conversation_id,
+                data={
+                    'argument_data': self.gptjson(),  # Use gptjson() format
+                    **data
+                }
+            )
+            logger.info(f"Queued builder task for conversation {self.conversation_id}")
+
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
     loc: str
@@ -154,6 +168,13 @@ class ArgumentsWithLoc(Arguments):
         new_proposition = getattr(self, thesis_attr)
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
+        # Queue builder task to find additional justifications
+        self.queue_builder_task({
+            'proposition': new_proposition,
+            'step_symbol': new_step.symbol,
+            'location': self.loc,
+            'step_index': 0
+        })
         return self.gptjson()
 
 class ArgumentsWithStep(Arguments):
@@ -177,6 +198,13 @@ class ArgumentsWithStep(Arguments):
         conclusion = self.arg[self.index]
         conclusion.justifiers.append(new_step.symbol)
         self.arg.insert(self.index, new_step)
+        # Queue builder task to find additional justifications
+        self.queue_builder_task({
+            'proposition': new_proposition,
+            'step_symbol': new_step.symbol,
+            'location': self.loc,
+            'step_index': self.index
+        })
         return conclusion
 
     def ai_justify(self):
@@ -246,4 +274,11 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
+        # Queue builder task to find additional justifications
+        self.queue_builder_task({
+            'proposition': self.proposition,
+            'step_symbol': new_step.symbol,
+            'location': self.loc,
+            'step_index': self.index
+        })
         return self.gptjson()
