@@ -165,11 +165,7 @@ class AgentCoordinator:
     
     def get_conversation_results(self, conversation_id: str) -> list:
         """Get all results for a conversation"""
-        from core.utils import logger
-        logger.info(f"Getting results for conversation_id: {conversation_id}")
-        logger.info(f"Available conversation_ids: {list(self.agent_results.keys())}")
         results = self.agent_results.get(conversation_id, [])
-        logger.info(f"Found {len(results)} results for conversation {conversation_id}")
         return results
     
     def get_active_tasks(self) -> list:
