@@ -58,15 +58,27 @@ Output:
 ["Consumer confidence is increasing.", "Employment rates are rising."]
 """
 
+# Create GPT instance for agent justification
+agent_gpt_justify = Gpt(
+    instructions=agent_justify_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "propositions": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        },
+        "required": ["propositions"],
+        "additionalProperties": False
+    }
+)
+
 # Agent-specific system prompt for evaluation
 agent_evaluate_system_prompt = """
 You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, and soundness of propositions and arguments.
 
-Always maintain logical rigor and provide clear reasoning for your evaluations.
-
-### Task: Evaluate Propositions and Arguments
-
-You will receive propositions and arguments to evaluate. Your goal is to assess their logical quality, truth value, and argumentative strength.
+For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
 
 ### Input Format
 - argument: List of propositions in the main argument
@@ -75,30 +87,60 @@ You will receive propositions and arguments to evaluate. Your goal is to assess 
 - thesis: The main thesis being argued
 - counter_thesis: The opposing thesis (if any)
 
-### Evaluation Criteria
-1. **Truth Value**: Are the individual propositions factually accurate?
-2. **Logical Validity**: Does the conclusion follow from the premises?
-3. **Soundness**: Are the premises true AND does the conclusion follow?
-4. **Argument Strength**: How persuasive and well-supported is the argument?
-5. **Logical Fallacies**: Identify any logical errors or fallacies
-6. **Evidence Quality**: Assess the quality and relevance of supporting evidence
+### Task
 
-### Guidelines
-1. Evaluate each proposition individually and the argument as a whole
-2. Consider the logical relationships between propositions
-3. Identify any gaps in reasoning or missing premises
-4. Assess the strength of counter-arguments
-5. Provide specific reasoning for each evaluation
-6. Use a confidence scale from 0.0 to 1.0
-7. Be objective and fair in your assessment
+You will receive argument data including propositions and context. You will evaluate the propositions and return an array of numbers from 0.0 to 1.0, rounded to nearest 0.05, each corresponding to a given proposition from "argument" in the same order. This array is returned as the "truth" property.
+
+Additionally, concerning the last proposition in the list, you will return one number from 0.0 to 1.0, rounded to the nearest 0.05, corresponding to the validity of the inference from the other propositions to the last one. That is, assuming that the other propositions in "argument", and all those in "assumptions", are certainly true, then this number represents the likelihood that the last proposition in "argument" is true. In case of deduction, set value to 1.0. In case of contradiction, set value to 0.0. Otherwise, determine the implicit premise that would make the inference a deduction. This number is returned as the "valid" property.
+
+### Considerations
+
+For each proposition in "argument", the number returned in the "truth" array should be 1.0 if the proposition is certainly true given the assumptions, 0.0 if it is certainly false given the assumptions, or a value representing the degree of likelihood given the assumptions.
+
+### Examples
+
+# valid but not sound
+
+(A) Socrates is a god.
+(B) All gods are immortal.
+(C) Socrates is immortal.
+
+truth: [0.0, 1.0, 0.0]
+valid: 1.0
+
+# valid and sound
+
+(A) Socrates is a man.
+(B) All men are mortal.
+(C) Socrates is mortal.
+
+truth: [1.0, 1.0, 1.0]
+valid: 1.0
+
+# partly valid
+
+(A) Socrates is a man.
+(B) Most men are mortal.
+(C) Socrates is mortal.
+
+truth: [1.0, 1.0, 1.0]
+valid: 0.7
+
+# deductively invalid though true, abductively reasonable
+
+(A) Socrates is mortal.
+(B) All men are mortal
+(C) Socrates is a man.
+
+truth: [1.0, 1.0, 1.0]
+valid: 0.2
 
 ### Output Format
 Provide evaluations for:
-- Individual proposition assessments
-- Overall argument validity and soundness
+- Individual proposition assessments (truth values)
+- Overall argument validity
 - Identified logical issues
 - Recommendations for improvement
-- Confidence scores for each assessment
 
 ### Examples
 
@@ -116,28 +158,10 @@ Output:
     {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
   ],
   "argument_validity": 0.95,
-  "argument_soundness": 0.85,
-  "overall_strength": 0.9,
   "logical_issues": [],
   "recommendations": ["Argument is logically sound and well-structured"]
 }
 """
-
-# Create GPT instance for agent justification
-agent_gpt_justify = Gpt(
-    instructions=agent_justify_system_prompt,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "propositions": {
-                "type": "array",
-                "items": {"type": "string"}
-            }
-        },
-        "required": ["propositions"],
-        "additionalProperties": False
-    }
-)
 
 # Create GPT instance for agent evaluation
 agent_gpt_evaluate = Gpt(
@@ -159,8 +183,6 @@ agent_gpt_evaluate = Gpt(
                 }
             },
             "argument_validity": {"type": "number"},
-            "argument_soundness": {"type": "number"},
-            "overall_strength": {"type": "number"},
             "logical_issues": {
                 "type": "array",
                 "items": {"type": "string"}
@@ -170,7 +192,7 @@ agent_gpt_evaluate = Gpt(
                 "items": {"type": "string"}
             }
         },
-        "required": ["proposition_evaluations", "argument_validity", "argument_soundness", "overall_strength", "logical_issues", "recommendations"],
+        "required": ["proposition_evaluations", "argument_validity", "logical_issues", "recommendations"],
         "additionalProperties": False
     }
 ) 
