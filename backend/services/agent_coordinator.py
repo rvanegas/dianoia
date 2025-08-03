@@ -164,6 +164,25 @@ class AgentCoordinator:
         results = self.agent_results.get(conversation_id, [])
         return results
     
+    def are_conversation_tasks_complete(self, conversation_id: str) -> bool:
+        """Check if all tasks for a conversation are complete"""
+        # Get all tasks for this conversation
+        conversation_tasks = [
+            task for task in self.task_history.values() 
+            if task.conversation_id == conversation_id
+        ]
+        
+        if not conversation_tasks:
+            return True  # No tasks means complete
+        
+        # Check if all tasks are completed or failed
+        all_complete = all(
+            task.status in ['completed', 'failed'] 
+            for task in conversation_tasks
+        )
+        
+        return all_complete
+    
     def get_active_tasks(self) -> list:
         """Get all active tasks"""
         return [task for task in self.task_history.values() 

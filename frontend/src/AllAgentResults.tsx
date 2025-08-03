@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -15,15 +15,17 @@ type AgentResult = {
 type AgentResultsProps = {
   conversationId: number
   sessionId: string
+  snapshotVersion?: number  // Add prop to track snapshot changes
 }
 
 type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, sessionId }: AgentResultsProps) {
+export default function AllAgentResults({ conversationId, sessionId, snapshotVersion }: AgentResultsProps) {
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
+  const tasksCompleteRef = useRef<boolean>(false)
 
   const fetchResults = async () => {
     try {
@@ -32,11 +34,15 @@ export default function AllAgentResults({ conversationId, sessionId }: AgentResu
       const response = await axios.get(url)
       
       const newResultsByAgent = response.data.results_by_agent || {}
+      const newTasksComplete = response.data.tasks_complete || false
       
       // Only update if we have new results
       if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
         setResultsByAgent(newResultsByAgent)
       }
+      
+      // Update tasks complete status
+      tasksCompleteRef.current = newTasksComplete
       setError(null)
     } catch (err: any) {
       console.error('Error fetching agent results:', err)
@@ -45,16 +51,20 @@ export default function AllAgentResults({ conversationId, sessionId }: AgentResu
   }
 
   useEffect(() => {
-    // Initial fetch
-    fetchResults()
+    // Reset tasks complete status when conversation or snapshot changes
+    tasksCompleteRef.current = false
     
-    // Set up polling every 2 seconds
-    const interval = setInterval(fetchResults, 2000)
+    // Set up polling every 2 seconds, but only if tasks are not complete
+    const interval = setInterval(() => {
+      if (!tasksCompleteRef.current) {
+        fetchResults()
+      }
+    }, 2000)
     
     return () => {
       clearInterval(interval)
     }
-  }, [conversationId, sessionId])
+  }, [conversationId, sessionId, snapshotVersion]) // Removed tasksComplete from dependencies
 
   // Don't show anything if no results
   if (Object.keys(resultsByAgent).length === 0) {

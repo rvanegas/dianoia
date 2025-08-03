@@ -454,7 +454,8 @@ function Conversation({
           </Section>
         )}
       </FlexTable>
-      <AllAgentResults conversationId={conversation.id} sessionId={sessionId} />
+      <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
+        snapshotVersion={snapshotRenderCount.current} />
       {loadingIndicator}
       {retryButton}
     </div>
