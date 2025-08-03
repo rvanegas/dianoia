@@ -117,17 +117,39 @@ export default function AllAgentResults({ conversationId, sessionId }: AgentResu
             </div>
             {result.data?.evaluation && (
               <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="bg-blue-50 p-2 rounded">
                     <span className="font-medium">Validity:</span> {(result.data.evaluation.argument_validity * 100).toFixed(0)}%
                   </div>
-                  <div className="bg-green-50 p-2 rounded">
-                    <span className="font-medium">Soundness:</span> {(result.data.evaluation.argument_soundness * 100).toFixed(0)}%
-                  </div>
-                  <div className="bg-yellow-50 p-2 rounded">
-                    <span className="font-medium">Strength:</span> {(result.data.evaluation.overall_strength * 100).toFixed(0)}%
-                  </div>
                 </div>
+                {result.data.evaluation.proposition_evaluations && result.data.evaluation.proposition_evaluations.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      📊 Proposition Truth Values:
+                    </div>
+                    <div className="space-y-1">
+                      {result.data.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
+                        <div key={pIndex} className="text-sm p-2 bg-gray-50 rounded border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <span className="text-gray-700 flex-1">{prop.proposition}</span>
+                            <span className={`font-medium ml-2 px-2 py-1 rounded text-xs ${
+                              prop.truth_value >= 0.8 ? 'bg-green-100 text-green-800' :
+                              prop.truth_value >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {(prop.truth_value * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          {prop.reasoning && (
+                            <div className="text-xs text-gray-500 mt-1 italic">
+                              {prop.reasoning}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {result.data.evaluation.logical_issues && result.data.evaluation.logical_issues.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-red-700 mb-2">

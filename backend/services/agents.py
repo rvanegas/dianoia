@@ -107,12 +107,10 @@ class EvaluationAgent:
             # Log key evaluation metrics
             proposition_count = len(evaluation_result.get("proposition_evaluations", []))
             argument_validity = evaluation_result.get("argument_validity", 0.0)
-            argument_soundness = evaluation_result.get("argument_soundness", 0.0)
-            overall_strength = evaluation_result.get("overall_strength", 0.0)
             logical_issues = evaluation_result.get("logical_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            logger.info(f"EvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}, Soundness: {argument_soundness:.2f}, Strength: {overall_strength:.2f}")
+            logger.info(f"EvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
             if logical_issues:
                 logger.info(f"EvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
             if recommendations:
@@ -125,12 +123,10 @@ class EvaluationAgent:
                     "evaluation": evaluation_result,
                     "proposition_count": proposition_count,
                     "argument_validity": argument_validity,
-                    "argument_soundness": argument_soundness,
-                    "overall_strength": overall_strength,
                     "logical_issues": logical_issues,
                     "recommendations": recommendations
                 },
-                confidence=overall_strength,
+                confidence=argument_validity,
                 reasoning=f"Evaluated {proposition_count} propositions with {len(logical_issues)} issues identified"
             )
             
