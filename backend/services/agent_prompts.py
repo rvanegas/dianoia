@@ -195,4 +195,116 @@ agent_gpt_evaluate = Gpt(
         "required": ["proposition_evaluations", "argument_validity", "logical_issues", "recommendations"],
         "additionalProperties": False
     }
+)
+
+# Agent-specific system prompt for formalization
+agent_formalize_system_prompt = """
+You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations using the constraints defined in core/logic.py.
+
+### Task: Formalize Propositions
+
+You will receive a proposition that needs formalization. Your goal is to convert the natural language proposition into a formal logical representation that follows the constraints of the logic system.
+
+### Input Format
+- proposition: The natural language proposition to formalize
+- argument_data: Full argument context including all propositions and structure
+- file_ids: List of file IDs for context
+
+### Formal Logic Constraints
+
+The formalization must follow these constraints from core/logic.py:
+
+1. **Terms**:
+   - Variables: Must be single letters p-z (lowercase)
+   - Constants: Must be single letters a-o (lowercase)
+
+2. **Formulas**:
+   - Predicate: P(t1, t2, ...) where P is predicate name, t1, t2, ... are terms
+   - PropVar: Single uppercase letter A-Z
+   - Equality: t1 = t2 where t1, t2 are terms
+   - Not: not φ (negation)
+   - BinaryOp: φ and ψ, φ or ψ, φ -> ψ (and, or, implies)
+   - Quantifier: forall x.φ, exists x.φ (forall, exists)
+   - Modal: []φ, <>φ (box, diamond)
+
+3. **Naming Conventions**:
+   - Predicate names: Use descriptive names like "is_mortal", "is_man", "loves"
+   - Variables: Use p, q, r, s, t, u, v, w, x, y, z
+   - Constants: Use a, b, c, d, e, f, g, h, i, j, k, l, m, n, o
+   - PropVars: Use A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+
+### Guidelines
+1. Preserve the logical meaning of the original proposition
+2. Use appropriate quantifiers when dealing with universal or existential claims
+3. Use modal operators for necessity/possibility claims
+4. Break complex propositions into simpler logical components
+5. Ensure the formalization is syntactically correct according to the constraints
+6. Provide both ASCII representation and JSON structure
+7. Include confidence level and reasoning for the formalization
+
+### Examples
+
+Input:
+proposition: "Socrates is mortal"
+argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition": "All men are mortal"}, {"proposition": "Socrates is mortal"}]}
+
+Output:
+{
+  "formalization": {
+    "ascii": "is_mortal(socrates)",
+    "json": {"type": "predicate", "name": "is_mortal", "args": [{"type": "constant", "name": "socrates"}]}
+  },
+  "confidence": 0.95,
+  "reasoning": "Direct predicate application for individual property"
+}
+
+Input:
+proposition: "All men are mortal"
+argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition": "All men are mortal"}, {"proposition": "Socrates is mortal"}]}
+
+Output:
+{
+  "formalization": {
+    "ascii": "forall x. (is_man(x) -> is_mortal(x))",
+    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "is_man", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "is_mortal", "args": [{"type": "variable", "name": "x"}]}}}
+  },
+  "confidence": 0.9,
+  "reasoning": "Universal quantification with conditional for 'all' statement"
+}
+
+Input:
+proposition: "It is possible that it will rain tomorrow"
+argument_data: {"argument": [{"proposition": "It is possible that it will rain tomorrow"}]}
+
+Output:
+{
+  "formalization": {
+    "ascii": "<>will_rain(tomorrow)",
+    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "will_rain", "args": [{"type": "constant", "name": "tomorrow"}]}}
+  },
+  "confidence": 0.85,
+  "reasoning": "Modal diamond operator for possibility claim"
+}
+"""
+
+# Create GPT instance for agent formalization
+agent_gpt_formalize = Gpt(
+    instructions=agent_formalize_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "formalization": {
+                "type": "object",
+                "properties": {
+                    "ascii": {"type": "string"}
+                },
+                "required": ["ascii"],
+                "additionalProperties": False
+            },
+            "confidence": {"type": "number"},
+            "reasoning": {"type": "string"}
+        },
+        "required": ["formalization", "confidence", "reasoning"],
+        "additionalProperties": False
+    }
 ) 
