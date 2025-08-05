@@ -221,7 +221,7 @@ export function useConversationActions(
       ...currentSnapshot,
       proposition: content,
     }
-    const url = VITE_API_BASE_URL + '/api/v1/argument/theses'
+    const url = VITE_API_BASE_URL + '/api/argument/theses'
     
     await makeApiCall(
       { url, data: apiPrompt, onSuccess: (responseObject) => {
@@ -243,7 +243,7 @@ export function useConversationActions(
     setPrompt(lastPrompt)
     setUserMode('waiting')
     
-    const url = VITE_API_BASE_URL + '/api/v1/argument/ai-justify'
+    const url = VITE_API_BASE_URL + '/api/argument/ai-justify'
     const apiPrompt = {
       ...currentSnapshot,
       loc, index
@@ -272,7 +272,7 @@ export function useConversationActions(
     const lastPrompt = `Argue for ${thesisLabel}`
     setUserMode('waiting')
     
-    const url = VITE_API_BASE_URL + '/api/v1/argument/argue'
+    const url = VITE_API_BASE_URL + '/api/argument/argue'
     const argMode: ArgMode = 'development'
     const apiPrompt = {
       ...currentSnapshot, 
@@ -298,7 +298,7 @@ export function useConversationActions(
     setPrompt(lastPrompt)
     setUserMode('waiting')
     
-    const url = VITE_API_BASE_URL + '/api/v1/argument/user-justify'
+    const url = VITE_API_BASE_URL + '/api/argument/user-justify'
     const apiPrompt = {
       ...currentSnapshot, 
       loc: targetLoc, index: targetIndex,
@@ -323,7 +323,7 @@ export function useConversationActions(
   // contents of this snapshot. saveSnapshot() is then called 
   // with inPlace = true
   const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
-    const url = VITE_API_BASE_URL + '/api/v1/argument/evaluate'
+    const url = VITE_API_BASE_URL + '/api/argument/evaluate'
     
     try {
       setEvaluatingMode(true)
@@ -357,7 +357,7 @@ export function useConversationActions(
     action: ActionType, lastPrompt: string, loc: string, index: number, errorLabel: string
   ) => {
     setUserMode('waiting')
-    const url = VITE_API_BASE_URL + '/api/v1/argument/' + action
+    const url = VITE_API_BASE_URL + '/api/argument/' + action
     const apiPrompt = {
       ...currentSnapshot,
       loc, index

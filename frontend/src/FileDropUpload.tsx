@@ -14,7 +14,7 @@ function FileDropUpload({newFileUploaded}: {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleUpload = async (file: File) => {
-    const url = VITE_API_BASE_URL + '/api/v1/argument/upload'
+    const url = VITE_API_BASE_URL + '/api/argument/upload'
     const formData = new FormData()
     formData.append('file', file)
     setIsUploading(true)
