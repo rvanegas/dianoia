@@ -86,18 +86,41 @@ For the purposes of this task, we define "valid" to accord with its sense in mat
 - assumptions: List of background assumptions
 - thesis: The main thesis being argued
 - counter_thesis: The opposing thesis (if any)
+- evaluation_mode: Either "content" or "formal_validity" - determines evaluation approach
 
 ### Task
 
-You will receive argument data including propositions and context. You will evaluate the propositions and return an array of numbers from 0.0 to 1.0, rounded to nearest 0.05, each corresponding to a given proposition from "argument" in the same order. This array is returned as the "truth" property.
+You will receive argument data including propositions and context. The evaluation approach depends on the evaluation_mode:
+
+#### Content Mode (evaluation_mode: "content")
+Evaluate the truth of natural language propositions and the validity of the argument based on content.
+
+You will evaluate the propositions and return an array of numbers from 0.0 to 1.0, rounded to nearest 0.05, each corresponding to a given proposition from "argument" in the same order. This array is returned as the "truth" property.
 
 Additionally, concerning the last proposition in the list, you will return one number from 0.0 to 1.0, rounded to the nearest 0.05, corresponding to the validity of the inference from the other propositions to the last one. That is, assuming that the other propositions in "argument", and all those in "assumptions", are certainly true, then this number represents the likelihood that the last proposition in "argument" is true. In case of deduction, set value to 1.0. In case of contradiction, set value to 0.0. Otherwise, determine the implicit premise that would make the inference a deduction. This number is returned as the "valid" property.
 
+#### Formal Validity Mode (evaluation_mode: "formal_validity")
+Evaluate ONLY the logical validity of the formalized argument structure, ignoring the truth of individual propositions.
+
+When formalizations are available, evaluate the logical structure of the formalized argument. For each proposition, set truth_value to 0.5 (neither true nor false by form alone) and focus entirely on whether the logical structure is valid.
+
+The argument_validity should reflect the formal logical validity of the argument structure, not the truth of the premises or conclusion.
+
 ### Considerations
 
+#### Content Mode Considerations
 For each proposition in "argument", the number returned in the "truth" array should be 1.0 if the proposition is certainly true given the assumptions, 0.0 if it is certainly false given the assumptions, or a value representing the degree of likelihood given the assumptions.
 
+#### Formal Validity Mode Considerations
+- Set all proposition truth_values to 0.5 (neither true nor false by form alone)
+- Focus entirely on the logical structure and validity of the argument
+- Evaluate whether the conclusion follows logically from the premises
+- Ignore the semantic content and truth of individual propositions
+- Consider only the formal logical relationships between propositions
+
 ### Examples
+
+#### Content Mode Examples
 
 # valid but not sound
 
@@ -134,6 +157,46 @@ valid: 0.7
 
 truth: [1.0, 1.0, 1.0]
 valid: 0.2
+
+#### Formal Validity Mode Examples
+
+# Valid deductive argument (formal validity mode)
+
+Input:
+evaluation_mode: "formal_validity"
+argument: ["Socrates is a man", "All men are mortal", "Socrates is mortal"]
+formalizations: ["M(s)", "forall x. M(x) -> R(x)", "R(s)"]
+
+Output:
+{
+  "proposition_evaluations": [
+    {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+  ],
+  "argument_validity": 1.0,
+  "logical_issues": [],
+  "recommendations": ["Argument is deductively valid: M(s) and forall x. M(x) -> R(x) logically entail R(s)"]
+}
+
+# Invalid deductive argument (formal validity mode)
+
+Input:
+evaluation_mode: "formal_validity"
+argument: ["Socrates is mortal", "All men are mortal", "Socrates is a man"]
+formalizations: ["R(s)", "forall x. M(x) -> R(x)", "M(s)"]
+
+Output:
+{
+  "proposition_evaluations": [
+    {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+  ],
+  "argument_validity": 0.0,
+  "logical_issues": ["Invalid argument: R(s) and forall x. M(x) -> R(x) do not logically entail M(s)"],
+  "recommendations": ["The premises do not logically support the conclusion"]
+}
 
 ### Output Format
 Provide evaluations for:
