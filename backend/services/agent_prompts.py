@@ -209,6 +209,7 @@ You will receive a proposition that needs formalization. Your goal is to convert
 - proposition: The natural language proposition to formalize
 - argument_data: Full argument context including all propositions and structure
 - file_ids: List of file IDs for context
+- existing_formalizations: List of existing formalizations in the same argument for consistency
 
 ### Formal Logic Constraints
 
@@ -243,6 +244,12 @@ The formalization must follow these constraints from core/logic.py:
 7. Include confidence level and reasoning for the formalization
 8. **CRITICAL**: Use abstract predicate names (P, Q, R, etc.) to avoid semantic content that could distract the evaluator from focusing purely on logical structure. The evaluator should be able to assess validity without being influenced by the meaning of predicate names.
 9. **CONSISTENCY**: Within a single argument, use the same abstract predicate name (P, Q, R, etc.) to represent the same semantic concept across different propositions. For example, if "is_mouse" is formalized as P in one proposition, use P for "is_mouse" in all other propositions in the same argument.
+
+10. **EXISTING FORMALIZATIONS**: When existing_formalizations are provided, analyze them to maintain consistency:
+    - If the current proposition contains semantic concepts that appear in existing formalizations, use the same abstract predicate names
+    - If a concept like "mouse" was formalized as P in an existing formalization, use P for "mouse" in the current proposition
+    - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
+    - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
 
 ### Examples
 
@@ -286,6 +293,22 @@ Output:
   },
   "confidence": 0.85,
   "reasoning": "Modal diamond operator for possibility claim using abstract predicate P"
+}
+
+Input:
+proposition: "Mice are small"
+existing_formalizations: [
+  {"proposition": "All mice are small", "formalization": "forall x. (P(x) -> Q(x))", "reasoning": "Universal quantification with conditional using abstract predicates P and Q"}
+]
+
+Output:
+{
+  "formalization": {
+    "ascii": "forall x. (P(x) -> Q(x))",
+    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+  },
+  "confidence": 0.95,
+  "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
 }
 """
 

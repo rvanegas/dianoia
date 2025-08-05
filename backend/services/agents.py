@@ -203,6 +203,32 @@ class FormalizationAgent:
     def __init__(self):
         self.name = "formalizer"
     
+    def _get_existing_formalizations(self, conversation_id: str) -> List[Dict[str, Any]]:
+        """Get existing formalizations for the conversation to maintain consistency"""
+        try:
+            from services.agent_coordinator import coordinator
+            
+            # Get all existing results for this conversation
+            existing_results = coordinator.get_conversation_results(conversation_id)
+            
+            # Extract formalization results
+            formalizations = []
+            for result in existing_results:
+                if result.get('agent_type') == 'formalizer':
+                    data = result.get('data', {})
+                    if data.get('proposition') and data.get('ascii'):
+                        formalizations.append({
+                            'proposition': data.get('proposition'),
+                            'formalization': data.get('ascii'),
+                            'reasoning': data.get('reasoning', '')
+                        })
+            
+            return formalizations
+            
+        except Exception as e:
+            logger.error(f"Error getting existing formalizations: {e}")
+            return []
+    
     def formalize_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Formalize a natural language proposition into formal logic"""
         try:
@@ -217,11 +243,16 @@ class FormalizationAgent:
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
+            # Get existing formalizations for consistency
+            conversation_id = conversation_data.get('conversation_id')
+            existing_formalizations = self._get_existing_formalizations(conversation_id)
+            
             # Prepare data for the formalizer
             formalization_data = {
                 'proposition': proposition,
                 'argument_data': conversation_data.get('argument_data', {}),
-                'file_ids': file_ids
+                'file_ids': file_ids,
+                'existing_formalizations': existing_formalizations
             }
             
             # Call the formalizer agent
