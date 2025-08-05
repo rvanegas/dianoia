@@ -102,7 +102,7 @@ class Gpt:
                 "content": prompt
             }]
         }
-        logger.debug(f"fids {file_ids}")
+        # logger.debug(f"fids {file_ids}")
 
         if file_ids and len(file_ids) > 0:
             vector_store_id = self.get_vector_store(file_ids)

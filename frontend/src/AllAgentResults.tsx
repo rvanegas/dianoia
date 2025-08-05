@@ -196,6 +196,61 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     )
   }
 
+  const renderFormalizerResults = (results: AgentResult[]) => {
+    return (
+      <div className="space-y-3">
+        {results.map((result, index) => (
+          <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <span className="font-medium text-green-700 flex items-center">
+                <span className="mr-2">📐</span>
+                Formalization Agent
+              </span>
+              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {result.confidence.toFixed(2)} confidence
+              </span>
+            </div>
+            <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
+              💭 {result.reasoning}
+            </div>
+            {result.data?.proposition && (
+              <div className="mt-3 space-y-2">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  📝 Original Proposition:
+                </div>
+                <div className="text-sm text-gray-700 p-2 bg-blue-50 rounded border border-blue-200">
+                  {result.data.proposition}
+                </div>
+                {result.data.ascii && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      🔤 ASCII Formalization:
+                    </div>
+                    <div className="text-sm font-mono text-gray-800 p-2 bg-green-50 rounded border border-green-200">
+                      {result.data.ascii}
+                    </div>
+                  </div>
+                )}
+                {result.data.json && Object.keys(result.data.json).length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      🏗️ JSON Structure:
+                    </div>
+                    <div className="text-sm font-mono text-gray-800 p-2 bg-purple-50 rounded border border-purple-200 overflow-x-auto">
+                      <pre className="whitespace-pre-wrap">{JSON.stringify(result.data.json, null, 2)}</pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  window.agent_results = resultsByAgent
+
   return (
     <div className="mt-4 space-y-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>
@@ -216,6 +271,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
           
           {agentType === 'builder' && renderBuilderResults(results)}
           {agentType === 'evaluator' && renderEvaluatorResults(results)}
+          {agentType === 'formalizer' && renderFormalizerResults(results)}
         </div>
       ))}
     </div>

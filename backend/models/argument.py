@@ -1,6 +1,7 @@
 """models for theses and arguments"""
 import json
 import re
+import time
 
 from pydantic import BaseModel
 from core.utils import find_index, logger
@@ -48,13 +49,11 @@ class Arguments(BaseModel):
     lastPrompt: str | None = None
     explanation: str | None = None
     file_ids: list[str] = []
-    formalization: list[str] = []
     arg: list[Step] = []
     conversation_id: str | None = None  # Format: "session_uuid:conversation_id"
 
     # pylint: disable=arguments-differ
     def model_post_init(self, __context):
-        self.formalization = []
         self.explanation = None
 
     def gptjsont(self):
@@ -67,7 +66,7 @@ class Arguments(BaseModel):
         """arguments json to return to frontend"""
         return self.json(include={
             "assumptions", "argument", "counter_argument",
-            "explanation", "formalization"})
+            "explanation"})
 
     def next_symbol(self):
         """picks next available A-Z in a natural order"""
@@ -136,7 +135,7 @@ class Arguments(BaseModel):
     def queue_builder_task(self, data: dict):
         """Queue a task for the builder agent"""
         if self.conversation_id:
-            logger.info(f"Queueing task with conversation_id: '{self.conversation_id}'")
+            # logger.info(f"Queueing task with conversation_id: '{self.conversation_id}'")
             task_data = {
                 'argument_data': self.gptjson(),  # Use gptjson() format
                 **data
@@ -146,8 +145,8 @@ class Arguments(BaseModel):
                 conversation_id=self.conversation_id,
                 data=task_data
             )
-            logger.debug(f"Queued builder task for conversation {self.conversation_id}")
-            logger.debug(f"Task data: {task_data}")
+            # logger.debug(f"Queued builder task for conversation {self.conversation_id}")
+            # logger.debug(f"Task data: {task_data}")
         else:
             logger.warning("No conversation_id available for task queuing")
 
@@ -163,8 +162,8 @@ class Arguments(BaseModel):
                 conversation_id=self.conversation_id,
                 data=task_data
             )
-            logger.debug(f"Queued evaluator task for conversation {self.conversation_id}")
-            logger.debug(f"Task data: {task_data}")
+            # logger.debug(f"Queued evaluator task for conversation {self.conversation_id}")
+            # logger.debug(f"Task data: {task_data}")
         else:
             logger.warning("No conversation_id available for evaluator task queuing")
 
@@ -299,7 +298,7 @@ class ArgumentsWithStep(Arguments):
         props, new_arg = self.subargument(self.arg, self.arg[self.index])
         response = gpt_explain.call(json.dumps(props), self.file_ids)
         content = json.loads(response)
-        self.formalization = content["formalization"]
+        
         self.explanation = content["explanation"]
         return self.gptjson()
 

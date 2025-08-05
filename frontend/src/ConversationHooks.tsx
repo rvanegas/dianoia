@@ -38,7 +38,6 @@ function initialSnapshot() : ConversationSnapshot {
     lastPrompt: '',
     evaluationsPending: false,
     explanation: '',
-    formalization: [],
     argMode: 'thesis',
     file_ids: [],
   }

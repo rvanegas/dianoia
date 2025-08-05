@@ -94,14 +94,17 @@ class AgentCoordinator:
                 raise ValueError(f"Unknown agent type: {task.agent_type}")
             
             # Process the task based on agent type
+            # Add conversation_id to the data for agents that need it
+            task_data = {**task.data, 'conversation_id': task.conversation_id}
+            
             if task.agent_type == 'builder':
-                result = agent.build_argument(task.data)
+                result = agent.build_argument(task_data)
             elif task.agent_type == 'evaluator':
-                result = agent.evaluate_propositions(task.data)
+                result = agent.evaluate_propositions(task_data)
             elif task.agent_type == 'formalizer':
-                result = agent.formalize_proposition(task.data)
+                result = agent.formalize_proposition(task_data)
             elif task.agent_type == 'rewriter':
-                result = agent.rewrite_proposition(task.data)
+                result = agent.rewrite_proposition(task_data)
             else:
                 raise ValueError(f"Unknown agent type: {task.agent_type}")
             
@@ -119,6 +122,10 @@ class AgentCoordinator:
             if task.conversation_id not in self.agent_results:
                 self.agent_results[task.conversation_id] = []
             self.agent_results[task.conversation_id].append(task.result)
+            
+            # Debug logging
+            # logger.info(f"Stored result for {task.agent_type} agent in conversation {task.conversation_id}")
+            # logger.debug(f"Current results for conversation {task.conversation_id}: {self.agent_results[task.conversation_id]}")
             
             task.status = 'completed'
             task.completed_at = time.time()
@@ -152,7 +159,7 @@ class AgentCoordinator:
         self.task_queue.put(task)
         self.task_history[task_id] = task
         
-        logger.info(f"Queued task {task_id} for {agent_type} agent")
+        # logger.info(f"Queued task {task_id} for {agent_type} agent in conversation {conversation_id}")
         return task_id
     
     def get_task_status(self, task_id: str) -> Optional[AgentTask]:
@@ -162,11 +169,13 @@ class AgentCoordinator:
     def get_conversation_results(self, conversation_id: str) -> list:
         """Get all results for a conversation"""
         results = self.agent_results.get(conversation_id, [])
+        # logger.debug(f"Retrieved {len(results)} results for conversation {conversation_id}")
+        # logger.debug(f"Results: {results}")
         return results
     
     def are_conversation_tasks_complete(self, conversation_id: str) -> bool:
         """Check if all tasks for a conversation are complete"""
-        # Get all tasks for this conversation
+        # Get all tasks for this conversation from history
         conversation_tasks = [
             task for task in self.task_history.values() 
             if task.conversation_id == conversation_id
@@ -176,12 +185,7 @@ class AgentCoordinator:
             return True  # No tasks means complete
         
         # Check if all tasks are completed or failed
-        all_complete = all(
-            task.status in ['completed', 'failed'] 
-            for task in conversation_tasks
-        )
-        
-        return all_complete
+        return all(task.status in ['completed', 'failed'] for task in conversation_tasks)
     
     def get_active_tasks(self) -> list:
         """Get all active tasks"""

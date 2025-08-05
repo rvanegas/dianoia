@@ -22,7 +22,7 @@ def get_conversation_handler(operation_name: str):
             try:
                 conversation_identifier = f"{session_id}:{conversation_id}"
                 args.conversation_id = conversation_identifier
-                logger.info(f"{operation_name} operation for conversation: {conversation_identifier}")
+                # logger.info(f"{operation_name} operation for conversation: {conversation_identifier}")
                 return args
             except Exception as e:
                 logger.error(f"{operation_name} error: {e}")

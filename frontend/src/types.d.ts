@@ -20,7 +20,6 @@ type ConversationSnapshot = {
   argMode: ArgMode
   evaluationsPending: boolean
   explanation: string | undefined
-  formalization: string[] | undefined
   file_ids: string[]
 }
 
