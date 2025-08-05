@@ -32,8 +32,8 @@ class ArgumentBuilderAgent:
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
-            # Queue formalizer tasks for unformalized propositions
-            self._queue_formalizer_tasks(conversation_data)
+            # Queue formalizer task for the specific proposition this builder is working on
+            self._queue_formalizer_task_for_proposition(conversation_data)
             
             # Pass the data directly to the agent without taking it apart
             basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
@@ -52,11 +52,13 @@ class ArgumentBuilderAgent:
                 agent_type=self.name,
                 operation="build_argument",
                 data={
+                    "proposition": conversation_data.get('proposition', ''),
+                    "location": conversation_data.get('location', ''),
                     "justifications": justifications,
                     "total_justifications": len(justifications)
                 },
                 confidence=0.8,
-                reasoning=f"Generated {len(justifications)} justification options and queued formalizer tasks"
+                reasoning=f"Generated {len(justifications)} justification options and queued formalizer task"
             )
             
             # logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
@@ -87,108 +89,52 @@ class ArgumentBuilderAgent:
         
         return None
 
-    def _queue_formalizer_tasks(self, conversation_data: Dict[str, Any]):
-        """Queue formalizer tasks for all unformalized propositions"""
+    def _queue_formalizer_task_for_proposition(self, conversation_data: Dict[str, Any]):
+        """Queue formalizer task for the specific proposition this builder is working on"""
         try:
             from services.agent_coordinator import coordinator
 
-            # logger.debug(f"q1")
+            # Get the specific proposition this builder is working on
+            proposition = conversation_data.get('proposition', '')
+            if not proposition:
+                logger.warning("No proposition found in builder task data")
+                return
             
             # Get existing formalizations from agent results
             conversation_id = conversation_data.get('conversation_id')
-            # logger.debug(f"Formalizer queueing - conversation_id: {conversation_id}")
             existing_results = coordinator.get_conversation_results(conversation_id)
             formalized_propositions = set()
-            
-            # logger.debug(f"q2")
             
             # Extract propositions that have already been formalized
             for result in existing_results:
                 if result.get('agent_type') == 'formalizer':
-                    proposition = result.get('data', {}).get('proposition')
-                    if proposition:
-                        formalized_propositions.add(proposition)
+                    existing_proposition = result.get('data', {}).get('proposition')
+                    if existing_proposition:
+                        formalized_propositions.add(existing_proposition)
             
-            # logger.debug(f"q3")
-            
-            # Get all propositions from the argument structure
-            all_propositions = []
-            
-            # Add propositions from argument
-            argument_data_raw = conversation_data.get('argument_data', '{}')
-            
-            # Parse argument_data if it's a JSON string
-            if isinstance(argument_data_raw, str):
-                try:
-                    argument_data = json.loads(argument_data_raw)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse argument_data JSON: {e}")
-                    argument_data = {}
+            # Only queue formalizer task if this proposition hasn't been formalized yet
+            if proposition not in formalized_propositions:
+                # logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
+                
+                task_data = {
+                    'proposition': proposition,
+                    'argument_data': conversation_data.get('argument_data', {}),
+                    'file_ids': conversation_data.get('file_ids', [])
+                }
+                
+                coordinator.queue_task(
+                    agent_type='formalizer',
+                    conversation_id=conversation_id,
+                    data=task_data
+                )
+                
+                # logger.debug(f"Queued formalizer task for proposition: {proposition}")
             else:
-                argument_data = argument_data_raw
-
-            # logger.debug(f"q3.1, argument_data: {argument_data}")
-
-            for step in argument_data.get('argument', []):
-                if isinstance(step, dict) and 'proposition' in step:
-                    all_propositions.append(step['proposition'])
-            
-            # logger.debug(f"q4")
-
-            # Add propositions from counter_argument
-            for step in argument_data.get('counter_argument', []):
-                if isinstance(step, dict) and 'proposition' in step:
-                    all_propositions.append(step['proposition'])
-            
-            # logger.debug(f"q5")
-
-            # Add propositions from assumptions
-            for step in argument_data.get('assumptions', []):
-                if isinstance(step, dict) and 'proposition' in step:
-                    all_propositions.append(step['proposition'])
-            
-            # logger.debug(f"q6")
-
-            # Queue formalizer tasks for unformalized propositions
-            file_ids = conversation_data.get('file_ids', [])
-            
-            # logger.debug(f"q7")
-
-            unformalized_count = 0
-            for proposition in all_propositions:
-                if proposition not in formalized_propositions:
-                    # logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
-                    
-                    # logger.debug(f"q8")
-
-                    task_data = {
-                        'proposition': proposition,
-                        'argument_data': argument_data,
-                        'file_ids': file_ids
-                    }
-                    
-                    # logger.debug(f"q9")
-
-                    coordinator.queue_task(
-                        agent_type='formalizer',
-                        conversation_id=conversation_id,
-                        data=task_data
-                    )
-                    
-                    # logger.debug(f"q10")
-
-                    # logger.debug(f"Queued formalizer task for proposition: {proposition}")
-
-                    # logger.debug(f"q11")
-
-                    unformalized_count += 1
-            
-            # logger.info(f"Queued {unformalized_count} formalizer tasks for unformalized propositions")
-
-            # logger.debug(f"q12")
+                # logger.debug(f"Proposition already formalized: {proposition}")
+                pass
 
         except Exception as e:
-            logger.error(f"Error queueing formalizer tasks: {e}")
+            logger.error(f"Error queueing formalizer task for proposition: {e}")
 
 
 class EvaluationAgent:
