@@ -224,16 +224,18 @@ Permission modal: Permitted: P
 
 Use only single letters for variables, names, propositions, and predicates.
 
+**IMPORTANT**: Use abstract predicate names (P, Q, R, S, T, etc.) rather than descriptive names to avoid semantic content that could distract from logical structure evaluation.
+
 Do not use synonymous expressions when the above forms are adequate. For example,
 don't return "P implies Q" when "if P then Q" is available.
 
 # Example
 
 Def: s = Socrates
-Def: M(x) = x is a man
-Def: R(x) = x is mortal
-A: for all x: (if M(x) then R(x))
-B: M(s)
-C: R(s)
+Def: P(x) = x is a man
+Def: Q(x) = x is mortal
+A: for all x: (if P(x) then Q(x))
+B: P(s)
+C: Q(s)
 
 """

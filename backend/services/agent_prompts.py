@@ -228,7 +228,7 @@ The formalization must follow these constraints from core/logic.py:
    - Modal: []φ, <>φ (box, diamond)
 
 3. **Naming Conventions**:
-   - Predicate names: Use descriptive names like "is_mortal", "is_man", "loves"
+   - Predicate names: Use abstract, non-descriptive names like "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" to avoid semantic content that could distract from logical structure
    - Variables: Use p, q, r, s, t, u, v, w, x, y, z
    - Constants: Use a, b, c, d, e, f, g, h, i, j, k, l, m, n, o
    - PropVars: Use A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
@@ -241,6 +241,8 @@ The formalization must follow these constraints from core/logic.py:
 5. Ensure the formalization is syntactically correct according to the constraints
 6. Provide both ASCII representation and JSON structure
 7. Include confidence level and reasoning for the formalization
+8. **CRITICAL**: Use abstract predicate names (P, Q, R, etc.) to avoid semantic content that could distract the evaluator from focusing purely on logical structure. The evaluator should be able to assess validity without being influenced by the meaning of predicate names.
+9. **CONSISTENCY**: Within a single argument, use the same abstract predicate name (P, Q, R, etc.) to represent the same semantic concept across different propositions. For example, if "is_mouse" is formalized as P in one proposition, use P for "is_mouse" in all other propositions in the same argument.
 
 ### Examples
 
@@ -251,11 +253,11 @@ argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition
 Output:
 {
   "formalization": {
-    "ascii": "is_mortal(socrates)",
-    "json": {"type": "predicate", "name": "is_mortal", "args": [{"type": "constant", "name": "socrates"}]}
+    "ascii": "P(a)",
+    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
   },
   "confidence": 0.95,
-  "reasoning": "Direct predicate application for individual property"
+  "reasoning": "Direct predicate application for individual property using abstract predicate P"
 }
 
 Input:
@@ -265,11 +267,11 @@ argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition
 Output:
 {
   "formalization": {
-    "ascii": "forall x. (is_man(x) -> is_mortal(x))",
-    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "is_man", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "is_mortal", "args": [{"type": "variable", "name": "x"}]}}}
+    "ascii": "forall x. (P(x) -> Q(x))",
+    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
   },
   "confidence": 0.9,
-  "reasoning": "Universal quantification with conditional for 'all' statement"
+  "reasoning": "Universal quantification with conditional for 'all' statement using abstract predicates P and Q"
 }
 
 Input:
@@ -279,11 +281,11 @@ argument_data: {"argument": [{"proposition": "It is possible that it will rain t
 Output:
 {
   "formalization": {
-    "ascii": "<>will_rain(tomorrow)",
-    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "will_rain", "args": [{"type": "constant", "name": "tomorrow"}]}}
+    "ascii": "<>P(a)",
+    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
   },
   "confidence": 0.85,
-  "reasoning": "Modal diamond operator for possibility claim"
+  "reasoning": "Modal diamond operator for possibility claim using abstract predicate P"
 }
 """
 
