@@ -391,6 +391,12 @@ class FormalizationAgent:
                 reasoning=reasoning
             )
             
+            # Check if all propositions are now formalized and queue form evaluator if so
+            self._check_and_queue_form_evaluator(conversation_data)
+            
+            # Clean up any invalid form evaluator results
+            self._cleanup_invalid_form_evaluator_results(conversation_data)
+            
             # logger.debug(f"FormalizationAgent task completed successfully. Output: {result}")
             return result
             
@@ -408,6 +414,89 @@ class FormalizationAgent:
             )
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")
             return result
+    
+    def _check_and_queue_form_evaluator(self, conversation_data: Dict[str, Any]):
+        """Check if all propositions are formalized and queue form evaluator if so"""
+        try:
+            conversation_id = conversation_data.get('conversation_id')
+            if not conversation_id:
+                return
+            
+            # Get the argument from the conversation data
+            argument_data = conversation_data.get('argument_data', {})
+            argument = argument_data.get('argument', [])
+            if not argument:
+                return
+            
+            # Extract proposition texts from the argument
+            argument_propositions = []
+            for step in argument:
+                if isinstance(step, dict):
+                    proposition = step.get('proposition', '')
+                else:
+                    proposition = str(step)
+                if proposition:
+                    argument_propositions.append(proposition)
+            
+            # Check if all propositions are formalized
+            from services.agent_coordinator import coordinator
+            if coordinator.check_formalization_completion(conversation_id, argument_propositions):
+                # Queue form evaluator task
+                task_data = {
+                    'argument': argument_propositions,
+                    'thesis': argument_data.get('thesis', ''),
+                    'counter_thesis': argument_data.get('counter_thesis', ''),
+                    'assumptions': argument_data.get('assumptions', []),
+                    'file_ids': conversation_data.get('file_ids', [])
+                }
+                
+                coordinator.queue_task(
+                    agent_type='form_evaluator',
+                    conversation_id=conversation_id,
+                    data=task_data
+                )
+                
+                logger.info(f"Queued form evaluator task for conversation {conversation_id}")
+            
+        except Exception as e:
+            logger.error(f"Error checking and queueing form evaluator: {e}")
+    
+    def _cleanup_invalid_form_evaluator_results(self, conversation_data: Dict[str, Any]):
+        """Clean up form evaluator results that are no longer valid"""
+        try:
+            conversation_id = conversation_data.get('conversation_id')
+            if not conversation_id:
+                return
+            
+            # Get the argument from the conversation data
+            argument_data = conversation_data.get('argument_data', {})
+            argument = argument_data.get('argument', [])
+            if not argument:
+                return
+            
+            # Extract proposition texts from the argument
+            argument_propositions = []
+            for step in argument:
+                if isinstance(step, dict):
+                    proposition = step.get('proposition', '')
+                else:
+                    proposition = str(step)
+                if proposition:
+                    argument_propositions.append(proposition)
+            
+            # Check if all propositions are formalized
+            from services.agent_coordinator import coordinator
+            if not coordinator.check_formalization_completion(conversation_id, argument_propositions):
+                # If not all propositions are formalized, clean up form evaluator results
+                results = coordinator.result_manager.get_results(conversation_id)
+                results[:] = [
+                    result for result in results
+                    if result.get('agent_type') != 'form_evaluator'
+                ]
+                logger.info(f"Cleaned up invalid form evaluator results for conversation {conversation_id}")
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up invalid form evaluator results: {e}")
 
 class RewriterAgent:
     """Agent that recommends proposition rewrites, rephrasing, and splitting (STUB)"""
