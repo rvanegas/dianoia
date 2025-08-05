@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from dataclasses import dataclass
 
 from services.conversation import gpt_justify, gpt_evaluate
-from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate, agent_gpt_formalize
+from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_content, agent_gpt_evaluate_form, agent_gpt_formalize
 from core.utils import logger
 
 
@@ -137,44 +137,73 @@ class ArgumentBuilderAgent:
             logger.error(f"Error queueing formalizer task for proposition: {e}")
 
 
-class EvaluationAgent:
-    """Agent that evaluates truth and validity of propositions"""
+class ContentEvaluationAgent:
+    """Agent that evaluates truth and validity of propositions based on content"""
     
     def __init__(self):
-        self.name = "evaluator"
+        self.name = "content_evaluator"
     
-    def _determine_evaluation_mode(self, conversation_data: Dict[str, Any]) -> str:
-        """Determine whether to evaluate in content mode or formal validity mode"""
+    def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
+        """Evaluate the truth, validity, and soundness of propositions and arguments based on content"""
         try:
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                return "content"  # Default to content mode if no conversation_id
+            # logger.info(f"ContentEvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            # logger.debug(f"ContentEvaluationAgent starting task with data: {conversation_data}")
             
-            from services.agent_coordinator import coordinator
+            # Get file_ids from task data
+            file_ids = conversation_data.get('file_ids', [])
             
-            # Get existing results for this conversation
-            existing_results = coordinator.get_conversation_results(conversation_id)
+            # Pass the data directly to the agent for evaluation
+            evaluation_response = agent_gpt_evaluate_content.call(json.dumps(conversation_data), file_ids)
+            evaluation_result = json.loads(evaluation_response)
             
-            # Check if we have formalizations for all propositions in the argument
-            argument = conversation_data.get('argument', [])
-            if not argument:
-                return "content"
+            # Log key evaluation metrics
+            proposition_count = len(evaluation_result.get("proposition_evaluations", []))
+            argument_validity = evaluation_result.get("argument_validity", 0.0)
+            logical_issues = evaluation_result.get("logical_issues", [])
+            recommendations = evaluation_result.get("recommendations", [])
             
-            # Count formalizations
-            formalization_count = 0
-            for result in existing_results:
-                if result.get('agent_type') == 'formalizer':
-                    formalization_count += 1
+            # logger.info(f"ContentEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
+            # if logical_issues:
+            #     logger.info(f"ContentEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
+            # if recommendations:
+            #     logger.info(f"ContentEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
-            # If we have formalizations for all propositions, use formal validity mode
-            if formalization_count >= len(argument):
-                return "formal_validity"
-            else:
-                return "content"
-                
+            result = AgentResult(
+                agent_type=self.name,
+                operation="evaluate_propositions",
+                data={
+                    "evaluation": evaluation_result,
+                    "proposition_count": proposition_count,
+                    "argument_validity": argument_validity,
+                    "logical_issues": logical_issues,
+                    "recommendations": recommendations,
+                    "evaluation_mode": "content"
+                },
+                confidence=argument_validity,
+                reasoning=f"Evaluated {proposition_count} propositions based on content with {len(logical_issues)} issues identified"
+            )
+            
+            # logger.debug(f"ContentEvaluationAgent task completed successfully. Output: {result}")
+            return result
+            
         except Exception as e:
-            logger.error(f"Error determining evaluation mode: {e}")
-            return "content"  # Default to content mode on error
+            logger.error(f"Content evaluator agent error: {e}")
+            result = AgentResult(
+                agent_type=self.name,
+                operation="evaluate_propositions",
+                data={"error": str(e)},
+                confidence=0.0,
+                reasoning=f"Error in content proposition evaluation: {e}"
+            )
+            # logger.debug(f"ContentEvaluationAgent task failed. Output: {result}")
+            return result
+
+
+class FormEvaluationAgent:
+    """Agent that evaluates only the logical validity of formalized arguments"""
+    
+    def __init__(self):
+        self.name = "form_evaluator"
     
     def _get_formalizations_for_argument(self, conversation_data: Dict[str, Any]) -> List[str]:
         """Get formalizations for all propositions in the argument"""
@@ -217,27 +246,20 @@ class EvaluationAgent:
             return []
     
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
-        """Evaluate the truth, validity, and soundness of propositions and arguments"""
+        """Evaluate only the logical validity of formalized arguments"""
         try:
-            # logger.info(f"EvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
-            # logger.debug(f"EvaluationAgent starting task with data: {conversation_data}")
-            
-            # Determine evaluation mode based on whether formalizations are available
-            evaluation_mode = self._determine_evaluation_mode(conversation_data)
+            # logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            # logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
             
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
-            # Add evaluation mode to the data
-            conversation_data['evaluation_mode'] = evaluation_mode
-            
-            # If in formal validity mode, add formalizations to the data
-            if evaluation_mode == "formal_validity":
-                formalizations = self._get_formalizations_for_argument(conversation_data)
-                conversation_data['formalizations'] = formalizations
+            # Add formalizations to the data
+            formalizations = self._get_formalizations_for_argument(conversation_data)
+            conversation_data['formalizations'] = formalizations
             
             # Pass the data directly to the agent for evaluation
-            evaluation_response = agent_gpt_evaluate.call(json.dumps(conversation_data), file_ids)
+            evaluation_response = agent_gpt_evaluate_form.call(json.dumps(conversation_data), file_ids)
             evaluation_result = json.loads(evaluation_response)
             
             # Log key evaluation metrics
@@ -246,11 +268,11 @@ class EvaluationAgent:
             logical_issues = evaluation_result.get("logical_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            # logger.info(f"EvaluationAgent completed - Mode: {evaluation_mode}, Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
+            # logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
             # if logical_issues:
-            #     logger.info(f"EvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
+            #     logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
             # if recommendations:
-            #     logger.info(f"EvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            #     logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
             result = AgentResult(
                 agent_type=self.name,
@@ -261,26 +283,28 @@ class EvaluationAgent:
                     "argument_validity": argument_validity,
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
-                    "evaluation_mode": evaluation_mode
+                    "evaluation_mode": "formal_validity"
                 },
                 confidence=argument_validity,
-                reasoning=f"Evaluated {proposition_count} propositions in {evaluation_mode} mode with {len(logical_issues)} issues identified"
+                reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified"
             )
             
-            # logger.debug(f"EvaluationAgent task completed successfully. Output: {result}")
+            # logger.debug(f"FormEvaluationAgent task completed successfully. Output: {result}")
             return result
             
         except Exception as e:
-            logger.error(f"Evaluator agent error: {e}")
+            logger.error(f"Form evaluator agent error: {e}")
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
                 data={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in proposition evaluation: {e}"
+                reasoning=f"Error in formal validity evaluation: {e}"
             )
-            # logger.debug(f"EvaluationAgent task failed. Output: {result}")
+            # logger.debug(f"FormEvaluationAgent task failed. Output: {result}")
             return result
+    
+
 
 class FormalizationAgent:
     """Agent that formalizes natural language propositions into formal logic"""
@@ -397,7 +421,8 @@ class RewriterAgent:
 # Agent registry
 AGENTS = {
     'builder': ArgumentBuilderAgent(),
-    'evaluator': EvaluationAgent(),
+    'content_evaluator': ContentEvaluationAgent(),
+    'form_evaluator': FormEvaluationAgent(),
     'formalizer': FormalizationAgent(),
     'rewriter': RewriterAgent()
 } 
