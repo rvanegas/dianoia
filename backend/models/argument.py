@@ -157,7 +157,7 @@ class Arguments(BaseModel):
         else:
             logger.warning("No conversation_id available for task queuing")
 
-    def queue_evaluator_task(self, data: dict):
+    def queue_content_evaluator_task(self, data: dict):
         """Queue a task for the content evaluator agent"""
         if self.conversation_id:
             # Extract argument propositions for content evaluator
@@ -211,8 +211,8 @@ class ArgumentsWithLoc(Arguments):
             'step_index': 0,
             'file_ids': self.file_ids
         })
-        # Queue evaluator task to evaluate the new argument
-        self.queue_evaluator_task({
+        # Queue content evaluator task to evaluate the new argument
+        self.queue_content_evaluator_task({
             'proposition': new_proposition,
             'location': self.loc,
             'step_index': 0,
@@ -248,8 +248,8 @@ class ArgumentsWithStep(Arguments):
             'step_index': self.index,
             'file_ids': self.file_ids
         })
-        # Queue evaluator task to evaluate the modified argument
-        self.queue_evaluator_task({
+        # Queue content evaluator task to evaluate the modified argument
+        self.queue_content_evaluator_task({
             'proposition': new_proposition,
             'location': self.loc,
             'step_index': self.index,
@@ -282,8 +282,8 @@ class ArgumentsWithStep(Arguments):
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
-        # Queue evaluator task to evaluate the modified argument
-        self.queue_evaluator_task({
+        # Queue content evaluator task to evaluate the modified argument
+        self.queue_content_evaluator_task({
             'location': self.loc,
             'step_index': self.index,
             'file_ids': self.file_ids
@@ -299,8 +299,8 @@ class ArgumentsWithStep(Arguments):
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
-        # Queue evaluator task to evaluate the modified argument
-        self.queue_evaluator_task({
+        # Queue content evaluator task to evaluate the modified argument
+        self.queue_content_evaluator_task({
             'location': self.loc,
             'step_index': self.index,
             'file_ids': self.file_ids
@@ -343,8 +343,8 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
             'step_index': self.index,
             'file_ids': self.file_ids
         })
-        # Queue evaluator task to evaluate the modified argument
-        self.queue_evaluator_task({
+        # Queue content evaluator task to evaluate the modified argument
+        self.queue_content_evaluator_task({
             'proposition': self.proposition,
             'location': self.loc,
             'step_index': self.index,
