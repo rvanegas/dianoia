@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from services.agents import EvaluationAgent
+from services.agents import ContentEvaluationAgent
 
 
 class TestEvaluationAgent:
@@ -9,7 +9,7 @@ class TestEvaluationAgent:
     
     def test_content_mode_evaluation(self):
         """Test that evaluation works correctly in content mode"""
-        agent = EvaluationAgent()
+        agent = ContentEvaluationAgent()
         
         # Mock the coordinator to return no formalizations (content mode)
         mock_existing_results = []
@@ -26,7 +26,7 @@ class TestEvaluationAgent:
             "recommendations": ["Argument is logically sound and well-structured"]
         }
         
-        with patch('services.agents.agent_gpt_evaluate') as mock_gpt, \
+        with patch('services.agents.agent_gpt_evaluate_content') as mock_gpt, \
              patch('services.agent_coordinator.coordinator') as mock_coordinator:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
@@ -43,7 +43,7 @@ class TestEvaluationAgent:
             result = agent.evaluate_propositions(conversation_data)
             
             # Verify the result is in content mode
-            assert result.agent_type == "evaluator"
+            assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
             assert result.data["evaluation_mode"] == "content"
             assert result.data["argument_validity"] == 0.95
@@ -51,13 +51,14 @@ class TestEvaluationAgent:
             # Verify that the evaluator was called with content mode
             call_args = mock_gpt.call.call_args[0][0]
             call_data = json.loads(call_args)
-            assert call_data['evaluation_mode'] == "content"
+            # The content evaluator doesn't need evaluation_mode in the call data
+            assert 'argument' in call_data
     
-    def test_formal_validity_mode_evaluation(self):
-        """Test that evaluation works correctly in formal validity mode"""
-        agent = EvaluationAgent()
+    def test_content_evaluator_always_evaluates_content(self):
+        """Test that content evaluator always evaluates content, regardless of formalizations"""
+        agent = ContentEvaluationAgent()
         
-        # Mock the coordinator to return formalizations (formal validity mode)
+        # Mock the coordinator to return formalizations (but content evaluator ignores them)
         mock_existing_results = [
             {
                 'agent_type': 'formalizer',
@@ -66,38 +67,20 @@ class TestEvaluationAgent:
                     'ascii': 'P(a)',
                     'reasoning': 'Direct predicate application'
                 }
-            },
-            {
-                'agent_type': 'formalizer',
-                'data': {
-                    'proposition': 'All men are mortal',
-                    'ascii': 'forall x. (P(x) -> Q(x))',
-                    'reasoning': 'Universal quantification'
-                }
-            },
-            {
-                'agent_type': 'formalizer',
-                'data': {
-                    'proposition': 'Socrates is mortal',
-                    'ascii': 'Q(a)',
-                    'reasoning': 'Direct predicate application'
-                }
             }
         ]
         
-        # Mock the GPT response for formal validity mode
+        # Mock the GPT response for content evaluation
         mock_response = {
             "proposition_evaluations": [
-                {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-                {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-                {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+                {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"}
             ],
-            "argument_validity": 1.0,
+            "argument_validity": 0.9,
             "logical_issues": [],
-            "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
+            "recommendations": ["Argument is sound"]
         }
         
-        with patch('services.agents.agent_gpt_evaluate') as mock_gpt, \
+        with patch('services.agents.agent_gpt_evaluate_content') as mock_gpt, \
              patch('services.agent_coordinator.coordinator') as mock_coordinator:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
@@ -105,7 +88,7 @@ class TestEvaluationAgent:
             
             # Test data
             conversation_data = {
-                "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
+                "argument": ["Socrates is a man"],
                 "thesis": "Socrates is mortal",
                 "conversation_id": "test_conversation"
             }
@@ -113,58 +96,45 @@ class TestEvaluationAgent:
             # Call the evaluation agent
             result = agent.evaluate_propositions(conversation_data)
             
-            # Verify the result is in formal validity mode
-            assert result.agent_type == "evaluator"
+            # Verify the result is always in content mode
+            assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "formal_validity"
-            assert result.data["argument_validity"] == 1.0
+            assert result.data["evaluation_mode"] == "content"
+            assert result.data["argument_validity"] == 0.9
             
-            # Verify that all proposition truth values are 0.5 (neither true nor false by form alone)
-            for evaluation in result.data["evaluation"]["proposition_evaluations"]:
-                assert evaluation["truth_value"] == 0.5
-            
-            # Verify that the evaluator was called with formal validity mode and formalizations
+            # Verify that the evaluator was called with content evaluation
             call_args = mock_gpt.call.call_args[0][0]
             call_data = json.loads(call_args)
-            assert call_data['evaluation_mode'] == "formal_validity"
-            assert 'formalizations' in call_data
-            assert call_data['formalizations'] == ['P(a)', 'forall x. (P(x) -> Q(x))', 'Q(a)']
+            assert 'argument' in call_data
     
-    def test_evaluation_mode_detection(self):
-        """Test that evaluation mode is correctly detected based on formalizations"""
-        agent = EvaluationAgent()
+    def test_content_evaluator_ignores_formalizations(self):
+        """Test that content evaluator ignores formalizations and always evaluates content"""
+        agent = ContentEvaluationAgent()
         
-        # Test with no formalizations (should be content mode)
-        mock_no_formalizations = []
-        
-        with patch('services.agent_coordinator.coordinator') as mock_coordinator:
-            mock_coordinator.get_conversation_results.return_value = mock_no_formalizations
-            
-            conversation_data = {
-                "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
-                "conversation_id": "test_conversation"
-            }
-            
-            mode = agent._determine_evaluation_mode(conversation_data)
-            assert mode == "content"
-        
-        # Test with formalizations for all propositions (should be formal validity mode)
+        # Test with formalizations present (content evaluator should ignore them)
         mock_with_formalizations = [
-            {'agent_type': 'formalizer', 'data': {'proposition': 'Socrates is a man'}},
-            {'agent_type': 'formalizer', 'data': {'proposition': 'All men are mortal'}},
-            {'agent_type': 'formalizer', 'data': {'proposition': 'Socrates is mortal'}}
+            {
+                'agent_type': 'formalizer',
+                'data': {
+                    'proposition': 'Socrates is a man',
+                    'ascii': 'P(a)',
+                    'reasoning': 'Direct predicate application'
+                }
+            }
         ]
         
         with patch('services.agent_coordinator.coordinator') as mock_coordinator:
             mock_coordinator.get_conversation_results.return_value = mock_with_formalizations
             
             conversation_data = {
-                "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
+                "argument": ["Socrates is a man"],
                 "conversation_id": "test_conversation"
             }
             
-            mode = agent._determine_evaluation_mode(conversation_data)
-            assert mode == "formal_validity"
+            # The content evaluator should always evaluate content, regardless of formalizations
+            result = agent.evaluate_propositions(conversation_data)
+            assert result.agent_type == "content_evaluator"
+            assert result.data["evaluation_mode"] == "content"
 
 
 if __name__ == "__main__":

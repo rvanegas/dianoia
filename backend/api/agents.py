@@ -9,55 +9,6 @@ from core.utils import logger
 
 router = APIRouter()
 
-class QueueTaskRequest(BaseModel):
-    agent_type: str
-    conversation_id: str
-    data: Dict[str, Any]
-    priority: int = 0
-
-class CheckFormalizationRequest(BaseModel):
-    conversation_id: str
-    argument: list
-
-@router.post("/queue")
-async def queue_agent_task(request: QueueTaskRequest) -> Dict[str, Any]:
-    """Queue a task for an agent"""
-    try:
-        task_id = coordinator.queue_task(
-            agent_type=request.agent_type,
-            conversation_id=request.conversation_id,
-            data=request.data,
-            priority=request.priority
-        )
-        
-        return {
-            "task_id": task_id,
-            "agent_type": request.agent_type,
-            "conversation_id": request.conversation_id,
-            "status": "queued"
-        }
-    except Exception as e:
-        logger.error(f"Error queueing task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/check-formalization")
-async def check_formalization_completion(request: CheckFormalizationRequest) -> Dict[str, Any]:
-    """Check if all propositions in an argument have been formalized"""
-    try:
-        is_complete = coordinator.check_formalization_completion(
-            conversation_id=request.conversation_id,
-            argument=request.argument
-        )
-        
-        return {
-            "conversation_id": request.conversation_id,
-            "argument": request.argument,
-            "formalization_complete": is_complete
-        }
-    except Exception as e:
-        logger.error(f"Error checking formalization completion: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/results/{conversation_id}")
 async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
     """Get all agent results for a conversation, grouped by agent type"""

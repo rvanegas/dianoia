@@ -123,8 +123,20 @@ class AgentResultManager:
             return
         
         # Check if all propositions are formalized
-        from services.agent_coordinator import coordinator
-        if not coordinator.check_formalization_completion(conversation_id, argument):
+        # Get existing results for this conversation
+        existing_results = self.get_results(conversation_id)
+        
+        # Get formalized propositions
+        formalized_propositions = set()
+        for existing_result in existing_results:
+            if existing_result.get('agent_type') == 'formalizer':
+                existing_proposition = existing_result.get('data', {}).get('proposition')
+                if existing_proposition:
+                    formalized_propositions.add(existing_proposition)
+        
+        # Check if all argument propositions have been formalized
+        argument_propositions = set(argument)
+        if not argument_propositions.issubset(formalized_propositions):
             # If not all propositions are formalized, remove all form evaluator results
             results[:] = [
                 result for result in results
@@ -138,11 +150,29 @@ class AgentResultManager:
             data = result.get('data', {})
             argument = data.get('argument', [])
             if not argument:
+                logger.debug(f"Form evaluator result has no argument data")
                 return False
             
             # Check if all propositions are formalized
-            from services.agent_coordinator import coordinator
-            return coordinator.check_formalization_completion(conversation_id, argument)
+            # Get existing results for this conversation
+            existing_results = self.get_results(conversation_id)
+            
+            # Get formalized propositions
+            formalized_propositions = set()
+            for existing_result in existing_results:
+                if existing_result.get('agent_type') == 'formalizer':
+                    existing_proposition = existing_result.get('data', {}).get('proposition')
+                    if existing_proposition:
+                        formalized_propositions.add(existing_proposition)
+            
+            # Check if all argument propositions have been formalized
+            argument_propositions = set(argument)
+            
+            logger.debug(f"Form evaluator check - Argument propositions: {argument_propositions}")
+            logger.debug(f"Form evaluator check - Formalized propositions: {formalized_propositions}")
+            logger.debug(f"Form evaluator check - Is subset: {argument_propositions.issubset(formalized_propositions)}")
+            
+            return argument_propositions.issubset(formalized_propositions)
             
         except Exception as e:
             logger.error(f"Error checking if form evaluator result should be added: {e}")

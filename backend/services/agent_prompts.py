@@ -204,18 +204,13 @@ You are an AI agent working on logical argumentation. Your task is to evaluate O
 For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
 
 ### Input Format
-- argument: List of propositions in the main argument
-- counter_argument: List of propositions in the counter-argument  
-- assumptions: List of background assumptions
-- thesis: The main thesis being argued
-- counter_thesis: The opposing thesis (if any)
 - formalizations: List of formal logical representations of the propositions
 
 ### Task
 
-You will receive argument data including propositions and their formalizations. You will evaluate ONLY the logical validity of the argument structure, ignoring the truth of individual propositions.
+You will receive formalizations of logical propositions. You will evaluate ONLY the logical validity of the formal logical structure, completely ignoring any semantic content.
 
-For each proposition, set truth_value to 0.5 (neither true nor false by form alone) and focus entirely on whether the logical structure is valid.
+For each formalization, set truth_value to 0.5 (neither true nor false by form alone) and focus entirely on whether the logical structure is valid.
 
 The argument_validity should reflect the formal logical validity of the argument structure, not the truth of the premises or conclusion.
 
@@ -227,39 +222,74 @@ The argument_validity should reflect the formal logical validity of the argument
 - Ignore the semantic content and truth of individual propositions
 - Consider only the formal logical relationships between propositions
 - Use the formalizations to assess logical validity
+- **IMPORTANT**: Pay attention to variable renaming and the transitivity of implication
+- When premises use different variable names (e.g., ∀y (Q(y) → R(y)) and ∀x (P(x) → Q(x))), the argument can still be valid if the logical structure supports the conclusion
+- The transitivity of implication means: if ∀x (P(x) → Q(x)) and ∀y (Q(y) → R(y)), then ∀x (P(x) → R(x)) is valid
+- Variable names can be renamed consistently without affecting validity
 
 ### Examples
 
 # Valid deductive argument
 
 Input:
-argument: ["Socrates is a man", "All men are mortal", "Socrates is mortal"]
 formalizations: ["P(a)", "forall x. (P(x) -> Q(x))", "Q(a)"]
 
 Output:
 {
   "proposition_evaluations": [
-    {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+    {"proposition": "P(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "Q(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
   ],
   "argument_validity": 1.0,
   "logical_issues": [],
   "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
 }
 
+# Valid deductive argument with transitivity
+
+Input:
+formalizations: ["forall y. (Q(y) -> R(y))", "forall x. (P(x) -> Q(x))", "forall x. (P(x) -> R(x))"]
+
+Output:
+{
+  "proposition_evaluations": [
+    {"proposition": "forall y. (Q(y) -> R(y))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "forall x. (P(x) -> R(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+  ],
+  "argument_validity": 1.0,
+  "logical_issues": [],
+  "recommendations": ["Argument is deductively valid: forall y. (Q(y) -> R(y)) and forall x. (P(x) -> Q(x)) logically entail forall x. (P(x) -> R(x)) via transitivity of implication"]
+}
+
+# Valid deductive argument with transitivity (2 premises)
+
+Input:
+formalizations: ["forall x. (Q(x) -> P(x))", "forall x. (P(x) -> R(x))"]
+
+Output:
+{
+  "proposition_evaluations": [
+    {"proposition": "forall x. (Q(x) -> P(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "forall x. (P(x) -> R(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+  ],
+  "argument_validity": 1.0,
+  "logical_issues": [],
+  "recommendations": ["Argument is deductively valid: forall x. (Q(x) -> P(x)) and forall x. (P(x) -> R(x)) logically entail forall x. (Q(x) -> R(x)) via transitivity of implication"]
+}
+
 # Invalid deductive argument
 
 Input:
-argument: ["Socrates is mortal", "All men are mortal", "Socrates is a man"]
 formalizations: ["Q(a)", "forall x. (P(x) -> Q(x))", "P(a)"]
 
 Output:
 {
   "proposition_evaluations": [
-    {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+    {"proposition": "Q(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
+    {"proposition": "P(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
   ],
   "argument_validity": 0.0,
   "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) -> Q(x)) do not logically entail P(a)"],
