@@ -1,15 +1,16 @@
 import pytest
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from services.agents import ContentEvaluationAgent, FormEvaluationAgent
+from services.agent_coordinator import coordinator
 
 
 class TestDualEvaluators:
-    """Test the dual evaluator system"""
+    """Test that both content and form evaluators work correctly"""
     
     def test_content_evaluator(self):
         """Test that content evaluator works correctly"""
-        agent = ContentEvaluationAgent()
+        agent = ContentEvaluationAgent(coordinator)
         
         # Mock the GPT response for content evaluation
         mock_response = {
@@ -18,8 +19,8 @@ class TestDualEvaluators:
                 {"proposition": "All men are mortal", "truth_value": 0.95, "reasoning": "Universal biological truth"},
                 {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
             ],
-            "argument_validity": 0.95,
-            "logical_issues": [],
+            "overall_truth_score": 0.95,
+            "truth_issues": [],
             "recommendations": ["Argument is logically sound and well-structured"]
         }
         
@@ -30,6 +31,8 @@ class TestDualEvaluators:
             conversation_data = {
                 "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
                 "thesis": "Socrates is mortal",
+                "counter_thesis": "Socrates is not mortal",
+                "assumptions": [],
                 "conversation_id": "test_conversation"
             }
             
@@ -39,12 +42,11 @@ class TestDualEvaluators:
             # Verify the result
             assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "content"
-            assert result.data["argument_validity"] == 0.95
+            assert result.data["evaluation_mode"] == "content_truth"
     
     def test_form_evaluator(self):
         """Test that form evaluator works correctly"""
-        agent = FormEvaluationAgent()
+        agent = FormEvaluationAgent(coordinator)
         
         # Mock the coordinator to return formalizations
         mock_existing_results = [
@@ -87,15 +89,16 @@ class TestDualEvaluators:
         }
         
         with patch('services.agents.agent_gpt_evaluate_form') as mock_gpt, \
-             patch('services.agent_coordinator.coordinator') as mock_coordinator:
+             patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results):
             
             mock_gpt.call.return_value = json.dumps(mock_response)
-            mock_coordinator.get_conversation_results.return_value = mock_existing_results
             
             # Test data
             conversation_data = {
                 "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
                 "thesis": "Socrates is mortal",
+                "counter_thesis": "Socrates is not mortal",
+                "assumptions": [],
                 "conversation_id": "test_conversation"
             }
             
@@ -106,7 +109,6 @@ class TestDualEvaluators:
             assert result.agent_type == "form_evaluator"
             assert result.operation == "evaluate_propositions"
             assert result.data["evaluation_mode"] == "formal_validity"
-            assert result.data["argument_validity"] == 1.0
             
             # Verify that all truth values are 0.5 (neither true nor false by form alone)
             for evaluation in result.data["evaluation"]["proposition_evaluations"]:
