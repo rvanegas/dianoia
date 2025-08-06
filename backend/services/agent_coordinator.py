@@ -115,10 +115,10 @@ class AgentResultManager:
     def _cleanup_form_evaluator_results(self, conversation_id: str, new_result: Dict[str, Any]):
         """Special cleanup for form evaluator results - ensure only one exists when appropriate"""
         results = self.results_by_conversation[conversation_id]
-        data = new_result.get('data', {})
+        data = new_result['data']
         
         # Get the argument from the new result
-        argument = data.get('argument', [])
+        argument = data['argument']
         if not argument:
             return
         
@@ -147,8 +147,8 @@ class AgentResultManager:
     def _should_add_form_evaluator_result(self, conversation_id: str, result: Dict[str, Any]) -> bool:
         """Check if a form evaluator result should be added based on formalization completion"""
         try:
-            data = result.get('data', {})
-            argument = data.get('argument', [])
+            data = result['data']
+            argument = data['argument']
             if not argument:
                 logger.debug(f"Form evaluator result has no argument data")
                 return False
