@@ -81,11 +81,19 @@ class ArgumentBuilderAgent:
         if loc == 'argument':
             argument = conversation_data.get('argument', [])
             if 0 <= index < len(argument):
-                return argument[index].get('proposition', '')
+                item = argument[index]
+                if isinstance(item, dict):
+                    return item.get('proposition', '')
+                else:
+                    return str(item)
         elif loc == 'counter_argument':
             counter_argument = conversation_data.get('counter_argument', [])
             if 0 <= index < len(counter_argument):
-                return counter_argument[index].get('proposition', '')
+                item = counter_argument[index]
+                if isinstance(item, dict):
+                    return item.get('proposition', '')
+                else:
+                    return str(item)
         
         return None
 
@@ -114,7 +122,7 @@ class ArgumentBuilderAgent:
             
             # Only queue formalizer task if this proposition hasn't been formalized yet
             if proposition not in formalized_propositions:
-                # logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
+                logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
                 
                 task_data = {
                     'proposition': proposition,
@@ -128,13 +136,53 @@ class ArgumentBuilderAgent:
                     data=task_data
                 )
                 
-                # logger.debug(f"Queued formalizer task for proposition: {proposition}")
+                logger.info(f"Queued formalizer task for proposition: {proposition}")
             else:
-                # logger.debug(f"Proposition already formalized: {proposition}")
-                pass
+                logger.info(f"Proposition already formalized: {proposition}")
 
         except Exception as e:
             logger.error(f"Error queueing formalizer task for proposition: {e}")
+    
+    def _queue_content_evaluator_task(self, conversation_data: Dict[str, Any]):
+        """Queue content evaluator task for the argument"""
+        try:
+            from services.agent_coordinator import coordinator
+
+            conversation_id = conversation_data.get('conversation_id')
+            if not conversation_id:
+                logger.warning("No conversation_id found in builder task data")
+                return
+            
+            # Get existing content evaluations from agent results
+            existing_results = coordinator.get_conversation_results(conversation_id)
+            content_evaluations = [r for r in existing_results if r.get('agent_type') == 'content_evaluator']
+            
+            # Only queue content evaluator task if there isn't already one
+            if not content_evaluations:
+                logger.info(f"Queueing content evaluator task for conversation: {conversation_id}")
+                
+                task_data = {
+                    'argument': conversation_data.get('argument', []),
+                    'thesis': conversation_data.get('thesis', ''),
+                    'counter_thesis': conversation_data.get('counter_thesis', ''),
+                    'assumptions': conversation_data.get('assumptions', []),
+                    'file_ids': conversation_data.get('file_ids', [])
+                }
+                
+                coordinator.queue_task(
+                    agent_type='content_evaluator',
+                    conversation_id=conversation_id,
+                    data=task_data
+                )
+                
+                logger.info(f"Queued content evaluator task for conversation: {conversation_id}")
+            else:
+                logger.info(f"Content evaluator already exists for conversation: {conversation_id}")
+
+        except Exception as e:
+            logger.error(f"Error queueing content evaluator task: {e}")
+    
+
 
 
 class ContentEvaluationAgent:
@@ -177,7 +225,11 @@ class ContentEvaluationAgent:
                     "argument_validity": argument_validity,
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
-                    "evaluation_mode": "content"
+                    "evaluation_mode": "content",
+                    "argument": conversation_data.get('argument', []),
+                    "thesis": conversation_data.get('thesis', ''),
+                    "counter_thesis": conversation_data.get('counter_thesis', ''),
+                    "assumptions": conversation_data.get('assumptions', [])
                 },
                 confidence=argument_validity,
                 reasoning=f"Evaluated {proposition_count} propositions based on content with {len(logical_issues)} issues identified"
@@ -248,8 +300,8 @@ class FormEvaluationAgent:
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
-            # logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
-            # logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
+            logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
             
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
@@ -258,8 +310,15 @@ class FormEvaluationAgent:
             formalizations = self._get_formalizations_for_argument(conversation_data)
             conversation_data['formalizations'] = formalizations
             
-            # Pass the data directly to the agent for evaluation
-            evaluation_response = agent_gpt_evaluate_form.call(json.dumps(conversation_data), file_ids)
+            # Create a clean data structure for the form evaluator - ONLY formalizations
+            form_evaluation_data = {
+                'formalizations': formalizations
+            }
+            
+            logger.debug(f"FormEvaluationAgent sending clean data: {form_evaluation_data}")
+            
+            # Pass the clean data to the agent for evaluation
+            evaluation_response = agent_gpt_evaluate_form.call(json.dumps(form_evaluation_data), file_ids)
             evaluation_result = json.loads(evaluation_response)
             
             # Log key evaluation metrics
@@ -268,11 +327,11 @@ class FormEvaluationAgent:
             logical_issues = evaluation_result.get("logical_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            # logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
-            # if logical_issues:
-            #     logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
-            # if recommendations:
-            #     logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
+            if logical_issues:
+                logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
+            if recommendations:
+                logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
             result = AgentResult(
                 agent_type=self.name,
@@ -283,7 +342,11 @@ class FormEvaluationAgent:
                     "argument_validity": argument_validity,
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
-                    "evaluation_mode": "formal_validity"
+                    "evaluation_mode": "formal_validity",
+                    "argument": conversation_data.get('argument', []),
+                    "thesis": conversation_data.get('thesis', ''),
+                    "counter_thesis": conversation_data.get('counter_thesis', ''),
+                    "assumptions": conversation_data.get('assumptions', [])
                 },
                 confidence=argument_validity,
                 reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified"
@@ -341,8 +404,8 @@ class FormalizationAgent:
     def formalize_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Formalize a natural language proposition into formal logic"""
         try:
-            # logger.info(f"FormalizationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
-            # logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
+            logger.info(f"FormalizationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
             
             # Extract the proposition to formalize
             proposition = conversation_data.get('proposition', '')
@@ -424,23 +487,58 @@ class FormalizationAgent:
             
             # Get the argument from the conversation data
             argument_data = conversation_data.get('argument_data', {})
+            
             argument = argument_data.get('argument', [])
             if not argument:
                 return
             
             # Extract proposition texts from the argument
             argument_propositions = []
-            for step in argument:
-                if isinstance(step, dict):
-                    proposition = step.get('proposition', '')
-                else:
-                    proposition = str(step)
-                if proposition:
-                    argument_propositions.append(proposition)
             
-            # Check if all propositions are formalized
+            # Debug: log the argument type and content
+            # logger.debug(f"Argument type: {type(argument)}, content: {argument}")
+            
+            # Handle different argument formats
+            if isinstance(argument, str):
+                # If argument is a string, treat it as a single proposition
+                argument_propositions = [argument]
+            elif isinstance(argument, list):
+                # If argument is a list, extract propositions from each step
+                for step in argument:
+                    if isinstance(step, dict):
+                        proposition = step.get('proposition', '')
+                    else:
+                        proposition = str(step)
+                    if proposition:
+                        argument_propositions.append(proposition)
+            else:
+                # Fallback: convert to string and treat as single proposition
+                argument_propositions = [str(argument)]
+            
+            # Check if all propositions are formalized (including this one)
             from services.agent_coordinator import coordinator
-            if coordinator.check_formalization_completion(conversation_id, argument_propositions):
+            # logger.info(f"Checking formalization completion for {len(argument_propositions)} propositions: {argument_propositions}")
+            
+            # Get existing results and add this formalization
+            existing_results = coordinator.get_conversation_results(conversation_id)
+            formalized_propositions = set()
+            
+            # Add existing formalizations
+            for result in existing_results:
+                if result.get('agent_type') == 'formalizer':
+                    existing_proposition = result.get('data', {}).get('proposition')
+                    if existing_proposition:
+                        formalized_propositions.add(existing_proposition)
+            
+            # Add this formalization
+            current_proposition = conversation_data.get('proposition', '')
+            if current_proposition:
+                formalized_propositions.add(current_proposition)
+            
+            # Check if all propositions are now formalized
+            argument_propositions_set = set(argument_propositions)
+            if argument_propositions_set.issubset(formalized_propositions):
+                # logger.info(f"All propositions formalized, queueing form evaluator")
                 # Queue form evaluator task
                 task_data = {
                     'argument': argument_propositions,
@@ -456,7 +554,10 @@ class FormalizationAgent:
                     data=task_data
                 )
                 
-                logger.info(f"Queued form evaluator task for conversation {conversation_id}")
+                # logger.info(f"Queued form evaluator task for conversation {conversation_id}")
+            else:
+                # logger.info(f"Not all propositions formalized yet. Formalized: {formalized_propositions}, Needed: {argument_propositions_set}")
+                pass
             
         except Exception as e:
             logger.error(f"Error checking and queueing form evaluator: {e}")
@@ -470,19 +571,33 @@ class FormalizationAgent:
             
             # Get the argument from the conversation data
             argument_data = conversation_data.get('argument_data', {})
+            
             argument = argument_data.get('argument', [])
             if not argument:
                 return
             
             # Extract proposition texts from the argument
             argument_propositions = []
-            for step in argument:
-                if isinstance(step, dict):
-                    proposition = step.get('proposition', '')
-                else:
-                    proposition = str(step)
-                if proposition:
-                    argument_propositions.append(proposition)
+            
+            # Debug: log the argument type and content
+            # logger.debug(f"Argument type: {type(argument)}, content: {argument}")
+            
+            # Handle different argument formats
+            if isinstance(argument, str):
+                # If argument is a string, treat it as a single proposition
+                argument_propositions = [argument]
+            elif isinstance(argument, list):
+                # If argument is a list, extract propositions from each step
+                for step in argument:
+                    if isinstance(step, dict):
+                        proposition = step.get('proposition', '')
+                    else:
+                        proposition = str(step)
+                    if proposition:
+                        argument_propositions.append(proposition)
+            else:
+                # Fallback: convert to string and treat as single proposition
+                argument_propositions = [str(argument)]
             
             # Check if all propositions are formalized
             from services.agent_coordinator import coordinator
@@ -493,7 +608,7 @@ class FormalizationAgent:
                     result for result in results
                     if result.get('agent_type') != 'form_evaluator'
                 ]
-                logger.info(f"Cleaned up invalid form evaluator results for conversation {conversation_id}")
+                # logger.info(f"Cleaned up invalid form evaluator results for conversation {conversation_id}")
             
         except Exception as e:
             logger.error(f"Error cleaning up invalid form evaluator results: {e}")

@@ -36,56 +36,56 @@ class TestResultManager:
             }
         ]
         
-        # Mock the coordinator to return these results and indicate completion
-        with patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'check_formalization_completion', return_value=True):
-            
-            # Add a form evaluator result
-            form_evaluator_result = {
-                'agent_type': 'form_evaluator',
-                'data': {
-                    'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
-                    'evaluation': {
-                        'proposition_evaluations': [
-                            {'proposition': 'Socrates is a man', 'truth_value': 0.5},
-                            {'proposition': 'All men are mortal', 'truth_value': 0.5},
-                            {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
-                        ],
-                        'argument_validity': 1.0
-                    }
+        # Add the existing formalization results to the result manager first
+        for result in mock_existing_results:
+            result_manager.add_result(conversation_id, result)
+        
+        # Add a form evaluator result
+        form_evaluator_result = {
+            'agent_type': 'form_evaluator',
+            'data': {
+                'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
+                'evaluation': {
+                    'proposition_evaluations': [
+                        {'proposition': 'Socrates is a man', 'truth_value': 0.5},
+                        {'proposition': 'All men are mortal', 'truth_value': 0.5},
+                        {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
+                    ],
+                    'argument_validity': 1.0
                 }
             }
-            
-            result_manager.add_result(conversation_id, form_evaluator_result)
-            
-            # Verify the result was added
-            results = result_manager.get_results(conversation_id)
-            form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
-            assert len(form_evaluator_results) == 1
-            
-            # Add another form evaluator result (should replace the first)
-            new_form_evaluator_result = {
-                'agent_type': 'form_evaluator',
-                'data': {
-                    'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
-                    'evaluation': {
-                        'proposition_evaluations': [
-                            {'proposition': 'Socrates is a man', 'truth_value': 0.5},
-                            {'proposition': 'All men are mortal', 'truth_value': 0.5},
-                            {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
-                        ],
-                        'argument_validity': 0.8  # Different validity
-                    }
+        }
+        
+        result_manager.add_result(conversation_id, form_evaluator_result)
+        
+        # Verify the result was added
+        results = result_manager.get_results(conversation_id)
+        form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
+        assert len(form_evaluator_results) == 1
+        
+        # Add another form evaluator result (should replace the first)
+        new_form_evaluator_result = {
+            'agent_type': 'form_evaluator',
+            'data': {
+                'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
+                'evaluation': {
+                    'proposition_evaluations': [
+                        {'proposition': 'Socrates is a man', 'truth_value': 0.5},
+                        {'proposition': 'All men are mortal', 'truth_value': 0.5},
+                        {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
+                    ],
+                    'argument_validity': 0.8  # Different validity
                 }
             }
-            
-            result_manager.add_result(conversation_id, new_form_evaluator_result)
-            
-            # Verify only one form evaluator result remains
-            results = result_manager.get_results(conversation_id)
-            form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
-            assert len(form_evaluator_results) == 1
-            assert form_evaluator_results[0]['data']['evaluation']['argument_validity'] == 0.8
+        }
+        
+        result_manager.add_result(conversation_id, new_form_evaluator_result)
+        
+        # Verify only one form evaluator result remains
+        results = result_manager.get_results(conversation_id)
+        form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
+        assert len(form_evaluator_results) == 1
+        assert form_evaluator_results[0]['data']['evaluation']['argument_validity'] == 0.8
     
     def test_result_manager_removes_form_evaluator_when_incomplete(self):
         """Test that result manager removes form evaluator results when not all propositions are formalized"""
@@ -104,9 +104,9 @@ class TestResultManager:
             # Missing formalizations for "All men are mortal" and "Socrates is mortal"
         ]
         
-        # Mock the coordinator to return these results and indicate incompletion
-        with patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'check_formalization_completion', return_value=False):
+        # Add the existing formalization results to the result manager first
+        for result in mock_existing_results:
+            result_manager.add_result(conversation_id, result)
             
             # Add a form evaluator result (this shouldn't exist but let's test cleanup)
             form_evaluator_result = {
