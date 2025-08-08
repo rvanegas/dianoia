@@ -132,9 +132,15 @@ class Arguments(BaseModel):
                 self.add_evaluations(self.counter_argument + self.assumptions, step)
         return self.gptjson()
 
-    def queue_builder_task(self, data: dict):
-        """Queue a task for the builder agent"""
-        task_data = {
+    def queue_argument_state_change(self, data: dict):
+        """Queue analysis and discovery for argument state changes"""
+        # Extract argument propositions for analysis
+        argument_propositions = []
+        for step in self.argument:
+            argument_propositions.append(step.proposition)
+        
+        # Queue content discovery (builder agent)
+        discovery_task_data = {
             'argument_data': {
                 'argument': [step.dict() for step in self.argument],
                 'counter_argument': [step.dict() for step in self.counter_argument],
@@ -148,27 +154,22 @@ class Arguments(BaseModel):
         coordinator.queue_task(
             agent_type='builder',
             conversation_id=self.conversation_id,
-            data=task_data
+            data=discovery_task_data
         )
-
-    def queue_content_evaluator_task(self, data: dict):
-        """Queue a task for the content evaluator agent"""
-        # Extract argument propositions for content evaluator
-        argument_propositions = []
-        for step in self.argument:
-            argument_propositions.append(step.proposition)
         
-        task_data = {
+        # Queue argument analysis (content evaluator)
+        analysis_task_data = {
             'argument': argument_propositions,
             'thesis': self.thesis,
             'counter_thesis': self.counter_thesis,
             'assumptions': self.assumptions,
-            'file_ids': self.file_ids
+            'file_ids': self.file_ids,
+            **data
         }
         coordinator.queue_task(
             agent_type='content_evaluator',
             conversation_id=self.conversation_id,
-            data=task_data
+            data=analysis_task_data
         )
 
 class ArgumentsWithLoc(Arguments):
@@ -193,15 +194,8 @@ class ArgumentsWithLoc(Arguments):
         new_proposition = getattr(self, thesis_attr)
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
-        # Queue builder task to find additional justifications
-        self.queue_builder_task({
-            'proposition': new_proposition,
-            'location': self.loc,
-            'step_index': 0,
-            'file_ids': self.file_ids
-        })
-        # Queue content evaluator task to evaluate the new argument
-        self.queue_content_evaluator_task({
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
             'proposition': new_proposition,
             'location': self.loc,
             'step_index': 0,
@@ -230,15 +224,8 @@ class ArgumentsWithStep(Arguments):
         conclusion = self.arg[self.index]
         conclusion.justifiers.append(new_step.symbol)
         self.arg.insert(self.index, new_step)
-        # Queue builder task to find additional justifications
-        self.queue_builder_task({
-            'proposition': new_proposition,
-            'location': self.loc,
-            'step_index': self.index,
-            'file_ids': self.file_ids
-        })
-        # Queue content evaluator task to evaluate the modified argument
-        self.queue_content_evaluator_task({
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
             'proposition': new_proposition,
             'location': self.loc,
             'step_index': self.index,
@@ -271,8 +258,8 @@ class ArgumentsWithStep(Arguments):
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
-        # Queue content evaluator task to evaluate the modified argument
-        self.queue_content_evaluator_task({
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
             'location': self.loc,
             'step_index': self.index,
             'file_ids': self.file_ids
@@ -288,8 +275,8 @@ class ArgumentsWithStep(Arguments):
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
-        # Queue content evaluator task to evaluate the modified argument
-        self.queue_content_evaluator_task({
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
             'location': self.loc,
             'step_index': self.index,
             'file_ids': self.file_ids
@@ -325,15 +312,8 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
-        # Queue builder task to find additional justifications
-        self.queue_builder_task({
-            'proposition': self.proposition,
-            'location': self.loc,
-            'step_index': self.index,
-            'file_ids': self.file_ids
-        })
-        # Queue content evaluator task to evaluate the modified argument
-        self.queue_content_evaluator_task({
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
             'proposition': self.proposition,
             'location': self.loc,
             'step_index': self.index,
