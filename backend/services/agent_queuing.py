@@ -12,26 +12,20 @@ def queue_argument_state_change(coordinator, conversation_id: str, argument_data
     Queue agents for argument state changes.
     This centralizes all agent queuing logic for argument modifications.
     """
-    if additional_data is None:
-        additional_data = {}
+    additional_data = additional_data or {}
     
     # Extract argument propositions for analysis
-    argument_propositions = []
-    for step in argument_data.get('argument', []):
-        if isinstance(step, dict):
-            argument_propositions.append(step.get('proposition', ''))
-        else:
-            argument_propositions.append(str(step))
+    argument_propositions = [step['proposition'] for step in argument_data['argument']]
     
     # Queue content discovery (builder agent)
     discovery_task_data = {
         'argument_data': {
-            'argument': argument_data.get('argument', []),
-            'counter_argument': argument_data.get('counter_argument', []),
-            'assumptions': argument_data.get('assumptions', []),
-            'thesis': argument_data.get('thesis', ''),
-            'counter_thesis': argument_data.get('counter_thesis', ''),
-            'presupposition': argument_data.get('presupposition', '')
+            'argument': argument_data['argument'],
+            'counter_argument': argument_data['counter_argument'],
+            'assumptions': argument_data['assumptions'],
+            'thesis': argument_data['thesis'],
+            'counter_thesis': argument_data['counter_thesis'],
+            'presupposition': argument_data['presupposition']
         },
         **additional_data
     }
@@ -49,16 +43,16 @@ def queue_argument_state_change(coordinator, conversation_id: str, argument_data
             conversation_id,
             proposition,
             discovery_task_data['argument_data'],
-            argument_data.get('file_ids', [])
+            argument_data['file_ids']
         )
     
     # Queue argument analysis (content evaluator)
     analysis_task_data = {
         'argument': argument_propositions,
-        'thesis': argument_data.get('thesis', ''),
-        'counter_thesis': argument_data.get('counter_thesis', ''),
-        'assumptions': argument_data.get('assumptions', []),
-        'file_ids': argument_data.get('file_ids', []),
+        'thesis': argument_data['thesis'],
+        'counter_thesis': argument_data['counter_thesis'],
+        'assumptions': argument_data['assumptions'],
+        'file_ids': argument_data['file_ids'],
         **additional_data
     }
     coordinator.queue_task(
@@ -73,10 +67,8 @@ def queue_formalizer_for_proposition(coordinator, conversation_id: str, proposit
     Queue formalizer agent for a specific proposition.
     This centralizes formalizer queuing logic.
     """
-    if argument_data is None:
-        argument_data = {}
-    if file_ids is None:
-        file_ids = []
+    argument_data = argument_data or {}
+    file_ids = file_ids or []
     
     # Get existing formalizations to avoid duplicate work
     existing_results = coordinator.get_conversation_results(conversation_id)
