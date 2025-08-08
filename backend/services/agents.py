@@ -75,27 +75,6 @@ class ArgumentBuilderAgent:
             # logger.debug(f"ArgumentBuilderAgent task failed. Output: {result}")
             return result
     
-    def _get_proposition_at_location(self, conversation_data: Dict[str, Any], loc: str, index: int) -> str:
-        """Extract proposition from the specified location and index"""
-        if loc == 'argument':
-            argument = conversation_data.get('argument', [])
-            if 0 <= index < len(argument):
-                item = argument[index]
-                if isinstance(item, dict):
-                    return item.get('proposition', '')
-                else:
-                    return str(item)
-        elif loc == 'counter_argument':
-            counter_argument = conversation_data.get('counter_argument', [])
-            if 0 <= index < len(counter_argument):
-                item = counter_argument[index]
-                if isinstance(item, dict):
-                    return item.get('proposition', '')
-                else:
-                    return str(item)
-        
-        return None
-
 
 class ContentEvaluationAgent:
     """Agent that evaluates the truth and validity of argument propositions"""
@@ -462,60 +441,6 @@ class FormalizationAgent:
         except Exception as e:
             logger.error(f"Error checking and queueing form evaluator: {e}")
     
-    def _cleanup_invalid_form_evaluator_results(self, conversation_data: Dict[str, Any]):
-        """Clean up form evaluator results that are no longer valid"""
-        try:
-            if not self.coordinator:
-                logger.warning("No coordinator available for cleanup")
-                return
-                
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                return
-            
-            # Get the argument from the conversation data
-            argument_data = conversation_data.get('argument_data', {})
-            
-            argument = argument_data.get('argument', [])
-            if not argument:
-                return
-            
-            # Extract proposition texts from the argument
-            argument_propositions = []
-            
-            # Debug: log the argument type and content
-            # logger.debug(f"Argument type: {type(argument)}, content: {argument}")
-            
-            # Handle different argument formats
-            if isinstance(argument, str):
-                # If argument is a string, treat it as a single proposition
-                argument_propositions = [argument]
-            elif isinstance(argument, list):
-                # If argument is a list, extract propositions from each step
-                for step in argument:
-                    if isinstance(step, dict):
-                        proposition = step.get('proposition', '')
-                    else:
-                        proposition = str(step)
-                    if proposition:
-                        argument_propositions.append(proposition)
-            else:
-                # Fallback: convert to string and treat as single proposition
-                argument_propositions = [str(argument)]
-            
-            # Check if all propositions are formalized
-            if not self.coordinator.check_formalization_completion(conversation_id, argument_propositions):
-                # If not all propositions are formalized, clean up form evaluator results
-                results = self.coordinator.result_manager.get_results(conversation_id)
-                results[:] = [
-                    result for result in results
-                    if result.get('agent_type') != 'form_evaluator'
-                ]
-                # logger.info(f"Cleaned up invalid form evaluator results for conversation {conversation_id}")
-            
-        except Exception as e:
-            logger.error(f"Error cleaning up invalid form evaluator results: {e}")
-
 
 class RewriterAgent:
     """Agent that recommends proposition rewrites, rephrasing, and splitting (STUB)"""
