@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from services.conversation import gpt_justify, gpt_evaluate
 from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_content, agent_gpt_evaluate_form, agent_gpt_formalize
+
 from core.utils import logger
 
 
@@ -33,11 +34,7 @@ class ArgumentBuilderAgent:
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
-            # Queue formalizer task for the specific proposition this builder is working on
-            self._queue_formalizer_task_for_proposition(conversation_data)
-            
-            # Queue content evaluator task to evaluate the argument
-            self._queue_content_evaluator_task(conversation_data)
+
             
             # Pass the data directly to the agent without taking it apart
             basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
@@ -62,7 +59,7 @@ class ArgumentBuilderAgent:
                     "total_justifications": len(justifications)
                 },
                 confidence=0.8,
-                reasoning=f"Generated {len(justifications)} justification options and queued formalizer and content evaluator tasks"
+                reasoning=f"Generated {len(justifications)} justification options"
             )
             
             # logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
@@ -100,70 +97,6 @@ class ArgumentBuilderAgent:
                     return str(item)
         
         return None
-
-    def _queue_formalizer_task_for_proposition(self, conversation_data: Dict[str, Any]):
-        """Queue formalizer task for the proposition this builder is working on"""
-        conversation_id = conversation_data['conversation_id']
-        proposition = conversation_data['proposition']
-        
-        # Get existing formalizations to avoid duplicate work
-        existing_results = self.coordinator.get_conversation_results(conversation_id)
-        formalized_propositions = set()
-        for result in existing_results:
-            if result.get('agent_type') == 'formalizer':
-                existing_proposition = result.get('data', {}).get('proposition')
-                if existing_proposition:
-                    formalized_propositions.add(existing_proposition)
-        
-        # Only queue formalizer task if this proposition hasn't been formalized yet
-        if proposition not in formalized_propositions:
-            logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
-            
-            task_data = {
-                'proposition': proposition,
-                'argument_data': conversation_data.get('argument_data', {}),
-                'file_ids': conversation_data.get('file_ids', [])
-            }
-            
-            self.coordinator.queue_task(
-                agent_type='formalizer',
-                conversation_id=conversation_id,
-                data=task_data
-            )
-            
-            logger.info(f"Queued formalizer task for proposition: {proposition}")
-        else:
-            logger.info(f"Proposition already formalized: {proposition}")
-    
-    def _queue_content_evaluator_task(self, conversation_data: Dict[str, Any]):
-        """Queue content evaluator task for the argument"""
-        conversation_id = conversation_data['conversation_id']
-        
-        # Get existing content evaluations from agent results
-        existing_results = self.coordinator.get_conversation_results(conversation_id)
-        content_evaluations = [r for r in existing_results if r.get('agent_type') == 'content_evaluator']
-        
-        # Only queue content evaluator task if there isn't already one
-        if not content_evaluations:
-            logger.info(f"Queueing content evaluator task for conversation: {conversation_id}")
-            
-            task_data = {
-                'argument': conversation_data.get('argument', []),
-                'thesis': conversation_data.get('thesis', ''),
-                'counter_thesis': conversation_data.get('counter_thesis', ''),
-                'assumptions': conversation_data.get('assumptions', []),
-                'file_ids': conversation_data.get('file_ids', [])
-            }
-            
-            self.coordinator.queue_task(
-                agent_type='content_evaluator',
-                conversation_id=conversation_id,
-                data=task_data
-            )
-            
-            logger.info(f"Queued content evaluator task for conversation: {conversation_id}")
-        else:
-            logger.info(f"Content evaluator already exists for conversation: {conversation_id}")
 
 
 class ContentEvaluationAgent:
@@ -586,5 +519,3 @@ class RewriterAgent:
     
     def rewrite_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
         pass
-
-# Agent registry - agents are created by coordinator with dependency injection 
