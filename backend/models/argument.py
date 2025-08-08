@@ -185,12 +185,7 @@ class ArgumentsWithLoc(Arguments):
     def argue(self):
         """just copy thesis into argument"""
         assert len(self.arg) == 0
-        if self.loc == "argument":
-            thesis_attr = "thesis"
-        elif self.loc == "counter_argument":
-            thesis_attr = "counter_thesis"
-        else:
-            raise ValueError("invalid loc")
+        thesis_attr = "thesis" if self.loc == "argument" else "counter_thesis"
         new_proposition = getattr(self, thesis_attr)
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
@@ -247,16 +242,15 @@ class ArgumentsWithStep(Arguments):
     def remove(self):
         """remove step and adjust justifiers and evaluations accordingly"""
         if self.loc != "assumptions":
-            inferences_from = [s for s in self.arg if s.symbol in self.arg[self.index].justifiers]
-            inferences_to = [s for s in self.arg if self.arg[self.index].symbol in s.justifiers]
-            premises = []
-            for step in inferences_from:
-                if step.symbol in self.arg[self.index].justifiers:
-                    premises.append(step.symbol)
+            # Clean up justifiers for this step
+            step_to_remove = self.arg[self.index]
+            inferences_to = [s for s in self.arg if step_to_remove.symbol in s.justifiers]
+            
             for step in inferences_to:
-                step.justifiers.remove(self.arg[self.index].symbol)
-                for premise in premises:
-                    step.justifiers.append(premise)
+                step.justifiers.remove(step_to_remove.symbol)
+                # Add the removed step's justifiers to the dependent step
+                step.justifiers.extend(step_to_remove.justifiers)
+        
         del self.arg[self.index]
         # Queue analysis and discovery for the argument state change
         self.queue_argument_state_change({
