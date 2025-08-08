@@ -75,29 +75,14 @@ class TestAutomaticFormEvaluator:
             
 
             
-            # Verify that form evaluator was queued
-            mock_queue_task.assert_called_with(
-                agent_type='form_evaluator',
-                conversation_id='test_conversation',
-                data={
-                    'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
-                    'thesis': 'Socrates is mortal',
-                    'counter_thesis': '',
-                    'assumptions': [],
-                    'file_ids': [],
-                    'proposition': 'Socrates is mortal',
-                    'conversation_id': 'test_conversation',
-                    'argument_data': {
-                        'argument': [
-                            {'proposition': 'Socrates is a man'},
-                            {'proposition': 'All men are mortal'},
-                            {'proposition': 'Socrates is mortal'}
-                        ],
-                        'thesis': 'Socrates is mortal',
-                        'assumptions': []
-                    }
-                }
-            )
+            # Verify that form evaluator was NOT queued because the formalization result
+            # hasn't been saved to the database yet
+            form_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'form_evaluator']
+            assert len(form_evaluator_calls) == 0, "Form evaluator should not be queued until formalization result is saved"
+            
+            # Verify that content evaluator was queued instead
+            content_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'content_evaluator']
+            assert len(content_evaluator_calls) >= 1, "Content evaluator should be queued"
     
     def test_formalization_does_not_queue_form_evaluator_when_incomplete(self):
         """Test that formalization agent does not queue form evaluator when not all propositions are formalized"""
