@@ -28,7 +28,13 @@ class TestFormalizationAgent:
             conversation_data = {
                 "proposition": "All mice are small",
                 "conversation_id": "test_conversation",
-                "argument_data": {},
+                "argument_data": {
+                    "argument": [
+                        {"proposition": "All mice are small"}
+                    ],
+                    "thesis": "All mice are small",
+                    "assumptions": []
+                },
                 "file_ids": []
             }
             
@@ -60,7 +66,13 @@ class TestFormalizationAgent:
             conversation_data = {
                 "proposition": "Socrates is mortal",
                 "conversation_id": "test_conversation",
-                "argument_data": {},
+                "argument_data": {
+                    "argument": [
+                        {"proposition": "Socrates is mortal"}
+                    ],
+                    "thesis": "Socrates is mortal",
+                    "assumptions": []
+                },
                 "file_ids": []
             }
             
@@ -108,7 +120,13 @@ class TestFormalizationAgent:
             conversation_data = {
                 "proposition": "This mouse is small",
                 "conversation_id": "test_conversation",
-                "argument_data": {},
+                "argument_data": {
+                    "argument": [
+                        {"proposition": "This mouse is small"}
+                    ],
+                    "thesis": "This mouse is small",
+                    "assumptions": []
+                },
                 "file_ids": []
             }
             

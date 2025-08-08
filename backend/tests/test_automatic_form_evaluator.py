@@ -127,7 +127,6 @@ class TestAutomaticFormEvaluator:
         
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
              patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'check_formalization_completion', return_value=False), \
              patch.object(coordinator, 'queue_task') as mock_queue_task:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
