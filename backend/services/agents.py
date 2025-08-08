@@ -184,6 +184,8 @@ class FormEvaluationAgent:
         
         # Map propositions to their formalizations
         formalizations = []
+        missing_formalizations = []
+        
         for proposition in argument:
             # Find the formalization for this proposition
             formalization = None
@@ -196,11 +198,17 @@ class FormEvaluationAgent:
             if formalization:
                 formalizations.append(formalization)
             else:
-                # If no formalization found, use the original proposition
-                formalizations.append(proposition)
+                # Missing formalization is an error - collect for reporting
+                missing_formalizations.append(proposition)
+        
+        # If any formalizations are missing, raise an error
+        if missing_formalizations:
+            error_msg = f"Missing formalizations for propositions: {missing_formalizations}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         return formalizations
-    
+
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
