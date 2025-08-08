@@ -326,33 +326,6 @@ class AgentCoordinator:
         return [task for task in self.task_history.values() 
                 if task.status in ['pending', 'running']]
     
-    def cleanup_conversation_results(self, conversation_id: str):
-        """Clean up all results for a conversation"""
-        self.result_manager.cleanup_conversation(conversation_id)
-        logger.info(f"Cleaned up results for conversation {conversation_id}")
-    
-    def check_formalization_completion(self, conversation_id: str, argument: list) -> bool:
-        """Check if all propositions in an argument have been formalized"""
-        try:
-            # Get existing results for this conversation
-            existing_results = self.get_conversation_results(conversation_id)
-            
-            # Get formalized propositions
-            formalized_propositions = set()
-            for result in existing_results:
-                if result.get('agent_type') == 'formalizer':
-                    existing_proposition = result.get('data', {}).get('proposition')
-                    if existing_proposition:
-                        formalized_propositions.add(existing_proposition)
-            
-            # Check if all argument propositions have been formalized
-            argument_propositions = set(argument)
-            return argument_propositions.issubset(formalized_propositions)
-            
-        except Exception as e:
-            logger.error(f"Error checking formalization completion: {e}")
-            return False
-    
     def react_to_argument_state_change(self, conversation_id: str, argument_data: Dict[str, Any], change_data: Dict[str, Any] = None):
         """
         Reactively queue agents based on argument state changes.
