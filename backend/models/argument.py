@@ -41,11 +41,8 @@ class Step(BaseModel):
 class Arguments(BaseModel):
     """theses and arguments as received from and returned to frontend"""
     thesis: str
-    counter_thesis: str
-    presupposition: str
     assumptions: list[Step]
     argument: list[Step]
-    counter_argument: list[Step]
     lastPrompt: str | None = None
     explanation: str | None = None
     file_ids: list[str] = []
@@ -59,20 +56,16 @@ class Arguments(BaseModel):
     def gptjsont(self):
         """arguments json to return to frontend used by theses()"""
         return self.model_dump_json(include={
-            "thesis", "counter_thesis",
-            "presupposition", "proposition"})
+            "thesis", "proposition"})
 
     def gptjson(self):
         """arguments json to return to frontend"""
         return self.model_dump_json(include={
-            "assumptions", "argument", "counter_argument",
-            "explanation"})
+            "assumptions", "argument", "explanation"})
 
     def next_symbol(self):
         """picks next available A-Z in a natural order"""
-        steps = (self.assumptions +
-            self.argument +
-            self.counter_argument)
+        steps = (self.assumptions + self.argument)
         letters = [step.symbol for step in steps]
         if not all(isinstance(c, str) and len(c) == 1 and
             'A' <= c <= 'Z' for c in letters):
@@ -127,9 +120,6 @@ class Arguments(BaseModel):
         for step in self.argument:
             if len(step.justifiers) != 0:
                 self.add_evaluations(self.argument + self.assumptions, step)
-        for step in self.counter_argument:
-            if len(step.justifiers) != 0:
-                self.add_evaluations(self.counter_argument + self.assumptions, step)
         return self.gptjson()
 
     def queue_argument_state_change(self, data: dict):
@@ -137,11 +127,8 @@ class Arguments(BaseModel):
         # Prepare argument data for the reactive coordinator
         argument_data = {
             'argument': [step.model_dump() for step in self.argument],
-            'counter_argument': [step.model_dump() for step in self.counter_argument],
             'assumptions': [step.model_dump() for step in self.assumptions],
             'thesis': self.thesis,
-            'counter_thesis': self.counter_thesis,
-            'presupposition': self.presupposition,
             'file_ids': self.file_ids
         }
         
@@ -155,13 +142,13 @@ class ArgumentsWithLoc(Arguments):
     def model_post_init(self, __context):
         """validate that indicated loc exists, and set self.arg"""
         super().model_post_init(__context)
-        assert self.loc in ["argument", "counter_argument"]
+        assert self.loc in ["argument"]
         self.arg = getattr(self, self.loc)
 
     def argue(self):
         """just copy thesis into argument"""
         assert len(self.arg) == 0
-        thesis_attr = "thesis" if self.loc == "argument" else "counter_thesis"
+        thesis_attr = "thesis"
         new_proposition = getattr(self, thesis_attr)
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
@@ -184,7 +171,7 @@ class ArgumentsWithStep(Arguments):
         """validate that indicated position exists, and set self.arg"""
         super().model_post_init(__context)
         # logger.debug(f"l {self.loc}")
-        assert self.loc in ['assumptions', 'argument', 'counter_argument']
+        assert self.loc in ['assumptions', 'argument']
         self.arg = getattr(self, self.loc)
         # logger.debug(f"o {len(self.arg)} {self.index}")
         assert len(self.arg) > self.index
@@ -277,7 +264,7 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
     # should use insert_proposition()
     def user_justify(self):
         """add step using proposition attr and adjust justifiers and evaluations accordingly"""
-        assert self.loc in ["argument", "counter_argument"]
+        assert self.loc in ["argument"]
         new_step = self.new_step(self.proposition)
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)

@@ -3,6 +3,7 @@ import json
 from unittest.mock import patch
 from services.agents import ContentEvaluationAgent, FormEvaluationAgent
 from services.agent_coordinator import coordinator
+from models.argument import Step
 
 
 class TestDualEvaluators:
@@ -31,7 +32,6 @@ class TestDualEvaluators:
             conversation_data = {
                 "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
                 "thesis": "Socrates is mortal",
-                "counter_thesis": "Socrates is not mortal",
                 "assumptions": [],
                 "conversation_id": "test_conversation"
             }
@@ -94,25 +94,24 @@ class TestDualEvaluators:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            conversation_data = {
-                "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
+            argument_data = {
                 "thesis": "Socrates is mortal",
-                "counter_thesis": "Socrates is not mortal",
                 "assumptions": [],
-                "conversation_id": "test_conversation"
+                "argument": ["All men are mortal", "Socrates is a man", "Socrates is mortal"],
+                "conversation_id": "test_session:1"
             }
             
             # Call the form evaluation agent
-            result = agent.evaluate_propositions(conversation_data)
+            result = agent.evaluate_propositions(argument_data)
             
             # Verify the result
             assert result.agent_type == "form_evaluator"
             assert result.operation == "evaluate_propositions"
             assert result.data["evaluation_mode"] == "formal_validity"
-            
-            # Verify that all truth values are 0.5 (neither true nor false by form alone)
-            for evaluation in result.data["evaluation"]["proposition_evaluations"]:
-                assert evaluation["truth_value"] == 0.5
+            assert result.data["argument_validity"] == 1.0
+            assert result.data["proposition_count"] == 3
+            assert len(result.data["logical_issues"]) == 0
+            assert len(result.data["recommendations"]) > 0
 
 
 if __name__ == "__main__":
