@@ -124,7 +124,6 @@ class ContentEvaluationAgent:
                     "evaluation_mode": "content_truth",
                     "argument": conversation_data['argument'],
                     "thesis": conversation_data['thesis'],
-                    "counter_thesis": conversation_data['counter_thesis'],
                     "assumptions": conversation_data['assumptions']
                 },
                 confidence=overall_truth_score,
@@ -235,14 +234,13 @@ class FormEvaluationAgent:
                 operation="evaluate_propositions",
                 data={
                     "evaluation": evaluation_result,
-                    "proposition_count": proposition_count,
                     "argument_validity": argument_validity,
+                    "proposition_count": proposition_count,
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
                     "evaluation_mode": "formal_validity",
                     "argument": conversation_data['argument'],
                     "thesis": conversation_data['thesis'],
-                    "counter_thesis": conversation_data['counter_thesis'],
                     "assumptions": conversation_data['assumptions']
                 },
                 confidence=argument_validity,

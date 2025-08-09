@@ -18,45 +18,28 @@ theses_system_prompt = instructions + """
 
 ### Task
 
-You will begin by extracting a thesis, a counter-thesis, a presupposition, and
+You will begin by extracting a thesis and
 a name from the given context. This may be a brief statement in
 the "proposition" property, or it may be a document in the context.
 
-Theses and a presupposition may already have been chosen, in which case
-interpret the proposition as directions to further refine these values.
-
-The thesis and counter-thesis must be logical contraries: they cannot both be
-true, and they should be formulated so that their disjunction (the thesis or
-the counter-thesis) is a logical truth or nearly so. In other words, the
-thesis and counter-thesis must be constructed so that their joint falsity
-entails a contradiction or near-contradiction.
-
-The presupposition is that proposition whose disjunction with the thesis and
-the counter-thesis must be a logical truth. That is: if both the thesis and
-counter-thesis are false, then the negation of the presupposition must be
-true. These is the proposition which must be true for the thesis and
-counter-thesis to be genuinely contraries. The presupposition represents the
-logical space within which the thesis and counter-thesis can stand in
-opposition.
+Thesis may already have been chosen, in which case
+interpret the proposition as directions to further refine this value.
 
 The name is a roughly 25 character description derived from the thesis with which
 to describe the conversation. Avoid words, such as "debate" or "thesis",
 that would be common to all descriptions. The name should be unique to the
 conversation. 
 
-Critically, you must derive the presupposition entirely from the logical
-forms of the thesis and counter-thesis, without introducing any new concepts,
+Critically, you must derive the thesis entirely from the logical
+forms of the given context, without introducing any new concepts,
 rewordings, paraphrases, semantic interpretations, or conceptual
 abstractions. Do not explain or analyze concepts. Do not ascend to questions
 of meaning, definition, or epistemic evaluation. Only work with the surface
-logical content already contained in the thesis and counter-thesis.
+logical content already contained in the context.
 
 You are not doing philosophy of language, nor meta-logic, nor analysis of
 criteria or categories. You are working strictly within the logic of natural
 language sentences as declarative propositions.
-
-When in doubt, remember: the negation of the presupposition must entail the
-falsity of both the thesis and the counter-thesis.
 
 ### Examples
 
@@ -65,16 +48,12 @@ Prompt:
 
 Output:
 thesis: The present king of France is bald.
-counter_thesis: The present king of France is not bald.
-presupposition: There is a present king of France.
 
 Prompt:
 "The Beatles are better than The Rolling Stones."
 
 Output:
 thesis: The Beatles are better than The Rolling Stones.
-counter_thesis: The Beatles are not better than The Rolling Stones.
-presuppositions: Either the Beatles or The Rolling Stones are better.
 
 """
 

@@ -197,7 +197,7 @@ interface AgentSuggestion {
     id: string;
     proposition: string;
     placement: {
-        loc: string;  // 'argument' | 'counter_argument' | 'assumptions'
+        loc: string;  // 'argument' | 'assumptions'
         index: number;
     };
     confidence: number;
