@@ -11,10 +11,7 @@ export type StepType = {
 
 type ConversationSnapshot = {
   thesis: string
-  counter_thesis: string
-  presupposition: string
   argument: StepType[]
-  counter_argument: StepType[]
   assumptions: StepType[]
   lastPrompt: string
   argMode: ArgMode

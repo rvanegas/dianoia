@@ -3,10 +3,6 @@ import type {StepType, ConversationSnapshot} from './types'
 export function thesisMarkdown(currentSnapshot: ConversationSnapshot) {
   let md = '**Thesis:**\n\n'
   md += currentSnapshot.thesis + '\n\n'
-  md += '**Counter-Thesis:**\n\n'
-  md += currentSnapshot.counter_thesis + '\n\n'
-  md += '**Presupposition:**\n\n'
-  md += currentSnapshot.presupposition + '\n\n'
   return md
 }
 
@@ -45,8 +41,6 @@ export function developmentMarkdown(currentSnapshot: ConversationSnapshot) {
   }
   md += '**Argument:**\n\n'
   argumentMarkdown(currentSnapshot.argument)
-  md += '**Counter-Argument:**\n\n'
-  argumentMarkdown(currentSnapshot.counter_argument)
   return md
 }
 
