@@ -247,10 +247,6 @@ function Conversation({
     <div>{argumentNode('argument', currentSnapshot.argument)}</div>
   )
 
-  const counterArgumentDiv = () => (
-    <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
-  )
-
   const assumptionsDiv = (
     <div>
       {currentSnapshot.assumptions.map((step, step_index) => {
@@ -398,24 +394,6 @@ function Conversation({
             </FlexRow>
           </Section>
         )}
-        {currentSnapshot.counter_thesis && (
-          <Section>
-            <FlexRow label="Counter-Thesis:" />
-            <FlexRow
-              chevron={
-                currentSnapshot.counter_argument.length == 0 ? (
-                  <ThesisActions
-                    thesisType="counter_thesis"
-                    userMode={userMode}
-                    onArgue={handleArgue}
-                  />
-                ) : undefined
-              }
-            >
-              {currentSnapshot.counter_thesis}
-            </FlexRow>
-          </Section>
-        )}
         {currentSnapshot.assumptions.length > 0 && (
           <Section>
             <FlexRow label="Assumptions:" />
@@ -426,12 +404,6 @@ function Conversation({
           <Section>
             <FlexRow label="Argument:" />
             {argumentDiv()}
-          </Section>
-        )}
-        {currentSnapshot.counter_argument.length > 0 && (
-          <Section>
-            <FlexRow label="Counter-Argument:" />
-            {counterArgumentDiv()}
           </Section>
         )}
         {currentSnapshot.explanation && (

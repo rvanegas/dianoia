@@ -3,7 +3,7 @@ import ActionMenu from './ActionMenu'
 type UserMode = 'waiting' | 'ready' | 'input'
 
 interface ThesisActionsProps {
-  thesisType: 'thesis' | 'counter_thesis'
+  thesisType: 'thesis'
   userMode: UserMode
   onArgue: (thesisType: string) => Promise<void>
 }
