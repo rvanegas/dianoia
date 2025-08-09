@@ -181,11 +181,11 @@ class AgentCoordinator:
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
-            logger.info(f"Started worker thread for {agent_type} agent")
+            # logger.info(f"Started worker thread for {agent_type} agent")
     
     def _worker_loop(self, agent_type: str):
         """Main worker loop for processing tasks"""
-        logger.info(f"Worker {agent_type} started")
+        # logger.info(f"Worker {agent_type} started")
         
         while self.running:
             try:
@@ -194,7 +194,7 @@ class AgentCoordinator:
                 
                 # Check if this task is for our agent type
                 if task.agent_type == agent_type:
-                    logger.info(f"Worker {agent_type} processing task {task.id}")
+                    # logger.info(f"Worker {agent_type} processing task {task.id}")
                     self._process_task(task)
                 else:
                     # Put back in queue for different agent
@@ -204,7 +204,7 @@ class AgentCoordinator:
                 # Queue timeout or other error, continue
                 continue
         
-        logger.info(f"Worker {agent_type} stopped")
+        # logger.info(f"Worker {agent_type} stopped")
     
     def _process_task(self, task: AgentTask):
         """Process a single task"""
@@ -374,6 +374,7 @@ class AgentCoordinator:
                     existing_formalizations.add(existing_proposition)
         
         # Queue formalizer for propositions that haven't been formalized yet
+        # logger.debug(f"Queueing formalizer tasks for proposition {all_propositions}")
         for proposition in all_propositions:
             if proposition not in existing_formalizations:
                 formalizer_task_data = {
@@ -381,6 +382,7 @@ class AgentCoordinator:
                     'argument_data': discovery_task_data['argument_data'],
                     'file_ids': argument_data.get('file_ids', [])
                 }
+                # logger.debug(f"Queueing formalizer task for proposition {proposition}")
                 self.queue_task(
                     agent_type='formalizer',
                     conversation_id=conversation_id,
@@ -451,11 +453,10 @@ class AgentCoordinator:
                     if existing_proposition:
                         formalized_propositions.add(existing_proposition)
             
-            # Note: We don't include the current proposition being formalized
-            # because the formalization result hasn't been saved yet
-            
             # Check if all propositions are now formalized
             form_eval_argument_propositions_set = set(form_eval_argument_propositions)
+
+            # logger.debug(f"Formalized propositions: {formalized_propositions}")
             
             if form_eval_argument_propositions_set.issubset(formalized_propositions):
                 # Queue form evaluator task
