@@ -8,7 +8,7 @@ from config import OPENAI_MODEL
 from core.utils import logger
 from services.openaiclient import client
 from services.system_prompt import (
-    theses_system_prompt,
+    gen_name_system_prompt,
     justify_system_prompt,
     evaluate_system_prompt,
     explain_system_prompt)
@@ -127,15 +127,14 @@ class Gpt:
         logger.error(f"No assistant value found. Messages returned: {messages.data}")
         raise AssistantResponseError("no assistant value found")
 
-gpt_theses = Gpt(
-    instructions=theses_system_prompt,
+gpt_gen_name = Gpt(
+    instructions=gen_name_system_prompt,
     response_format_base={
         "type": "object",
         "properties": {
-            "thesis": {"type": "string"},
             "name": {"type": "string"}
         },
-        "required": ["thesis", "name"],
+        "required": ["name"],
         "additionalProperties": False
     }
 )

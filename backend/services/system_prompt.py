@@ -14,46 +14,15 @@ alone.
 
 """
 
-theses_system_prompt = instructions + """
+gen_name_system_prompt = instructions + """
 
 ### Task
 
-You will begin by extracting a thesis and
-a name from the given context. This may be a brief statement in
-the "proposition" property, or it may be a document in the context.
-
-Thesis may already have been chosen, in which case
-interpret the proposition as directions to further refine this value.
-
-The name is a roughly 25 character description derived from the thesis with which
-to describe the conversation. Avoid words, such as "debate" or "thesis",
-that would be common to all descriptions. The name should be unique to the
-conversation. 
-
-Critically, you must derive the thesis entirely from the logical
-forms of the given context, without introducing any new concepts,
-rewordings, paraphrases, semantic interpretations, or conceptual
-abstractions. Do not explain or analyze concepts. Do not ascend to questions
-of meaning, definition, or epistemic evaluation. Only work with the surface
-logical content already contained in the context.
-
-You are not doing philosophy of language, nor meta-logic, nor analysis of
-criteria or categories. You are working strictly within the logic of natural
-language sentences as declarative propositions.
-
-### Examples
-
-Prompt:
-"The present king of France is bald."
-
-Output:
-thesis: The present king of France is bald.
-
-Prompt:
-"The Beatles are better than The Rolling Stones."
-
-Output:
-thesis: The Beatles are better than The Rolling Stones.
+Generate a name that is roughly 25 characters long to describe the conversation.
+The name should be derived from the proposition and be unique to this specific
+conversation. Avoid generic words like "debate" or "thesis" that would
+apply to all conversations. Name should be readable for the UI.
+Don't use bicapitalization or other code-like formatting.
 
 """
 
