@@ -192,6 +192,7 @@ export function useConversationActions(
       operationInfo.onSuccess(responseObject)
       // Clear any previous failed operation on success
       setLastFailedOperation(null)
+      return responseObject
     } catch (error: any) {
       handleApiError(error, operationInfo)
     } finally {
@@ -211,27 +212,52 @@ export function useConversationActions(
     if (userMode == 'waiting') return
     if (!(content && content.trim())) return
     setPrompt(content)
-    setUserMode('waiting')
     setInputText('')
     
-    const apiPrompt = {
+    let apiPrompt = {
       ...currentSnapshot,
       proposition: content,
     }
-    const url = VITE_API_BASE_URL + '/api/argument/theses'
+    let url = VITE_API_BASE_URL + '/api/argument/argue'
+    let newSnapshot = currentSnapshot
+    const argMode: ArgMode = 'thesis'
     
+    // First API call to create thesis
+    const thesisResponseObject = await makeApiCall(
+      {
+        url, data: apiPrompt, onSuccess: (responseObject) => {
+          newSnapshot = {
+            ...currentSnapshot,
+            ...responseObject,
+            lastPrompt: content,
+            argMode,
+          }
+          saveSnapshot(newSnapshot)
+          setPrompt('')
+        }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis'
+      }
+    )
+
+    url = VITE_API_BASE_URL + '/api/argument/gen-name'
+    apiPrompt = {
+      ...currentSnapshot,
+      ...thesisResponseObject,
+      proposition: content,
+    }
+
     await makeApiCall(
-      { url, data: apiPrompt, onSuccess: (responseObject) => {
-        const argMode: ArgMode = 'thesis'
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-          lastPrompt: content,
-          argMode,
-        }
-        saveSnapshot(newSnapshot, false, responseObject.name)
-        setPrompt('')
-      }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis' }
+      {
+        url, data: apiPrompt, onSuccess: (responseObject) => {
+          const finalSnapshot = {
+            ...currentSnapshot,
+            ...thesisResponseObject,
+            lastPrompt: content,
+            argMode,
+          }
+          saveSnapshot(finalSnapshot, false, responseObject.name)
+          setPrompt('')
+        }, onFinally: () => {}, operationName: 'Generate Name'
+      }
     )
   }
 
