@@ -221,7 +221,7 @@ export function useConversationActions(
     }
     let url = VITE_API_BASE_URL + '/api/argument/argue'
     let newSnapshot = currentSnapshot
-    const argMode: ArgMode = 'thesis'
+    const argMode: ArgMode = 'development'
     
     // First API call to create thesis
     const thesisResponseObject = await makeApiCall(
