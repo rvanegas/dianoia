@@ -11,10 +11,10 @@ interface PropositionActionsProps {
   userMode: UserMode
   onAIJustify: (loc: string, stepIndex: number) => Promise<void>
   onUserJustify: (loc: string, stepIndex: number) => void
-  onAssume: (action: ActionType, prompt: string, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
-  onRemove: (action: ActionType, prompt: string, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
+  onAssume: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
+  onRemove: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   onDispute: (step: any) => Promise<void>
-  onExplain: (action: ActionType, prompt: string, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
+  onExplain: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   setUserMode: (mode: UserMode) => void
   setTargetLoc: (loc: string) => void
   setTargetIndex: (index: number) => void
@@ -58,16 +58,14 @@ export default function PropositionActions({
     {
       label: 'Assume',
       onClick: async () => {
-        const prompt = `Assume proposition (${step.symbol})`
-        await onAssume('assume', prompt, loc, stepIndex, `Assume proposition (${step.symbol})`)
+        await onAssume('assume', loc, stepIndex, `Assume proposition (${step.symbol})`)
       },
       show: !isLastStep && !hasJustifiers
     },
     {
       label: 'Remove',
       onClick: async () => {
-        const prompt = `Remove proposition (${step.symbol})`
-        await onRemove('remove', prompt, loc, stepIndex, `Remove proposition (${step.symbol})`)
+        await onRemove('remove', loc, stepIndex, `Remove proposition (${step.symbol})`)
       },
       show: !isLastStep
     },
@@ -81,8 +79,7 @@ export default function PropositionActions({
     {
       label: 'Explain',
       onClick: async () => {
-        const prompt = `Explain inference to propositon (${step.symbol})`
-        await onExplain('explain', prompt, loc, stepIndex, `Explain inference to proposition (${step.symbol})`)
+        await onExplain('explain', loc, stepIndex, `Explain inference to proposition (${step.symbol})`)
       },
       show: hasJustifiers
     }

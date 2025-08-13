@@ -32,7 +32,6 @@ function initialSnapshot() : ConversationSnapshot {
     thesis: '',
     assumptions: [],
     argument: [],
-    lastPrompt: '',
     evaluationsPending: false,
     explanation: '',
     argMode: 'thesis',
@@ -63,8 +62,7 @@ export function useConversationState(
   // contents of input element
   const [inputText, setInputText] = useState<string>('')
 
-  // should rename to currentPrompt. this is prompt backend is currently working on.
-  const [prompt, setPrompt] = useState<string>('')
+
 
   // export button
   const [copied, setCopied] = useState<boolean>(false)
@@ -95,11 +93,6 @@ export function useConversationState(
     setConversation(newConversation)
   }
 
-  // this is just an abbreviation to keep typescript happy
-  const argLoc = (loc: string) => {
-    return currentSnapshot[loc as keyof typeof currentSnapshot] as any[]
-  }
-
   return {
     snapshotRenderCount,
     snapshotIndex,
@@ -113,15 +106,12 @@ export function useConversationState(
     setTargetIndex,
     inputText,
     setInputText,
-    prompt,
-    setPrompt,
     copied,
     setCopied,
     evaluatingMode,
     setEvaluatingMode,
     inputRef,
     saveSnapshot,
-    argLoc,
     sessionId
   }
 }
@@ -130,11 +120,10 @@ export function useConversationActions(
   currentSnapshot: ConversationSnapshot,
   userMode: UserMode,
   setUserMode: (mode: UserMode) => void,
-  setPrompt: (prompt: string) => void,
+
   setInputText: (text: string) => void,
   targetLoc: string,
   targetIndex: number,
-  argLoc: (loc: string) => any[],
   saveSnapshot: (newSnap: ConversationSnapshot, inPlace?: boolean, convName?: string) => void,
   createConversationFromProposition: (proposition: string) => void,
   setEvaluatingMode: (mode: boolean) => void,
@@ -212,7 +201,7 @@ export function useConversationActions(
   const handleThesis = async (content?: string) => {
     if (userMode == 'waiting') return
     if (!(content && content.trim())) return
-    setPrompt(content)
+
     setInputText('')
     
     let apiPrompt = {
@@ -230,11 +219,9 @@ export function useConversationActions(
           newSnapshot = {
             ...currentSnapshot,
             ...responseObject,
-            lastPrompt: content,
             argMode,
           }
           saveSnapshot(newSnapshot)
-          setPrompt('')
         }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis'
       }
     )
@@ -252,19 +239,15 @@ export function useConversationActions(
           const finalSnapshot = {
             ...currentSnapshot,
             ...thesisResponseObject,
-            lastPrompt: content,
             argMode,
           }
           saveSnapshot(finalSnapshot, false, responseObject.name)
-          setPrompt('')
         }, onFinally: () => {}, operationName: 'Generate Name'
       }
     )
   }
 
   const handleAIJustify = async (loc: string, index: number) => {
-    const lastPrompt = `AI Justify proposition ${argLoc(loc)[index].symbol}`
-    setPrompt(lastPrompt)
     setUserMode('waiting')
     
     const url = VITE_API_BASE_URL + '/api/argument/ai-justify'
@@ -279,10 +262,8 @@ export function useConversationActions(
           ...currentSnapshot,
           ...responseObject,
           evaluationsPending: true,
-          lastPrompt,
         }
         saveSnapshot(newSnapshot)
-        setPrompt('')
       }, onFinally: () => setUserMode('ready'), operationName: 'AI Justify' }
     )
   }
@@ -292,8 +273,6 @@ export function useConversationActions(
       throw new Error('bad params')
     }
     const argumentAttr = 'argument'
-    const thesisLabel = 'Thesis'
-    const lastPrompt = `Argue for ${thesisLabel}`
     setUserMode('waiting')
     
     const url = VITE_API_BASE_URL + '/api/argument/argue'
@@ -309,17 +288,13 @@ export function useConversationActions(
           ...currentSnapshot,
           ...responseObject,
           argMode,
-          lastPrompt
         }
         saveSnapshot(newSnapshot)
-        setPrompt('')
       }, onFinally: () => setUserMode('ready'), operationName: 'Argue' }
     )
   }
 
   const handleUserJustify = async (proposition: string) => {
-    const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
-    setPrompt(lastPrompt)
     setUserMode('waiting')
     
     const url = VITE_API_BASE_URL + '/api/argument/user-justify'
@@ -335,10 +310,8 @@ export function useConversationActions(
           ...currentSnapshot,
           ...responseObject,
           evaluationsPending: true,
-          lastPrompt
         }
         saveSnapshot(newSnapshot)
-        setPrompt('')
       }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' }
     )
   }
@@ -378,7 +351,7 @@ export function useConversationActions(
   }
 
   const handleAction = async (
-    action: ActionType, lastPrompt: string, loc: string, index: number, errorLabel: string
+    action: ActionType, loc: string, index: number, errorLabel: string
   ) => {
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/argument/' + action
@@ -392,15 +365,11 @@ export function useConversationActions(
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
-          lastPrompt
         }
         if (action == 'remove' || action == 'assume') {
           newSnapshot.evaluationsPending = true
-        } else {
-          setPrompt(lastPrompt)
         }
         saveSnapshot(newSnapshot)
-        setPrompt('')
       }, onFinally: () => setUserMode('ready'), operationName: errorLabel }
     )
   }
