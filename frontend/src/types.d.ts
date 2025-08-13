@@ -13,7 +13,6 @@ type ConversationSnapshot = {
   thesis: string
   argument: StepType[]
   assumptions: StepType[]
-  lastPrompt: string
   argMode: ArgMode
   evaluationsPending: boolean
   explanation: string | undefined
