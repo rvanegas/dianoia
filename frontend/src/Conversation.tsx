@@ -285,57 +285,6 @@ function Conversation({
     </div>
   )
 
-  // const thesesDiv = (
-  //   <div>
-  //     <div>
-  //       {currentSnapshot.argument.length == 0 ? (
-  //         <div className="flex items-start gap-2">
-  //           <ThesisActions
-  //             thesisType="thesis"
-  //             userMode={userMode}
-  //             onArgue={handleArgue}
-  //           />
-  //           <div className="flex-1">
-  //             {currentSnapshot.thesis}
-  //           </div>
-  //         </div>
-  //       ) : (
-  //         <div>{currentSnapshot.thesis}</div>
-  //       )}
-  //     </div>
-  //     <div>
-  //       {currentSnapshot.counter_argument.length == 0 ? (
-  //         <div className="flex items-start gap-2">
-  //           <ThesisActions
-  //             thesisType="counter_thesis"
-  //             userMode={userMode}
-  //             onArgue={handleArgue}
-  //           />
-  //           <div className="flex-1">
-  //             {currentSnapshot.counter_thesis}
-  //           </div>
-  //         </div>
-  //       ) : (
-  //         <div>{currentSnapshot.counter_thesis}</div>
-  //       )}
-  //     </div>
-  //     <div>{currentSnapshot.presupposition}</div>
-  //   </div>
-  // )
-
-
-
-  // const lastPromptDiv = (
-  //   <div>
-  //     {currentSnapshot.lastPrompt}
-  //   </div>
-  // )
-
-  // const promptDiv = (
-  //   <div>
-  //     {prompt}
-  //   </div>
-  // )
 
   const explanationDiv = () => {
     return (
