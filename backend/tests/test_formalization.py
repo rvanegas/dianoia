@@ -32,7 +32,6 @@ class TestFormalizationAgent:
                     "argument": [
                         {"proposition": "All mice are small"}
                     ],
-                    "thesis": "All mice are small",
                     "assumptions": []
                 },
                 "file_ids": []
@@ -70,7 +69,6 @@ class TestFormalizationAgent:
                     "argument": [
                         {"proposition": "Socrates is mortal"}
                     ],
-                    "thesis": "Socrates is mortal",
                     "assumptions": []
                 },
                 "file_ids": []
@@ -124,7 +122,6 @@ class TestFormalizationAgent:
                     "argument": [
                         {"proposition": "This mouse is small"}
                     ],
-                    "thesis": "This mouse is small",
                     "assumptions": []
                 },
                 "file_ids": []

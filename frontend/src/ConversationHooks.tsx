@@ -29,7 +29,6 @@ function getSessionId(): string {
 
 function initialSnapshot() : ConversationSnapshot {
   return {
-    thesis: '',
     assumptions: [],
     argument: [],
     evaluationsPending: false,
@@ -268,31 +267,7 @@ export function useConversationActions(
     )
   }
 
-  const handleArgue = async (thesisAttr: string) => {
-    if (thesisAttr !== 'thesis') {
-      throw new Error('bad params')
-    }
-    const argumentAttr = 'argument'
-    setUserMode('waiting')
-    
-    const url = VITE_API_BASE_URL + '/api/argument/argue'
-    const argMode: ArgMode = 'development'
-    const apiPrompt = {
-      ...currentSnapshot, 
-      loc: argumentAttr, index: 0,
-    }
-    
-    await makeApiCall(
-      { url, data: apiPrompt, onSuccess: (responseObject) => {
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-          argMode,
-        }
-        saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: 'Argue' }
-    )
-  }
+
 
   const handleUserJustify = async (proposition: string) => {
     setUserMode('waiting')
@@ -381,7 +356,6 @@ export function useConversationActions(
   return {
     handleThesis,
     handleAIJustify,
-    handleArgue,
     handleUserJustify,
     evaluateSteps,
     handleAction,

@@ -58,7 +58,6 @@ class TestAutomaticFormEvaluator:
                         {'proposition': 'All men are mortal'},
                         {'proposition': 'Socrates is mortal'}
                     ],
-                    'thesis': 'Socrates is mortal',
                     'assumptions': []
                 },
                 'file_ids': []
@@ -119,7 +118,6 @@ class TestAutomaticFormEvaluator:
                         {'proposition': 'All men are mortal'},
                         {'proposition': 'Socrates is mortal'}
                     ],
-                    'thesis': 'Socrates is mortal',
                     'assumptions': []
                 },
                 'file_ids': []

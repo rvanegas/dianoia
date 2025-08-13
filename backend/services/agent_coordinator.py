@@ -347,11 +347,10 @@ class AgentCoordinator:
         
         # Queue builder agent for content discovery
         discovery_task_data = {
-            'argument_data': {
-                'argument': argument_data.get('argument', []),
-                'assumptions': argument_data.get('assumptions', []),
-                'thesis': argument_data.get('thesis', '')
-            },
+                    'argument_data': {
+            'argument': argument_data.get('argument', []),
+            'assumptions': argument_data.get('assumptions', [])
+        },
             **change_data
         }
         self.queue_task(
@@ -387,7 +386,6 @@ class AgentCoordinator:
         # Queue content evaluator for argument analysis
         analysis_task_data = {
             'argument': argument_propositions,
-            'thesis': argument_data.get('thesis', ''),
             'assumptions': argument_data.get('assumptions', []),
             'file_ids': argument_data.get('file_ids', []),
             'conversation_id': conversation_id
@@ -456,7 +454,6 @@ class AgentCoordinator:
                 # Queue form evaluator task
                 form_evaluator_task_data = {
                     'argument': form_eval_argument_propositions,
-                    'thesis': argument_data.get('thesis', ''),
                     'assumptions': argument_data.get('assumptions', []),
                     'file_ids': argument_data.get('file_ids', []),
                     **change_data

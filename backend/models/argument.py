@@ -40,7 +40,6 @@ class Step(BaseModel):
 
 class Arguments(BaseModel):
     """theses and arguments as received from and returned to frontend"""
-    thesis: str
     assumptions: list[Step]
     argument: list[Step]
     explanation: str | None = None
@@ -126,7 +125,6 @@ class Arguments(BaseModel):
         argument_data = {
             'argument': [step.model_dump() for step in self.argument],
             'assumptions': [step.model_dump() for step in self.assumptions],
-            'thesis': self.thesis,
             'file_ids': self.file_ids
         }
         
@@ -237,9 +235,8 @@ class ArgumentsWithProposition(Arguments):
     proposition: str
 
     def argue(self):
-        """just copy thesis into argument"""
+        """add proposition as first argument step"""
         assert len(self.arg) == 0
-        thesis_attr = "thesis"
         new_step = self.new_step(self.proposition)
         self.argument.append(new_step)
         logger.debug(f"arg: {self.argument}")

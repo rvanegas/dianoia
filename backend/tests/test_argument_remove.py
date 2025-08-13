@@ -12,7 +12,6 @@ class TestArgumentRemove:
         """Test removing a step that has justifiers and is referenced by other steps"""
         # Create an argument with multiple steps and justifiers
         argument_data = {
-            "thesis": "Socrates is mortal",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
@@ -59,7 +58,6 @@ class TestArgumentRemove:
     def test_remove_step_from_argument_without_justifiers(self):
         """Test removing a step that has no justifiers"""
         argument_data = {
-            "thesis": "Socrates is mortal",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
@@ -92,7 +90,6 @@ class TestArgumentRemove:
     def test_remove_step_from_assumptions(self):
         """Test removing a step from assumptions (should not transfer justifiers)"""
         argument_data = {
-            "thesis": "Socrates is mortal",
             "assumptions": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="All men are mortal", justifiers=["A"], truth="1.0", valid="1.0")
@@ -120,7 +117,6 @@ class TestArgumentRemove:
     def test_remove_step_with_complex_justifier_transfer(self):
         """Test removing a step with complex justifier relationships"""
         argument_data = {
-            "thesis": "Complex argument",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Premise A", justifiers=[], truth="1.0", valid="1.0"),
@@ -156,7 +152,6 @@ class TestArgumentRemove:
     def test_remove_step_queues_argument_state_change(self):
         """Test that remove() queues argument state change"""
         argument_data = {
-            "thesis": "Test thesis",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Step A", justifiers=[], truth="1.0", valid="1.0"),
@@ -189,7 +184,6 @@ class TestArgumentRemove:
     def test_remove_step_preserves_other_arguments(self):
         """Test that remove() doesn't affect other arguments"""
         argument_data = {
-            "thesis": "Test thesis",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Step A", justifiers=[], truth="1.0", valid="1.0"),

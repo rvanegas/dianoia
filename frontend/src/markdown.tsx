@@ -1,12 +1,6 @@
 import type {StepType, ConversationSnapshot} from './types'
 
-export function thesisMarkdown(currentSnapshot: ConversationSnapshot) {
-  let md = '**Thesis:**\n\n'
-  md += currentSnapshot.thesis + '\n\n'
-  return md
-}
-
-export function developmentMarkdown(currentSnapshot: ConversationSnapshot) {
+export function exportMarkdown(currentSnapshot: ConversationSnapshot) {
   let md = ''
 
   const assumptionsMarkdown = (assumptions: StepType[]) => {
@@ -41,12 +35,5 @@ export function developmentMarkdown(currentSnapshot: ConversationSnapshot) {
   }
   md += '**Argument:**\n\n'
   argumentMarkdown(currentSnapshot.argument)
-  return md
-}
-
-export function exportMarkdown(currentSnapshot: ConversationSnapshot) {
-  let md = ''
-  md += thesisMarkdown(currentSnapshot)
-  md += developmentMarkdown(currentSnapshot)
   return md
 }
