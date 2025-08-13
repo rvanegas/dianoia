@@ -31,7 +31,6 @@ class TestDualEvaluators:
             # Test data
             conversation_data = {
                 "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
-                "thesis": "Socrates is mortal",
                 "assumptions": [],
                 "conversation_id": "test_conversation"
             }
@@ -95,7 +94,6 @@ class TestDualEvaluators:
             
             # Test data
             argument_data = {
-                "thesis": "Socrates is mortal",
                 "assumptions": [],
                 "argument": ["All men are mortal", "Socrates is a man", "Socrates is mortal"],
                 "conversation_id": "test_session:1"
