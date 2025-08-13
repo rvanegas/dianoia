@@ -18,7 +18,7 @@ interface ActionMenuProps {
 export default function ActionMenu({
   actionItems,
   userMode,
-  className = "relative -ml-4"
+  className = "relative"
 }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const isDisabled = userMode === 'waiting'
@@ -32,8 +32,6 @@ export default function ActionMenu({
   return (
     <div 
       className={className}
-      onMouseEnter={() => !isDisabled && setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
     >
       <button
         disabled={isDisabled}
@@ -48,8 +46,8 @@ export default function ActionMenu({
       </button>
       
       {isOpen && (
-        <div className="absolute left-7 top-0 bg-gray-100 dark:bg-gray-700 shadow-lg z-10">
-          <div className="flex">
+        <div className="ml-5 mt-1 bg-gray-100 dark:bg-gray-700 shadow-sm rounded border border-gray-200 dark:border-gray-600">
+          <div className="flex gap-1 p-1">
             {filteredItems.map((item, index) => (
               <button
                 key={index}
@@ -57,7 +55,7 @@ export default function ActionMenu({
                   item.onClick()
                   setIsOpen(false)
                 }}
-                className="px-2 h-6 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 whitespace-nowrap"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 whitespace-nowrap rounded"
               >
                 {item.label}
               </button>
