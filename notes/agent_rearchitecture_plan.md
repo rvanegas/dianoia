@@ -54,6 +54,17 @@ interface AgentInput {
     user_preferences: UserPreferences
   }
   
+  // Note: Step model must be updated to include formalization and separate validity attributes
+  // Step = {
+  //   symbol: string
+  //   proposition: string
+  //   justifiers: string[]
+  //   truth: string
+  //   valid_content: string    // Validity from content evaluation
+  //   valid_formal: string     // Validity from formal evaluation
+  //   formalization?: string   // Formal logic representation
+  // }
+  
   // Task-specific data
   task_data: {
     target_type: 'argument' | 'proposition'
@@ -71,6 +82,8 @@ interface AgentInput {
 ```
 
 ### Implementation
+- Update Step model to include formalization attribute
+- Implement agent input filtering (formalization omitted for content evaluation, content omitted for formal evaluation)
 - Standardize all agent entry points
 - Add validation and transformation logic
 
@@ -125,10 +138,10 @@ Based on analysis of argumentation needs, agents must perform these specific fun
 
 #### **Core Agent Types**
 
-**1. Content Evaluation Agent** (Evaluates truth, validity, and coherence of natural language content)
+**1. Content Evaluation Agent** (Evaluates truth, validity, coherence, and identifies weak inferences in natural language content)
 ```typescript
 interface ContentEvaluationAgent {
-  input: AgentInput
+  input: AgentInput  // Receives steps without formalization attributes
   output: ContentEvaluationResult[]
 }
 ```
@@ -136,7 +149,7 @@ interface ContentEvaluationAgent {
 **2. Formal Evaluation Agent** (Evaluates validity of formalized logic)
 ```typescript
 interface FormalEvaluationAgent {
-  input: AgentInput  // Note: content omitted to avoid distraction
+  input: AgentInput  // Receives steps without natural language content
   output: FormalEvaluationResult[]
 }
 ```
@@ -162,7 +175,8 @@ interface ImprovementAgent {
 Content Evaluation Agent
 ├── Evaluates truth of propositions
 ├── Evaluates validity of natural language inferences
-└── Checks coherence of proposition sets
+├── Checks coherence of proposition sets
+└── Identifies weak inferences in natural language
 
 Formalization Agent
 ├── Formalizes individual propositions
