@@ -82,87 +82,101 @@ Current agents have overlapping responsibilities and unclear boundaries:
 - `content_evaluator` and `form_evaluator` both evaluate
 - No clear specialization or hierarchy
 
+### Required Agent Functions
+Based on analysis of argumentation needs, agents must perform these specific functions:
+
+1. **Evaluate truth of propositions**
+   - Only those which were not evaluated in previous snapshot
+
+2. **Evaluate validity of inferences**
+   - Only those inferences which were not evaluated in previous snapshot
+   - An inference from P, Q to R is equivalent to the evaluation of the truth of "if P and Q then R" where the conditional is strict implication, not material implication
+
+3. **Check coherence**
+   - Flag sets of incoherent propositions
+   - That a set of propositions P, Q is incoherent is equivalent to the truth of "if P and Q then False" where the conditional is strict implication, not material implication
+
+4. **Identify weakest inferences in argument**
+   - Inferences whose validity, that is whose corresponding strict implication conditional are not absolutely true, are weakly valid
+
+5. **Identify missing premises**
+   - The additional premise with which a weakly valid inference would be stronger is a missing premise
+
+6. **Recommend proposition rewriting and step reordering**
+   - Recommend individual propositions rewrites
+   - Recommend separating composite propositions into multiple simple propositions to make inferences explicit
+   - Recommend combining simple propositions into composites for clarity
+   - Recommend rewrites that serve formalization
+
+7. **Formalize argument**
+   - Select logical complexity: propositional, predicates, quantifiers, modes
+   - Select predicates and names common to multiple propositions in view of potential for inference
+   - Formalize all propositions holistically
+
+8. **Formalize propositions**
+   - Formalize only new propositions
+   - Maintain consistency of predicates and names with previous snapshot
+
+9. **Evaluate validity of formal inferences**
+   - Do the same as 2, 3, 4, and 5 above, but only with respect to the formalizations of 7 and 8
+   - Unlike 1-8, this task must not be passed full context; content is omitted to avoid distraction
+
 ### Solution: New Agent Taxonomy
 
 #### **Core Agent Types**
 
-**1. Discovery Agents** (Find and suggest content)
+**1. Content Evaluation Agent** (Evaluates truth, validity, and coherence of natural language content)
 ```typescript
-interface DiscoveryAgent {
-  type: 'proposition_discovery' | 'argument_discovery' | 'counter_argument_discovery'
-  capabilities: ['suggest_propositions', 'identify_gaps', 'find_evidence']
+interface ContentEvaluationAgent {
   input: AgentInput
-  output: DiscoveryResult[]
+  output: ContentEvaluationResult[]
 }
 ```
 
-**2. Analysis Agents** (Evaluate and assess)
+**2. Formal Evaluation Agent** (Evaluates validity of formalized logic)
 ```typescript
-interface AnalysisAgent {
-  type: 'truth_analysis' | 'validity_analysis' | 'coherence_analysis' | 'completeness_analysis'
-  capabilities: ['evaluate_truth', 'assess_validity', 'check_coherence', 'identify_missing_premises']
-  input: AgentInput
-  output: AnalysisResult[]
+interface FormalEvaluationAgent {
+  input: AgentInput  // Note: content omitted to avoid distraction
+  output: FormalEvaluationResult[]
 }
 ```
 
-**3. Formalization Agents** (Convert to formal logic)
+**3. Formalization Agent** (Converts natural language to formal logic)
 ```typescript
 interface FormalizationAgent {
-  type: 'proposition_formalization' | 'argument_formalization' | 'proof_formalization'
-  capabilities: ['formalize_proposition', 'formalize_argument', 'generate_proof_sketch']
   input: AgentInput
   output: FormalizationResult[]
 }
 ```
 
-**4. Improvement Agents** (Enhance and refine)
+**4. Improvement Agent** (Recommends enhancements and restructuring)
 ```typescript
 interface ImprovementAgent {
-  type: 'proposition_improvement' | 'argument_restructuring' | 'clarity_enhancement'
-  capabilities: ['rewrite_proposition', 'restructure_argument', 'improve_clarity']
   input: AgentInput
   output: ImprovementResult[]
 }
 ```
 
-**5. Synthesis Agents** (Combine and integrate)
-```typescript
-interface SynthesisAgent {
-  type: 'argument_synthesis' | 'evidence_synthesis' | 'conclusion_synthesis'
-  capabilities: ['synthesize_arguments', 'combine_evidence', 'draw_conclusions']
-  input: AgentInput
-  output: SynthesisResult[]
-}
-```
-
 #### **Agent Hierarchy and Dependencies**
 ```
-Discovery Agents
-├── Proposition Discovery
-├── Argument Discovery
-└── Counter-Argument Discovery
+Content Evaluation Agent
+├── Evaluates truth of propositions
+├── Evaluates validity of natural language inferences
+└── Checks coherence of proposition sets
 
-Analysis Agents
-├── Truth Analysis (depends on: Proposition Discovery)
-├── Validity Analysis (depends on: Formalization Agents)
-├── Coherence Analysis (depends on: Argument Discovery)
-└── Completeness Analysis (depends on: Discovery Agents)
+Formalization Agent
+├── Formalizes individual propositions
+└── Formalizes entire arguments holistically
 
-Formalization Agents
-├── Proposition Formalization
-├── Argument Formalization
-└── Proof Formalization
+Formal Evaluation Agent (depends on: Formalization Agent)
+├── Evaluates validity of formalized inferences
+├── Checks coherence of formalized propositions
+└── Identifies weakest formal inferences
 
-Improvement Agents
-├── Proposition Improvement (depends on: Analysis Agents)
-├── Argument Restructuring (depends on: Analysis Agents)
-└── Clarity Enhancement (depends on: Analysis Agents)
-
-Synthesis Agents
-├── Argument Synthesis (depends on: All other agents)
-├── Evidence Synthesis (depends on: Discovery Agents)
-└── Conclusion Synthesis (depends on: Analysis Agents)
+Improvement Agent (depends on: Content Evaluation Agent)
+├── Recommends proposition rewrites and restructuring
+├── Recommends step reordering and restructuring
+└── Identifies missing premises for weak inferences
 ```
 
 ## 3. Trigger Mechanism Rearchitecture
