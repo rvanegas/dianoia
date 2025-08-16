@@ -196,78 +196,83 @@ Improvement Agent (depends on: Content Evaluation Agent)
 ## 3. Trigger Mechanism Rearchitecture
 
 ### Problem
-Current triggering is reactive only to argument changes, limiting agent autonomy and continuous improvement.
+Current triggering is reactive only to argument changes, limiting agent autonomy and continuous improvement. Agents work in isolation without considering the full context of previous results and related documents.
 
-### Solution: Multi-Modal Trigger System
+### Solution: Adaptive Context-Aware Trigger System
 
-#### **Trigger Types**
-
-**1. Event-Driven Triggers**
+#### **Context-Aware Agent Input**
 ```typescript
-interface EventTrigger {
-  type: 'user_action' | 'agent_completion' | 'snapshot_change' | 'file_upload'
-  event_data: any
-  priority: 'immediate' | 'high' | 'normal' | 'low'
-  cascade_rules: CascadeRule[]
+interface ContextAwareAgentInput extends AgentInput {
+  // Full context including all previous agent results
+  context: {
+    assumptions: Step[]
+    argument: Step[]
+    file_ids: string[]
+    user_preferences: UserPreferences
+    previous_agent_results: AgentResult[]  // Results from all previous agent runs
+    document_context: DocumentContext[]    // Extracted content from PDFs and other files
+  }
+  
+  // Agent decision making
+  agent_decisions: {
+    can_trigger_other_agents: boolean
+    can_revisit_previous_work: boolean
+    can_use_document_context: boolean
+  }
 }
 ```
 
-**2. Time-Based Triggers**
+#### **Document Context Integration**
 ```typescript
-interface TimeTrigger {
-  type: 'periodic' | 'delayed' | 'scheduled'
-  interval_seconds: number
-  conditions: TriggerCondition[]
-  max_executions: number
+interface DocumentContext {
+  file_id: string
+  filename: string
+  extracted_content: string
+  relevance_score: number
+  sections: DocumentSection[]
+}
+
+interface DocumentSection {
+  content: string
+  page_number: number
+  relevance_to_argument: number
+  key_concepts: string[]
 }
 ```
 
-**3. Condition-Based Triggers**
+#### **Adaptive Trigger Coordinator**
 ```typescript
-interface ConditionTrigger {
-  type: 'state_change' | 'threshold_reached' | 'dependency_met'
-  conditions: TriggerCondition[]
-  evaluation_frequency: number
-}
-```
-
-#### **Trigger Coordinator**
-```typescript
-class TriggerCoordinator {
-  // Event-driven triggers
+class AdaptiveTriggerCoordinator {
+  // Initial trigger from user action
   onUserAction(action: UserAction): void
-  onAgentCompletion(completion: AgentCompletion): void
-  onSnapshotChange(change: SnapshotChange): void
   
-  // Time-based triggers
-  schedulePeriodicTask(agent_type: string, interval: number): void
-  scheduleDelayedTask(agent_type: string, delay: number): void
+  // Agent completion with context awareness
+  onAgentCompletion(completion: AgentCompletion, full_context: ContextAwareAgentInput): void
   
-  // Condition-based triggers
-  evaluateConditions(snapshot: ConversationSnapshot): void
+  // Agent decision making
+  allowAgentToTriggerNext(agent_type: string, context: ContextAwareAgentInput): string[]
+  allowAgentToRevisitWork(agent_type: string, context: ContextAwareAgentInput): boolean
   
-  // Cascade management
-  executeCascade(trigger: EventTrigger): void
+  // Document integration
+  extractRelevantDocumentContext(file_ids: string[], argument_content: string): DocumentContext[]
+  
+  // Iteration management
+  checkIterationLimits(conversation_id: string): boolean
+  isWorkComplete(context: ContextAwareAgentInput): boolean
 }
 ```
 
-#### **Cascade Rules**
+#### **Agent Decision Making**
 ```typescript
-interface CascadeRule {
-  source_agent: string
-  target_agents: string[]
-  conditions: CascadeCondition[]
-  delay_seconds: number
-  priority: number
-}
-
-// Example cascade: When formalization completes, trigger validity analysis
-{
-  source_agent: 'proposition_formalization',
-  target_agents: ['validity_analysis'],
-  conditions: [{ type: 'formalization_complete', confidence_threshold: 0.7 }],
-  delay_seconds: 0,
-  priority: 1
+interface AgentDecision {
+  agent_type: string
+  reasoning: string
+  next_actions: {
+    trigger_agent?: string
+    revisit_work?: string
+    use_documents?: string[]
+  }
+  confidence: number
 }
 ```
 
@@ -313,7 +318,14 @@ interface SnapshotDiff {
     argument_structure_changed: boolean
   }
 }
-```
+
+interface AgentContribution {
+  agent_type: string
+  snapshot_id: string
+  contribution_type: 'evaluation' | 'formalization' | 'improvement'
+  impact_score: number
+  timestamp: number
+}
 
 #### **Agent-Snapshot Association**
 ```typescript
