@@ -382,13 +382,13 @@ interface AgentHandoffDecision {
 ## 4. Snapshot Association
 
 ### Problem
-Agents currently only associate with conversations, missing the rich context of conversation history and evolution.
+Agents currently only associate with conversations, missing the rich context of conversation history and evolution. Managing full historical context is complex and may be excessive.
 
-### Solution: Snapshot-Aware Agent System
+### Solution: Stale Results Propagation System
 
-#### **Snapshot Context Model**
+#### **Stale Results Propagation**
 ```typescript
-interface SnapshotContext {
+interface SnapshotWithStaleResults {
   snapshot_id: string
   conversation_id: string
   
@@ -396,13 +396,13 @@ interface SnapshotContext {
   assumptions: Step[]
   argument: Step[]
   
-  // Historical context (managed by server)
-  previous_snapshots: ConversationSnapshot[]
-  snapshot_diffs: SnapshotDiff[]
-  
-  // Evolution tracking
-  change_history: SnapshotChange[]
-  agent_contribution_history: AgentContribution[]
+  // Stale results from previous snapshot (marked for replacement)
+  stale_results: {
+    content_evaluation: AgentResult[]  // Marked as stale
+    formalization: AgentResult[]       // Marked as stale  
+    formal_evaluation: AgentResult[]   // Marked as stale
+    improvement: AgentResult[]         // Marked as stale
+  }
   
   // Metadata
   created_at: number
@@ -410,50 +410,26 @@ interface SnapshotContext {
   version: number
 }
 
-interface SnapshotDiff {
-  from_snapshot_id: string
-  to_snapshot_id: string
-  changes: {
-    propositions_added: string[]
-    propositions_removed: string[]
-    propositions_modified: string[]
-    assumptions_changed: boolean
-    argument_structure_changed: boolean
-  }
+interface StaleResult {
+  original_result: AgentResult
+  marked_stale_at: number
+  replacement_priority: number  // Higher priority = replace first
 }
 
-interface AgentContribution {
-  agent_type: string
-  snapshot_id: string
-  contribution_type: 'evaluation' | 'formalization' | 'improvement'
-  impact_score: number
-  timestamp: number
-}
-
-#### **Agent-Snapshot Association**
-```typescript
-interface AgentSnapshotAssociation {
-  agent_id: string
-  snapshot_id: string
-  conversation_id: string
+interface StaleResultsPropagation {
+  // When user makes changes, copy previous agent results as stale
+  copyStaleResults(fromSnapshot: ConversationSnapshot, toSnapshot: ConversationSnapshot): void
   
-  // Association metadata
-  association_type: 'primary' | 'secondary' | 'historical'
-  relevance_score: number
-  last_activity: number
+  // Agents replace stale results rather than filling in empty space
+  replaceStaleResults(agentType: string, newResults: AgentResult[]): void
   
-  // Context awareness
-  understands_history: boolean
-  can_access_previous_snapshots: boolean
-  tracks_evolution: boolean
+  // Benefits:
+  // - No need for complex historical context
+  // - Agents work on replacement rather than completion
+  // - Simpler state management
+  // - Handles rapid user changes naturally
 }
 ```
-
-#### **Implementation Strategy**
-1. **Snapshot-Aware Input**: All agent inputs include snapshot context
-2. **Historical Analysis**: Agents can analyze conversation evolution
-3. **Predictive Suggestions**: Agents use history to predict future improvements
-4. **Contextual Relevance**: Results are scored based on snapshot relevance
 
 ## 5. TTL Implementation
 
@@ -642,32 +618,33 @@ interface AgentRealTimeUpdates {
 ## Implementation Phases
 
 ### Phase 1: Foundation (Weeks 1-2)
-1. Implement `AgentInput` schema
-2. Set up `TTLManager` infrastructure
-3. Add snapshot context to existing agents
+1. Implement `AgentInput` schema with context filtering
+2. Update `Step` model to include `formalization`, `valid_content`, and `valid_formal` attributes
+3. Set up `TTLManager` infrastructure
+4. Implement `StaleResultsPropagation` system
 
 ### Phase 2: Agent Reorganization (Weeks 3-4)
-1. Implement new agent taxonomy
-2. Migrate existing agents to new types
-3. Set up agent hierarchy and dependencies
-4. Create `TriggerCoordinator`
+1. Implement new agent taxonomy (Content Evaluation, Formalization, Formal Evaluation, Improvement)
+2. Migrate existing agents to new types with proper input filtering
+3. Set up direct agent handoff via OpenAI tool calling
+4. Create `AgentHandoffCoordinator` with loop prevention
 
 ### Phase 3: Advanced Features (Weeks 5-6)
-1. Implement cascade rules
-2. Add condition-based triggers
+1. Implement document context integration for PDFs and files
+2. Add context-aware agent decision making
 3. Enhance TTL system with smart extensions
-4. Add snapshot evolution tracking
+4. Resolve content filtering vs. full context handoff conflict
 
 ### Phase 4: Frontend Integration (Weeks 7-8)
-1. Create enhanced result display components
-2. Implement agent status dashboard
-3. Add interactive agent controls
-4. Set up real-time updates
+1. Create enhanced result display components with stale result indicators
+2. Implement agent status dashboard with real-time handoff tracking
+3. Add interactive agent controls for manual triggering
+4. Set up WebSocket-based real-time updates
 
 ### Phase 5: Testing and Optimization (Weeks 9-10)
-1. Comprehensive testing of all components
-2. Performance optimization
-3. User experience refinement
+1. Comprehensive testing of agent handoff chains and loop prevention
+2. Performance optimization of context filtering and stale result propagation
+3. User experience refinement with progressive disclosure
 4. Documentation and training materials
 
 ## Success Metrics
