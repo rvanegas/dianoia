@@ -240,39 +240,142 @@ interface DocumentSection {
 }
 ```
 
-#### **Adaptive Trigger Coordinator**
+#### **Direct Agent Handoff via Tool Calling**
 ```typescript
-class AdaptiveTriggerCoordinator {
-  // Initial trigger from user action
-  onUserAction(action: UserAction): void
+interface AgentTool {
+  name: string
+  description: string
+  parameters: {
+    type: "object"
+    properties: {
+      agent_type: { type: "string" }
+      target_content: { type: "string" }
+      context: { type: "object" }
+      reasoning: { type: "string" }
+    }
+    required: ["agent_type", "reasoning"]
+  }
+}
+
+// Each agent has access to tools for calling other agents
+const agentTools = [
+  {
+    name: "trigger_content_evaluation",
+    description: "Hand off to content evaluation agent for truth, validity, and coherence analysis",
+    parameters: {
+      type: "object",
+      properties: {
+        target_content: { type: "string", description: "Content to evaluate" },
+        context: { type: "object", description: "Full conversation context" },
+        reasoning: { type: "string", description: "Why this evaluation is needed" }
+      },
+      required: ["reasoning"]
+    }
+  },
+  {
+    name: "trigger_formalization", 
+    description: "Hand off to formalization agent to convert natural language to formal logic",
+    parameters: {
+      type: "object",
+      properties: {
+        target_content: { type: "string", description: "Content to formalize" },
+        context: { type: "object", description: "Full conversation context" },
+        reasoning: { type: "string", description: "Why formalization is needed" }
+      },
+      required: ["reasoning"]
+    }
+  },
+  {
+    name: "trigger_formal_evaluation",
+    description: "Hand off to formal evaluation agent for logical validity analysis",
+    parameters: {
+      type: "object", 
+      properties: {
+        target_content: { type: "string", description: "Formalized content to evaluate" },
+        context: { type: "object", description: "Full conversation context" },
+        reasoning: { type: "string", description: "Why formal evaluation is needed" }
+      },
+      required: ["reasoning"]
+    }
+  },
+  {
+    name: "trigger_improvement",
+    description: "Hand off to improvement agent for recommendations and restructuring",
+    parameters: {
+      type: "object",
+      properties: {
+        target_content: { type: "string", description: "Content to improve" },
+        context: { type: "object", description: "Full conversation context" },
+        reasoning: { type: "string", description: "Why improvement is needed" }
+      },
+      required: ["reasoning"]
+    }
+  }
+]
+```
+
+#### **Agent Handoff Coordinator**
+```typescript
+class AgentHandoffCoordinator {
+  // Track agent call chains to prevent infinite loops
+  private callChains: Map<string, string[]> = new Map()
   
-  // Agent completion with context awareness
-  onAgentCompletion(completion: AgentCompletion, full_context: ContextAwareAgentInput): void
+  // Handle direct agent handoffs
+  async handleAgentHandoff(
+    fromAgent: string, 
+    toAgent: string, 
+    context: ContextAwareAgentInput,
+    reasoning: string
+  ): Promise<void> {
+    // Check for infinite loops
+    const callChain = this.callChains.get(context.conversation_id) || []
+    if (this.wouldCreateLoop(callChain, toAgent)) {
+      return // Prevent the handoff
+    }
+    
+    // Update call chain
+    this.callChains.set(context.conversation_id, [...callChain, toAgent])
+    
+    // Execute the handoff
+    await this.executeAgent(toAgent, context, reasoning)
+  }
   
-  // Agent decision making
-  allowAgentToTriggerNext(agent_type: string, context: ContextAwareAgentInput): string[]
-  allowAgentToRevisitWork(agent_type: string, context: ContextAwareAgentInput): boolean
+  // Check iteration limits
+  private wouldCreateLoop(callChain: string[], nextAgent: string): boolean {
+    // Simple loop detection - could be more sophisticated
+    return callChain.length > 10 || callChain.includes(nextAgent)
+  }
   
-  // Document integration
-  extractRelevantDocumentContext(file_ids: string[], argument_content: string): DocumentContext[]
-  
-  // Iteration management
-  checkIterationLimits(conversation_id: string): boolean
-  isWorkComplete(context: ContextAwareAgentInput): boolean
+  // Execute agent with full context
+  private async executeAgent(
+    agentType: string, 
+    context: ContextAwareAgentInput,
+    reasoning: string
+  ): Promise<void> {
+    // Agent gets full context including previous results and documents
+    // Agent can make tool calls to other agents
+    // Results are accumulated in the conversation context
+    
+    // TODO: Need to resolve conflict between full context handoff and content filtering
+    // - Content Evaluation Agent: needs natural language but should NOT see formalizations
+    // - Formal Evaluation Agent: needs formalizations but should NOT see natural language content
+    // - Direct handoff requires full context to be passed between agents
+    // Potential solutions:
+    // 1. Context filtering in handoff coordinator
+    // 2. Separate context objects for different agent types
+    // 3. Agent-specific handoff tools with filtered context
+  }
 }
 ```
 
 #### **Agent Decision Making**
 ```typescript
-interface AgentDecision {
+interface AgentHandoffDecision {
   agent_type: string
   reasoning: string
-  next_actions: {
-    trigger_agent?: string
-    revisit_work?: string
-    use_documents?: string[]
-  }
+  target_content: string
   confidence: number
+  expected_outcome: string
 }
 ```
 
