@@ -1,0 +1,260 @@
+"""
+Argument business logic service.
+Handles state modification, GPT interactions, and complex argument operations.
+"""
+
+import json
+import re
+from typing import List, Tuple, Dict, Any
+
+from core.utils import find_index, logger
+from services.conversation import gpt_justify, gpt_evaluate, gpt_explain, gpt_gen_name
+from services.agent_coordinator import coordinator
+from schemas.arguments import Arguments, ArgumentsWithStep, ArgumentsWithProposition, ArgumentsWithStepAndProposition
+from schemas.step import Step
+
+
+def clean_citations(proposition: str) -> str:
+    """
+    Clean citations from propositions by replacing non-ASCII brackets with ASCII brackets
+    and keeping only the filename, removing numbers and dagger symbols.
+    
+    Example: "Mice are small【4:0†small.txt】." -> "Mice are small [small.txt]."
+    """
+    # Pattern to match citations like 【4:0†small.txt】 or similar
+    # This matches the non-ASCII brackets 【】 and the dagger †, and captures the filename
+    pattern = r'\u3010[^\u3011]*?([^\u2020]+)\u3011'
+    
+    def replace_citation(match):
+        filename = match.group(1)
+        if filename == "source":
+            return ""
+        return f" [{filename}]"
+
+    replaced = re.sub(pattern, replace_citation, proposition)
+    logger.debug(f"proposition: {proposition}")
+    logger.debug(f"replaced...: {replaced}")
+    return replaced
+
+
+class ArgumentService:
+    """Service for argument business logic and state modification"""
+    
+    def __init__(self, arguments: Arguments):
+        self.arguments = arguments
+    
+    def next_symbol(self) -> str:
+        """Picks next available A-Z in a natural order"""
+        steps = (self.arguments.assumptions + self.arguments.argument)
+        letters = [step.symbol for step in steps]
+        if not all(isinstance(c, str) and len(c) == 1 and
+            'A' <= c <= 'Z' for c in letters):
+            raise ValueError("All elements must be single lowercase letters A-Z")
+        seen = set(letters)
+        if len(seen) == 0:
+            return 'A'
+        if len(seen) == 26:
+            raise ValueError("All 26 letters are already present")
+        if 'Z' not in seen:
+            last = sorted(seen)[-1]
+            return chr(ord(last)+1)
+        for i in range(ord('A'), ord('Z') + 1):
+            c = chr(i)
+            if c not in seen:
+                return c
+        raise RuntimeError("something went wrong")
+
+    def new_step(self, proposition: str) -> Step:
+        """Make new step"""
+        return Step(symbol=self.next_symbol(), proposition=proposition,
+            justifiers=[], truth="0.0", valid="0.0")
+
+    def subargument(self, arg: List[Step], conclusion: Step) -> Tuple[Dict[str, Any], List[Step]]:
+        """Extract a few steps by way of a justifiers property"""
+        new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
+        new_arg.append(conclusion)
+        props = {
+            "assumptions": [s.model_dump_json() for s in self.arguments.assumptions],
+            "argument": [s.model_dump_json() for s in new_arg]
+        }
+        return props, new_arg
+
+    def add_evaluations(self, arg: List[Step], conclusion: Step):
+        """
+        For a given list of steps as premises, and a step as conclusion,
+        use gpt to set "truth" and "valid" values according to evaluate_system_prompt
+        """
+        props, new_arg = self.subargument(arg, conclusion)
+        content = gpt_evaluate.call(json.dumps(props), self.arguments.file_ids)
+        evaluations = json.loads(content)
+        for new_arg_index, step in enumerate(new_arg):
+            arg_index = find_index(arg, lambda x, step=step: x.symbol == step.symbol)
+            arg[arg_index].truth = evaluations["truth"][new_arg_index]
+            if new_arg_index == len(new_arg) - 1:
+                arg[arg_index].valid = evaluations["valid"]
+            else:
+                arg[arg_index].valid = "1.0"
+
+    def evaluate(self) -> str:
+        """Find all the subarguments and evaluate their numbers using add_evaluations()"""
+        for step in self.arguments.argument:
+            if len(step.justifiers) != 0:
+                self.add_evaluations(self.arguments.argument + self.arguments.assumptions, step)
+        return self.arguments.model_dump_json(include={
+            "assumptions", "argument", "explanation"})
+
+    def queue_argument_state_change(self, change_data: Dict[str, Any]):
+        """Reactively queue agents for argument state changes"""
+        # Prepare argument data for the reactive coordinator
+        argument_data = {
+            'argument': [step.model_dump() for step in self.arguments.argument],
+            'assumptions': [step.model_dump() for step in self.arguments.assumptions],
+            'file_ids': self.arguments.file_ids
+        }
+        
+        # Use the reactive coordinator method
+        coordinator.react_to_user_argument_change(self.arguments.conversation_id, argument_data, change_data)
+
+    def gptjson(self) -> str:
+        """Arguments json to return to frontend"""
+        return self.arguments.model_dump_json(include={
+            "assumptions", "argument", "explanation"})
+
+    def gptjsont(self) -> str:
+        """Arguments json to return to frontend used by theses()"""
+        return self.arguments.model_dump_json(include={"proposition"})
+
+
+class ArgumentStepService(ArgumentService):
+    """Service for argument operations involving specific steps"""
+    
+    def __init__(self, arguments_with_step: ArgumentsWithStep):
+        super().__init__(arguments_with_step)
+        self.arguments_with_step = arguments_with_step
+
+    def insert_proposition(self, new_proposition: str) -> Step:
+        """Add step and reference to it in indicated justifiers"""
+        new_step = self.new_step(new_proposition)
+        conclusion = self.arguments_with_step.arg[self.arguments_with_step.index]
+        conclusion.justifiers.append(new_step.symbol)
+        self.arguments_with_step.arg.insert(self.arguments_with_step.index, new_step)
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'proposition': new_proposition,
+            'location': self.arguments_with_step.loc,
+            'step_index': self.arguments_with_step.index,
+            'file_ids': self.arguments_with_step.file_ids
+        })
+        return conclusion
+
+    def ai_justify(self) -> str:
+        """Use gpt to add steps to justify indicated conclusion"""
+        response = gpt_justify.call(self.arguments_with_step.model_dump_json(), self.arguments_with_step.file_ids)
+        new_propositions = json.loads(response)["propositions"]
+        for p in new_propositions:
+            # Clean citations from the proposition
+            cleaned_proposition = clean_citations(p)
+            self.insert_proposition(cleaned_proposition)
+            self.arguments_with_step.index += 1
+        return self.gptjson()
+
+    def remove(self) -> str:
+        """Remove step and adjust justifiers and evaluations accordingly"""
+        if self.arguments_with_step.loc != "assumptions":
+            # Clean up justifiers for this step
+            step_to_remove = self.arguments_with_step.arg[self.arguments_with_step.index]
+            inferences_to = [s for s in self.arguments_with_step.arg if step_to_remove.symbol in s.justifiers]
+            
+            for step in inferences_to:
+                step.justifiers.remove(step_to_remove.symbol)
+                # Add the removed step's justifiers to the dependent step
+                step.justifiers.extend(step_to_remove.justifiers)
+        
+        del self.arguments_with_step.arg[self.arguments_with_step.index]
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'location': self.arguments_with_step.loc,
+            'step_index': self.arguments_with_step.index,
+            'file_ids': self.arguments_with_step.file_ids
+        })
+        return self.gptjson()
+
+    def assume(self) -> str:
+        """Move step into assumptions and adjust evaluations accordingly"""
+        if self.arguments_with_step.loc == "assumptions":
+            raise ValueError("already assumed")
+        if len(self.arguments_with_step.arg[self.arguments_with_step.index].justifiers) != 0:
+            raise ValueError("cannot assume justified proposition")
+        self.arguments_with_step.arg[self.arguments_with_step.index].truth = "1.0"
+        self.arguments_with_step.assumptions.append(self.arguments_with_step.arg[self.arguments_with_step.index])
+        del self.arguments_with_step.arg[self.arguments_with_step.index]
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'location': self.arguments_with_step.loc,
+            'step_index': self.arguments_with_step.index,
+            'file_ids': self.arguments_with_step.file_ids
+        })
+        return self.gptjson()
+
+    def explain(self) -> str:
+        """Explain the 'valid' property and formalize the propositions."""
+        assert len(self.arguments_with_step.arg[self.arguments_with_step.index].justifiers) != 0
+        props, new_arg = self.subargument(self.arguments_with_step.arg, self.arguments_with_step.arg[self.arguments_with_step.index])
+        response = gpt_explain.call(json.dumps(props), self.arguments_with_step.file_ids)
+        content = json.loads(response)
+        
+        self.arguments_with_step.explanation = content["explanation"]
+        return self.gptjson()
+
+
+class ArgumentPropositionService(ArgumentService):
+    """Service for argument operations involving propositions"""
+    
+    def __init__(self, arguments_with_proposition: ArgumentsWithProposition):
+        super().__init__(arguments_with_proposition)
+        self.arguments_with_proposition = arguments_with_proposition
+
+    def argue(self) -> str:
+        """Add proposition as first argument step"""
+        assert len(self.arguments_with_proposition.arg) == 0
+        new_step = self.new_step(self.arguments_with_proposition.proposition)
+        self.arguments_with_proposition.argument.append(new_step)
+        logger.debug(f"arg: {self.arguments_with_proposition.argument}")
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'proposition': self.arguments_with_proposition.proposition,
+            'location': 'argument',
+            'step_index': 0,
+            'file_ids': self.arguments_with_proposition.file_ids
+        })
+        logger.debug(f"gptjson: {self.gptjson()}")
+        return self.gptjson()
+
+    def gen_name(self) -> str:
+        """Generate name from proposition"""
+        return gpt_gen_name.call(self.gptjsont(), self.arguments_with_proposition.file_ids)
+
+
+class ArgumentStepAndPropositionService(ArgumentStepService, ArgumentPropositionService):
+    """Service for argument operations involving both steps and propositions"""
+    
+    def __init__(self, arguments_with_step_and_proposition: ArgumentsWithStepAndProposition):
+        ArgumentStepService.__init__(self, arguments_with_step_and_proposition)
+        ArgumentPropositionService.__init__(self, arguments_with_step_and_proposition)
+        self.arguments_with_step_and_proposition = arguments_with_step_and_proposition
+
+    def user_justify(self) -> str:
+        """Add step using proposition attr and adjust justifiers and evaluations accordingly"""
+        assert self.arguments_with_step_and_proposition.loc in ["argument"]
+        new_step = self.new_step(self.arguments_with_step_and_proposition.proposition)
+        conclusion = self.arguments_with_step_and_proposition.arg[self.arguments_with_step_and_proposition.index]
+        self.arguments_with_step_and_proposition.arg.insert(self.arguments_with_step_and_proposition.index, new_step)
+        conclusion.justifiers.append(new_step.symbol)
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'proposition': self.arguments_with_step_and_proposition.proposition,
+            'location': self.arguments_with_step_and_proposition.loc,
+            'step_index': self.arguments_with_step_and_proposition.index,
+            'file_ids': self.arguments_with_step_and_proposition.file_ids
+        })
+        return self.gptjson()
