@@ -9,6 +9,9 @@ from datetime import datetime
 from core.utils import logger
 from services.agents import ArgumentBuilderAgent, ContentEvaluationAgent, FormEvaluationAgent, FormalizationAgent, RewriterAgent
 
+# TTL configuration
+AGENT_RESULT_TTL_SECONDS = 3 * 24 * 60 * 60  # 3 days in seconds
+
 
 @dataclass
 class AgentTask:
@@ -30,10 +33,11 @@ class AgentTask:
 
 
 class AgentResultManager:
-    """Manages agent results with disciplined cleanup and maintenance"""
+    """Manages agent results with disciplined cleanup and TTL maintenance"""
     
     def __init__(self):
         self.results_by_conversation: Dict[str, List[Dict[str, Any]]] = {}
+        self.conversation_timestamps: Dict[str, float] = {}  # Track last activity per conversation
     
     def add_result(self, conversation_id: str, result: Dict[str, Any]):
         """Add a new result and clean up outdated ones"""
@@ -49,8 +53,9 @@ class AgentResultManager:
                 # Don't add the result if formalization is incomplete
                 return
         
-        # Add the new result
+        # Add the new result and update conversation timestamp
         self.results_by_conversation[conversation_id].append(result)
+        self.conversation_timestamps[conversation_id] = time.time()
     
     def _cleanup_outdated_results(self, conversation_id: str, new_result: Dict[str, Any]):
         """Remove outdated results based on the new result"""
@@ -137,12 +142,42 @@ class AgentResultManager:
     
     def get_results(self, conversation_id: str) -> List[Dict[str, Any]]:
         """Get all results for a conversation"""
-        return self.results_by_conversation.get(conversation_id, [])
+        results = self.results_by_conversation.get(conversation_id, [])
+        
+        if not results:
+            return []
+        
+        # Update conversation timestamp on activity
+        self.conversation_timestamps[conversation_id] = time.time()
+        
+        return results
     
     def cleanup_conversation(self, conversation_id: str):
         """Clean up all results for a conversation"""
         if conversation_id in self.results_by_conversation:
             del self.results_by_conversation[conversation_id]
+        if conversation_id in self.conversation_timestamps:
+            del self.conversation_timestamps[conversation_id]
+        logger.debug(f"Cleaned up all results for conversation {conversation_id}")
+    
+    def cleanup_expired_conversations(self) -> int:
+        """Clean up expired conversations and return count of removed conversations"""
+        current_time = time.time()
+        expired_conversations = []
+        
+        for conversation_id, timestamp in self.conversation_timestamps.items():
+            if current_time - timestamp > AGENT_RESULT_TTL_SECONDS:
+                expired_conversations.append(conversation_id)
+        
+        # Remove expired conversations
+        for conversation_id in expired_conversations:
+            del self.results_by_conversation[conversation_id]
+            del self.conversation_timestamps[conversation_id]
+        
+        if expired_conversations:
+            logger.info(f"Cleaned up {len(expired_conversations)} expired conversations")
+        
+        return len(expired_conversations)
 
 
 class AgentCoordinator:
@@ -476,7 +511,7 @@ class AgentCoordinator:
         """Stop all workers"""
         self.running = False
         logger.info("AgentCoordinator stopping all workers")
-
+    
 
 # Global coordinator instance
 coordinator = AgentCoordinator() 
