@@ -1,7 +1,9 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from models.argument import ArgumentsWithStep, Step
+from schemas.arguments import ArgumentsWithStep
+from schemas.step import Step
+from services.argument_service import ArgumentStepService
 from services.agent_coordinator import coordinator
 
 
@@ -23,13 +25,14 @@ class TestArgumentRemove:
             "conversation_id": "test_session:1"
         }
         
-        # Create the argument object
+                # Create the argument object
         args = ArgumentsWithStep(**argument_data)
-        
+        service = ArgumentStepService(args)
+    
         # Mock the coordinator to avoid actual agent queuing
         with patch.object(coordinator, 'queue_task') as mock_queue:
             # Call remove
-            result = args.remove()
+            result = service.remove()
             
             # Verify the step was removed
             assert len(args.argument) == 2
@@ -70,9 +73,10 @@ class TestArgumentRemove:
         }
         
         args = ArgumentsWithStep(**argument_data)
+        service = ArgumentStepService(args)
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
-            result = args.remove()
+            result = service.remove()
             
             # Verify the step was removed
             assert len(args.argument) == 2
@@ -101,9 +105,10 @@ class TestArgumentRemove:
         }
         
         args = ArgumentsWithStep(**argument_data)
+        service = ArgumentStepService(args)
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
-            result = args.remove()
+            result = service.remove()
             
             # Verify the step was removed from assumptions
             assert len(args.assumptions) == 1
@@ -130,9 +135,10 @@ class TestArgumentRemove:
         }
         
         args = ArgumentsWithStep(**argument_data)
+        service = ArgumentStepService(args)
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
-            result = args.remove()
+            result = service.remove()
             
             # Verify the step was removed
             assert len(args.argument) == 3
@@ -163,9 +169,10 @@ class TestArgumentRemove:
         }
         
         args = ArgumentsWithStep(**argument_data)
+        service = ArgumentStepService(args)
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
-            args.remove()
+            service.remove()
             
             # Verify that queue_task was called for multiple agents (builder, formalizer, content evaluator, and potentially form evaluator)
             assert mock_queue.call_count >= 3
@@ -195,12 +202,13 @@ class TestArgumentRemove:
         }
         
         args = ArgumentsWithStep(**argument_data)
+        service = ArgumentStepService(args)
         
         # Store original argument
         original_argument = args.argument.copy()
         
         with patch.object(coordinator, 'queue_task'):
-            result = args.remove()
+            result = service.remove()
             
             # Verify the step at index 1 was removed
             assert len(args.argument) == 1

@@ -3,7 +3,7 @@ import json
 from unittest.mock import patch
 from services.agents import ContentEvaluationAgent, FormEvaluationAgent
 from services.agent_coordinator import coordinator
-from models.argument import Step
+from schemas.step import Step
 
 
 class TestDualEvaluators:
