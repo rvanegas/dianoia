@@ -29,9 +29,10 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
 
   const fetchResults = async () => {
     try {
-      const url = `${VITE_API_BASE_URL}/api/agents/results/${sessionId}:${conversationId}`
+      const url = new URL(`${VITE_API_BASE_URL}/api/agents/results`)
+      url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
       
-      const response = await axios.get(url)
+      const response = await axios.get(url.toString())
       
       const newResultsByAgent = response.data.results_by_agent || {}
       const newTasksComplete = response.data.tasks_complete || false

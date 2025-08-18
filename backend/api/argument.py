@@ -18,13 +18,11 @@ router = APIRouter()
 
 def get_conversation_handler(operation_name: str):
     """Dependency that returns a conversation handler function"""
-    def handler(session_id: str = Query(..., description="Session UUID"),
-            conversation_id: int = Query(..., description="Conversation ID")):
+    def handler(conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)")):
         def conversation_handler(args):
             try:
-                conversation_identifier = f"{session_id}:{conversation_id}"
-                args.conversation_id = conversation_identifier
-                # logger.info(f"{operation_name} operation for conversation: {conversation_identifier}")
+                args.conversation_id = conversation_id
+                # logger.info(f"{operation_name} operation for conversation: {conversation_id}")
                 return args
             except Exception as e:
                 logger.error(f"{operation_name} error: {e}")
