@@ -69,8 +69,8 @@ class TestAutomaticFormEvaluator:
             # Verify the result
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
-            assert result.data["proposition"] == "Socrates is mortal"
-            assert result.data["ascii"] == "Q(a)"
+            assert result.result_content["proposition"] == "Socrates is mortal"
+            assert result.result_content["ascii"] == "Q(a)"
             
             # Verify that queue_formal_evaluator_if_ready was NOT called by the FormalizationAgent
             # (this functionality is handled elsewhere in the coordinator)
@@ -129,8 +129,8 @@ class TestAutomaticFormEvaluator:
             # Verify the result
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
-            assert result.data["proposition"] == "All men are mortal"
-            assert result.data["ascii"] == "forall x. (P(x) -> Q(x))"
+            assert result.result_content["proposition"] == "All men are mortal"
+            assert result.result_content["ascii"] == "forall x. (P(x) -> Q(x))"
             
             # Verify that queue_formal_evaluator_if_ready was NOT called by the FormalizationAgent
             # (this functionality is handled elsewhere in the coordinator)
