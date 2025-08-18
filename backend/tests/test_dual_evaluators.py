@@ -41,7 +41,7 @@ class TestDualEvaluators:
             # Verify the result
             assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "content_truth"
+            assert result.result_content["evaluation_mode"] == "content_truth"
     
     def test_form_evaluator(self):
         """Test that form evaluator works correctly"""
@@ -51,7 +51,7 @@ class TestDualEvaluators:
         mock_existing_results = [
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'Socrates is a man',
                     'ascii': 'P(a)',
                     'reasoning': 'Direct predicate application'
@@ -59,7 +59,7 @@ class TestDualEvaluators:
             },
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'All men are mortal',
                     'ascii': 'forall x. (P(x) -> Q(x))',
                     'reasoning': 'Universal quantification'
@@ -67,7 +67,7 @@ class TestDualEvaluators:
             },
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'Socrates is mortal',
                     'ascii': 'Q(a)',
                     'reasoning': 'Direct predicate application'
@@ -105,11 +105,11 @@ class TestDualEvaluators:
             # Verify the result
             assert result.agent_type == "form_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "formal_validity"
-            assert result.data["argument_validity"] == 1.0
-            assert result.data["proposition_count"] == 3
-            assert len(result.data["logical_issues"]) == 0
-            assert len(result.data["recommendations"]) > 0
+            assert result.result_content["evaluation_mode"] == "formal_validity"
+            assert result.result_content["argument_validity"] == 1.0
+            assert result.result_content["proposition_count"] == 3
+            assert len(result.result_content["logical_issues"]) == 0
+            assert len(result.result_content["recommendations"]) > 0
 
 
 if __name__ == "__main__":
