@@ -1,7 +1,7 @@
 import pytest
 import time
 from unittest.mock import patch, MagicMock
-from services.agent_coordinator import coordinator, AgentResultManager, StoredAgentResult
+from services.agent_coordinator import coordinator, AgentResultManager, StoredAgentResult, TargetMetadata
 
 
 class TestResultManager:
@@ -23,7 +23,7 @@ class TestResultManager:
                 },
                 confidence=0.9,
                 reasoning='Formalized proposition',
-                target_metadata={'target_type': 'proposition', 'target_content': 'Socrates is a man'},
+                target_metadata=TargetMetadata(target_type='proposition', target_content='Socrates is a man'),
                 snapshot_id='test_snapshot',
                 processed_at=time.time()
             ),
@@ -36,7 +36,7 @@ class TestResultManager:
                 },
                 confidence=0.9,
                 reasoning='Formalized proposition',
-                target_metadata={'target_type': 'proposition', 'target_content': 'All men are mortal'},
+                target_metadata=TargetMetadata(target_type='proposition', target_content='All men are mortal'),
                 snapshot_id='test_snapshot',
                 processed_at=time.time()
             ),
@@ -49,7 +49,7 @@ class TestResultManager:
                 },
                 confidence=0.9,
                 reasoning='Formalized proposition',
-                target_metadata={'target_type': 'proposition', 'target_content': 'Socrates is mortal'},
+                target_metadata=TargetMetadata(target_type='proposition', target_content='Socrates is mortal'),
                 snapshot_id='test_snapshot',
                 processed_at=time.time()
             )
@@ -76,7 +76,7 @@ class TestResultManager:
             },
             confidence=0.8,
             reasoning='Evaluated formal argument',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -105,7 +105,7 @@ class TestResultManager:
             },
             confidence=0.8,
             reasoning='Updated formal evaluation',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -143,7 +143,7 @@ class TestResultManager:
             },
             confidence=0.8,
             reasoning='Formal evaluation without formalizations',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -178,7 +178,7 @@ class TestResultManager:
             },
             confidence=0.9,
             reasoning='Content evaluation',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -207,7 +207,7 @@ class TestResultManager:
             },
             confidence=0.85,
             reasoning='Updated content evaluation',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
