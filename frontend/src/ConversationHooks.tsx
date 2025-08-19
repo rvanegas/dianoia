@@ -127,7 +127,8 @@ export function useConversationActions(
   createConversationFromProposition: (proposition: string) => void,
   setEvaluatingMode: (mode: boolean) => void,
   conversationId: number,
-  sessionId: string
+  sessionId: string,
+  snapshotIndex: number
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
@@ -156,6 +157,7 @@ export function useConversationActions(
       // Add conversation_id as query parameter (format: session_id:conversation_id)
       const url = new URL(operationInfo.url)
       url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
+      url.searchParams.set('snapshot_id', String(snapshotIndex + 1))
       
       const response = await axios.post(url.toString(), operationInfo.data)
       

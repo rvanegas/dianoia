@@ -3,6 +3,8 @@ import json
 from unittest.mock import patch
 from services.agents import FormalizationAgent
 from services.agent_coordinator import coordinator
+from schemas.agent_input import AgentInput, AgentData
+from schemas.step import Step
 
 
 class TestFormalizationAgent:
@@ -25,20 +27,25 @@ class TestFormalizationAgent:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            conversation_data = {
-                "proposition": "All mice are small",
-                "conversation_id": "test_conversation",
-                "argument_data": {
-                    "argument": [
-                        {"proposition": "All mice are small"}
-                    ],
-                    "assumptions": []
-                },
-                "file_ids": []
-            }
+            agent_data = AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol="A", proposition="All mice are small", justifiers=[], truth="1.0", valid="1.0")
+                ],
+                latest_results=[],
+                target_type="proposition",
+                target_content="All mice are small"
+            )
+            agent_input = AgentInput(
+                conversation_id="test_conversation",
+                snapshot_id="test_snapshot_123",
+                
+                file_ids=[],
+                agent_data=agent_data
+            )
             
             # Call the formalization agent
-            result = agent.formalize_proposition(conversation_data)
+            result = agent.formalize_proposition(agent_input)
             
             # Verify the result uses abstract predicate names
             assert result.agent_type == "formalizer"
@@ -62,20 +69,25 @@ class TestFormalizationAgent:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            conversation_data = {
-                "proposition": "Socrates is mortal",
-                "conversation_id": "test_conversation",
-                "argument_data": {
-                    "argument": [
-                        {"proposition": "Socrates is mortal"}
-                    ],
-                    "assumptions": []
-                },
-                "file_ids": []
-            }
+            agent_data = AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol="A", proposition="Socrates is mortal", justifiers=[], truth="1.0", valid="1.0")
+                ],
+                latest_results=[],
+                target_type="proposition",
+                target_content="Socrates is mortal"
+            )
+            agent_input = AgentInput(
+                conversation_id="test_conversation",
+                snapshot_id="test_snapshot_123",
+                
+                file_ids=[],
+                agent_data=agent_data
+            )
             
             # Call the formalization agent
-            result = agent.formalize_proposition(conversation_data)
+            result = agent.formalize_proposition(agent_input)
             
             # Verify the result does NOT contain descriptive predicate names
             ascii_formalization = result.result_content["ascii"]
@@ -92,7 +104,7 @@ class TestFormalizationAgent:
         mock_existing_results = [
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'All mice are small',
                     'ascii': 'forall x. (P(x) -> Q(x))',
                     'reasoning': 'Universal quantification using P for mouse and Q for small'
@@ -115,20 +127,25 @@ class TestFormalizationAgent:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            conversation_data = {
-                "proposition": "This mouse is small",
-                "conversation_id": "test_conversation",
-                "argument_data": {
-                    "argument": [
-                        {"proposition": "This mouse is small"}
-                    ],
-                    "assumptions": []
-                },
-                "file_ids": []
-            }
+            agent_data = AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol="A", proposition="This mouse is small", justifiers=[], truth="1.0", valid="1.0")
+                ],
+                latest_results=[],
+                target_type="proposition",
+                target_content="This mouse is small"
+            )
+            agent_input = AgentInput(
+                conversation_id="test_conversation",
+                snapshot_id="test_snapshot_123",
+                
+                file_ids=[],
+                agent_data=agent_data
+            )
             
             # Call the formalization agent
-            result = agent.formalize_proposition(conversation_data)
+            result = agent.formalize_proposition(agent_input)
             
             # Verify that the formalizer was called with existing formalizations
             call_args = mock_gpt.call.call_args[0][0]

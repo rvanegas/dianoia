@@ -96,7 +96,8 @@ function Conversation({
     createConversationFromProposition,
     setEvaluatingMode,
     conversation.id,
-    sessionId
+    sessionId,
+    snapshotIndex
   )
 
   const {
@@ -342,7 +343,7 @@ function Conversation({
         )}
       </FlexTable>
       <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
-        snapshotVersion={snapshotRenderCount.current} />
+        snapshotVersion={snapshotRenderCount.current} snapshotIndex={snapshotIndex} />
       {loadingIndicator}
       {retryButton}
     </div>

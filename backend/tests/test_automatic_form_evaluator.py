@@ -49,22 +49,28 @@ class TestAutomaticFormEvaluator:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data - formalizing the last proposition
-            conversation_data = {
-                'proposition': 'Socrates is mortal',
-                'conversation_id': 'test_conversation',
-                'argument_data': {
-                    'argument': [
-                        {'proposition': 'Socrates is a man'},
-                        {'proposition': 'All men are mortal'},
-                        {'proposition': 'Socrates is mortal'}
+            from schemas.agent_input import AgentInput, AgentData
+            from schemas.step import Step
+            
+            agent_input = AgentInput(
+                conversation_id='test_conversation',
+                snapshot_id='test_snapshot',
+                agent_data=AgentData(
+                    assumptions=[],
+                    argument=[
+                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth='1.0', valid='1.0'),
+                        Step(symbol='B', proposition='All men are mortal', justifiers=[], truth='1.0', valid='1.0'),
+                        Step(symbol='C', proposition='Socrates is mortal', justifiers=[], truth='1.0', valid='1.0')
                     ],
-                    'assumptions': []
-                },
-                'file_ids': []
-            }
+                    latest_results=[],
+                    target_type='proposition',
+                    target_content='Socrates is mortal'
+                ),
+                file_ids=[]
+            )
             
             # Call the formalization agent
-            result = agent.formalize_proposition(conversation_data)
+            result = agent.formalize_proposition(agent_input)
             
             # Verify the result
             assert result.agent_type == "formalizer"
@@ -109,22 +115,28 @@ class TestAutomaticFormEvaluator:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data - formalizing the second proposition
-            conversation_data = {
-                'proposition': 'All men are mortal',
-                'conversation_id': 'test_conversation',
-                'argument_data': {
-                    'argument': [
-                        {'proposition': 'Socrates is a man'},
-                        {'proposition': 'All men are mortal'},
-                        {'proposition': 'Socrates is mortal'}
+            from schemas.agent_input import AgentInput, AgentData
+            from schemas.step import Step
+            
+            agent_input = AgentInput(
+                conversation_id='test_conversation',
+                snapshot_id='test_snapshot',
+                agent_data=AgentData(
+                    assumptions=[],
+                    argument=[
+                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth='1.0', valid='1.0'),
+                        Step(symbol='B', proposition='All men are mortal', justifiers=[], truth='1.0', valid='1.0'),
+                        Step(symbol='C', proposition='Socrates is mortal', justifiers=[], truth='1.0', valid='1.0')
                     ],
-                    'assumptions': []
-                },
-                'file_ids': []
-            }
+                    latest_results=[],
+                    target_type='proposition',
+                    target_content='All men are mortal'
+                ),
+                file_ids=[]
+            )
             
             # Call the formalization agent
-            result = agent.formalize_proposition(conversation_data)
+            result = agent.formalize_proposition(agent_input)
             
             # Verify the result
             assert result.agent_type == "formalizer"

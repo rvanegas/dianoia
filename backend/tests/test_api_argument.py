@@ -23,8 +23,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/argue",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "proposition": "Socrates is mortal",
@@ -49,8 +49,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/gen-name",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "proposition": "Socrates is mortal",
@@ -71,8 +71,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/remove",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "assumptions": [],
@@ -111,8 +111,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/assume",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "assumptions": [],
@@ -147,8 +147,8 @@ class TestAPIArgumentEndpoints:
                 response = client.post(
                     "/api/argument/ai-justify",
                     params={
-                        "session_id": "test_session_123",
-                        "conversation_id": "1"
+                        "conversation_id": "test_session_123:1",
+                        "snapshot_id": "test_snapshot_123"
                     },
                     json={
                         "assumptions": [],
@@ -181,8 +181,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/user-justify",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "assumptions": [],
@@ -217,8 +217,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/explain",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "assumptions": [],
@@ -259,8 +259,8 @@ class TestAPIArgumentEndpoints:
             response = client.post(
                 "/api/argument/evaluate",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "assumptions": [],
