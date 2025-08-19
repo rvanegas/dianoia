@@ -17,10 +17,21 @@ async def get_conversation_results(conversation_id: str = Query(..., description
     # Group results by agent type
     results_by_agent = {}
     for result in all_results:
-        agent_type = result.get('agent_type', 'unknown')
+        agent_type = result.agent_type
         if agent_type not in results_by_agent:
             results_by_agent[agent_type] = []
-        results_by_agent[agent_type].append(result)
+        # Convert StoredAgentResult to dict for API response
+        result_dict = {
+            'agent_type': result.agent_type,
+            'operation': result.operation,
+            'result_content': result.result_content,
+            'confidence': result.confidence,
+            'reasoning': result.reasoning,
+            'target_metadata': result.target_metadata,
+            'snapshot_id': result.snapshot_id,
+            'processed_at': result.processed_at
+        }
+        results_by_agent[agent_type].append(result_dict)
     
     # Check if all tasks for this conversation are complete
     tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id)
@@ -41,7 +52,7 @@ async def get_active_tasks(conversation_id: str = Query(..., description="Conver
     # Filter tasks by conversation_id
     filtered_tasks = [
         task for task in active_tasks 
-        if task.conversation_id == conversation_id
+        if task.agent_input.conversation_id == conversation_id
     ]
     
     return {
@@ -50,7 +61,7 @@ async def get_active_tasks(conversation_id: str = Query(..., description="Conver
                 "task_id": task.id,
                 "agent_type": task.agent_type,
                 "status": task.status,
-                "conversation_id": task.conversation_id
+                "conversation_id": task.agent_input.conversation_id
             }
             for task in filtered_tasks
         ],
