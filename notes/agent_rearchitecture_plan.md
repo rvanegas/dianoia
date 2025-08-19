@@ -624,7 +624,81 @@ interface AgentRealTimeUpdates {
 4. ✅ Implement `StaleResultsPropagation` system
 
 ### Phase 2: Agent Reorganization (Weeks 3-4)
-1. Implement new agent taxonomy (Content Evaluation, Formalization, Formal Evaluation, Improvement)
+
+#### Phase 2.1: New Agent Taxonomy Implementation (Week 3)
+
+**Objective**: Implement the four core agent types with proper input/output schemas and filtering
+
+**Implementation Steps**:
+
+1. **Evolve Existing Gpt Class**
+   - Enhance existing `Gpt` class in `conversation.py` to support agent functionality
+   - Add `AgentInput` validation and filtering capabilities
+   - Add `AgentResult` standardization
+   - Maintain backward compatibility with existing usage
+
+2. **Update Existing ContentEvaluationAgent**
+   - Enhance existing `ContentEvaluationAgent` in `agents.py`
+   - Ensure proper input filtering to exclude formalization data
+   - Update prompts for truth, validity, coherence evaluation
+   - Standardize result schema
+   - Add weak inference identification prompts
+
+3. **Update Existing FormalizationAgent**
+   - Enhance existing `FormalizationAgent` in `agents.py`
+   - Update prompts for proposition formalization
+   - Add prompts for holistic argument formalization
+   - Standardize result schema
+   - Add prompts for predicate and name consistency checking
+
+4. **Update Existing FormEvaluationAgent**
+   - Enhance existing `FormEvaluationAgent` in `agents.py`
+   - Ensure proper input filtering to exclude natural language content
+   - Update prompts for formal logic validation
+   - Standardize result schema
+   - Add prompts for weakest formal inference identification
+
+5. **Implement Improvement Agent (combining RewriterAgent and ArgumentBuilderAgent)**
+   - Complete the existing `RewriterAgent` stub in `agents.py`
+   - Incorporate functionality from existing `ArgumentBuilderAgent`
+   - Rename to `ImprovementAgent` for clarity
+   - Create prompts for recommendation generation
+   - Create prompts for proposition rewrite suggestions
+   - Create prompts for argument building and enhancement
+   - Standardize result schema
+   - Add prompts for missing premise identification
+
+6. **Update Agent Coordinator**
+   - Modify `AgentCoordinator` to support new agent types
+   - Update task queueing for new agent hierarchy
+   - Implement proper input filtering per agent type
+   - Add agent type-specific result handling
+
+7. **Update API Endpoints**
+   - Update existing `/api/agents` endpoints to work with enhanced agents
+   - Update agent status tracking
+
+**Success Criteria**:
+- All four agent types implemented and functional
+- Proper input filtering working for each agent type
+- Agent results properly structured and typed
+- Agent coordinator supports new taxonomy
+- API endpoints updated and tested
+
+**Files to Modify/Create**:
+- `backend/agents/base_agent.py` (new)
+- `backend/agents/content_evaluation_agent.py` (new)
+- `backend/agents/formalization_agent.py` (new)
+- `backend/agents/formal_evaluation_agent.py` (new)
+- `backend/agents/improvement_agent.py` (new)
+- `backend/agents/agent_factory.py` (new)
+- `backend/services/agent_coordinator.py` (modify)
+- `backend/api/agents.py` (modify)
+- `backend/schemas/agent_results.py` (new)
+- `backend/tests/test_new_agent_taxonomy.py` (new)
+
+#### Phase 2.2: Agent Migration and Handoff (Week 4)
+
 2. Migrate existing agents to new types with proper input filtering
 3. Set up direct agent handoff via OpenAI tool calling
 4. Create `AgentHandoffCoordinator` with loop prevention
