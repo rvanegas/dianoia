@@ -4,6 +4,7 @@ from unittest.mock import patch
 from services.agents import ContentEvaluationAgent, FormEvaluationAgent
 from services.agent_coordinator import coordinator
 from schemas.step import Step
+from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 
 
 class TestDualEvaluators:
@@ -29,14 +30,29 @@ class TestDualEvaluators:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            conversation_data = {
-                "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
-                "assumptions": [],
-                "conversation_id": "test_conversation"
-            }
+            agent_data = AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
+                    Step(symbol="B", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0"),
+                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0")
+                ],
+                latest_results=[],
+                target_type="argument",
+                target_content=None
+            )
+            agent_input = AgentInput(
+                conversation_id="test_conversation",
+                snapshot_id="test_snapshot_123",
+                
+                file_ids=[],
+                agent_data=agent_data
+            )
             
+            # Create FilteredAgentInput for content evaluation
+            filtered_input = FilteredAgentInput.for_content_evaluation(agent_input)
             # Call the content evaluation agent
-            result = agent.evaluate_propositions(conversation_data)
+            result = agent.evaluate_propositions(filtered_input)
             
             # Verify the result
             assert result.agent_type == "content_evaluator"
@@ -47,33 +63,7 @@ class TestDualEvaluators:
         """Test that form evaluator works correctly"""
         agent = FormEvaluationAgent(coordinator)
         
-        # Mock the coordinator to return formalizations
-        mock_existing_results = [
-            {
-                'agent_type': 'formalizer',
-                'result_content': {
-                    'proposition': 'Socrates is a man',
-                    'ascii': 'P(a)',
-                    'reasoning': 'Direct predicate application'
-                }
-            },
-            {
-                'agent_type': 'formalizer',
-                'result_content': {
-                    'proposition': 'All men are mortal',
-                    'ascii': 'forall x. (P(x) -> Q(x))',
-                    'reasoning': 'Universal quantification'
-                }
-            },
-            {
-                'agent_type': 'formalizer',
-                'result_content': {
-                    'proposition': 'Socrates is mortal',
-                    'ascii': 'Q(a)',
-                    'reasoning': 'Direct predicate application'
-                }
-            }
-        ]
+
         
         # Mock the GPT response for form evaluation
         mock_response = {
@@ -87,20 +77,33 @@ class TestDualEvaluators:
             "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
         }
         
-        with patch('services.agents.agent_gpt_evaluate_form') as mock_gpt, \
-             patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results):
+        with patch('services.agents.agent_gpt_evaluate_form') as mock_gpt:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
-            argument_data = {
-                "assumptions": [],
-                "argument": ["All men are mortal", "Socrates is a man", "Socrates is mortal"],
-                "conversation_id": "test_session:1"
-            }
+            agent_data = AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol="A", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0", formalization="forall x. (P(x) -> Q(x))"),
+                    Step(symbol="B", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0", formalization="P(a)"),
+                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0", formalization="Q(a)")
+                ],
+                latest_results=[],
+                target_type="argument",
+                target_content=None
+            )
+            agent_input = AgentInput(
+                conversation_id="test_session:1",
+                snapshot_id="test_snapshot_123",
+                file_ids=[],
+                agent_data=agent_data
+            )
             
+            # Create FilteredAgentInput for form evaluation
+            filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
             # Call the form evaluation agent
-            result = agent.evaluate_propositions(argument_data)
+            result = agent.evaluate_propositions(filtered_input)
             
             # Verify the result
             assert result.agent_type == "form_evaluator"

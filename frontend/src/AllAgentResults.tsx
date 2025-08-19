@@ -16,14 +16,15 @@ type AgentResult = {
 type AgentResultsProps = {
   conversationId: number
   sessionId: string
-  snapshotVersion?: number  // Add prop to track snapshot changes
+  snapshotVersion: number  // Required prop to track snapshot changes
+  snapshotIndex: number  // Required prop for API calls
 }
 
 type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, sessionId, snapshotVersion }: AgentResultsProps) {
+export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex }: AgentResultsProps) {
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const tasksCompleteRef = useRef<boolean>(false)
@@ -32,6 +33,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     try {
       const url = new URL(`${VITE_API_BASE_URL}/api/agents/results`)
       url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
+      url.searchParams.set('snapshot_id', String(snapshotIndex))
       
       const response = await axios.get(url.toString())
       

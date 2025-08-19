@@ -18,8 +18,8 @@ class TestTTLIntegration:
             response = client.post(
                 "/api/argument/argue",
                 params={
-                    "session_id": "test_session_123",
-                    "conversation_id": "1"
+                    "conversation_id": "test_session_123:1",
+                    "snapshot_id": "test_snapshot_123"
                 },
                 json={
                     "proposition": "Socrates is mortal",

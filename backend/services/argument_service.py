@@ -10,7 +10,7 @@ from typing import List, Tuple, Dict, Any
 from core.utils import find_index, logger
 from services.conversation import gpt_justify, gpt_evaluate, gpt_explain, gpt_gen_name
 from services.agent_coordinator import coordinator
-from schemas.arguments import Arguments, ArgumentsWithStep, ArgumentsWithProposition, ArgumentsWithStepAndProposition
+from schemas.arguments import Arguments, ArgumentsWithStep, ArgumentsWithProposition, ArgumentsWithStepAndProposition, ArgumentData
 from schemas.step import Step
 
 
@@ -40,8 +40,9 @@ def clean_citations(proposition: str) -> str:
 class ArgumentService:
     """Service for argument business logic and state modification"""
     
-    def __init__(self, arguments: Arguments):
+    def __init__(self, arguments: Arguments, snapshot_id: str):
         self.arguments = arguments
+        self.snapshot_id = snapshot_id
     
     def next_symbol(self) -> str:
         """Picks next available A-Z in a natural order"""
@@ -103,17 +104,21 @@ class ArgumentService:
         return self.arguments.model_dump_json(include={
             "assumptions", "argument", "explanation"})
 
-    def queue_argument_state_change(self, change_data: Dict[str, Any]):
+    def queue_argument_state_change(self):
         """Reactively queue agents for argument state changes"""
         # Prepare argument data for the reactive coordinator
-        argument_data = {
-            'argument': [step.model_dump() for step in self.arguments.argument],
-            'assumptions': [step.model_dump() for step in self.arguments.assumptions],
-            'file_ids': self.arguments.file_ids
-        }
+        argument_data = ArgumentData(
+            argument=self.arguments.argument,
+            assumptions=self.arguments.assumptions,
+            file_ids=self.arguments.file_ids
+        )
         
         # Use the reactive coordinator method
-        coordinator.react_to_user_argument_change(self.arguments.conversation_id, argument_data, change_data)
+        coordinator.react_to_user_argument_change(
+            self.arguments.conversation_id,
+            self.snapshot_id,
+            argument_data
+        )
 
     def gptjson(self) -> str:
         """Arguments json to return to frontend"""
@@ -128,8 +133,8 @@ class ArgumentService:
 class ArgumentStepService(ArgumentService):
     """Service for argument operations involving specific steps"""
     
-    def __init__(self, arguments_with_step: ArgumentsWithStep):
-        super().__init__(arguments_with_step)
+    def __init__(self, arguments_with_step: ArgumentsWithStep, snapshot_id: str):
+        super().__init__(arguments_with_step, snapshot_id)
         self.arguments_with_step = arguments_with_step
 
     def insert_proposition(self, new_proposition: str) -> Step:
@@ -139,12 +144,7 @@ class ArgumentStepService(ArgumentService):
         conclusion.justifiers.append(new_step.symbol)
         self.arguments_with_step.arg.insert(self.arguments_with_step.index, new_step)
         # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'proposition': new_proposition,
-            'location': self.arguments_with_step.loc,
-            'step_index': self.arguments_with_step.index,
-            'file_ids': self.arguments_with_step.file_ids
-        })
+        self.queue_argument_state_change()
         return conclusion
 
     def ai_justify(self) -> str:
@@ -172,11 +172,7 @@ class ArgumentStepService(ArgumentService):
         
         del self.arguments_with_step.arg[self.arguments_with_step.index]
         # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'location': self.arguments_with_step.loc,
-            'step_index': self.arguments_with_step.index,
-            'file_ids': self.arguments_with_step.file_ids
-        })
+        self.queue_argument_state_change()
         return self.gptjson()
 
     def assume(self) -> str:
@@ -189,11 +185,7 @@ class ArgumentStepService(ArgumentService):
         self.arguments_with_step.assumptions.append(self.arguments_with_step.arg[self.arguments_with_step.index])
         del self.arguments_with_step.arg[self.arguments_with_step.index]
         # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'location': self.arguments_with_step.loc,
-            'step_index': self.arguments_with_step.index,
-            'file_ids': self.arguments_with_step.file_ids
-        })
+        self.queue_argument_state_change()
         return self.gptjson()
 
     def explain(self) -> str:
@@ -210,8 +202,8 @@ class ArgumentStepService(ArgumentService):
 class ArgumentPropositionService(ArgumentService):
     """Service for argument operations involving propositions"""
     
-    def __init__(self, arguments_with_proposition: ArgumentsWithProposition):
-        super().__init__(arguments_with_proposition)
+    def __init__(self, arguments_with_proposition: ArgumentsWithProposition, snapshot_id: str):
+        super().__init__(arguments_with_proposition, snapshot_id)
         self.arguments_with_proposition = arguments_with_proposition
 
     def argue(self) -> str:
@@ -221,12 +213,7 @@ class ArgumentPropositionService(ArgumentService):
         self.arguments_with_proposition.argument.append(new_step)
         logger.debug(f"arg: {self.arguments_with_proposition.argument}")
         # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'proposition': self.arguments_with_proposition.proposition,
-            'location': 'argument',
-            'step_index': 0,
-            'file_ids': self.arguments_with_proposition.file_ids
-        })
+        self.queue_argument_state_change()
         logger.debug(f"gptjson: {self.gptjson()}")
         return self.gptjson()
 
@@ -238,9 +225,9 @@ class ArgumentPropositionService(ArgumentService):
 class ArgumentStepAndPropositionService(ArgumentStepService, ArgumentPropositionService):
     """Service for argument operations involving both steps and propositions"""
     
-    def __init__(self, arguments_with_step_and_proposition: ArgumentsWithStepAndProposition):
-        ArgumentStepService.__init__(self, arguments_with_step_and_proposition)
-        ArgumentPropositionService.__init__(self, arguments_with_step_and_proposition)
+    def __init__(self, arguments_with_step_and_proposition: ArgumentsWithStepAndProposition, snapshot_id: str):
+        ArgumentStepService.__init__(self, arguments_with_step_and_proposition, snapshot_id)
+        ArgumentPropositionService.__init__(self, arguments_with_step_and_proposition, snapshot_id)
         self.arguments_with_step_and_proposition = arguments_with_step_and_proposition
 
     def user_justify(self) -> str:
@@ -251,10 +238,5 @@ class ArgumentStepAndPropositionService(ArgumentStepService, ArgumentProposition
         self.arguments_with_step_and_proposition.arg.insert(self.arguments_with_step_and_proposition.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
         # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'proposition': self.arguments_with_step_and_proposition.proposition,
-            'location': self.arguments_with_step_and_proposition.loc,
-            'step_index': self.arguments_with_step_and_proposition.index,
-            'file_ids': self.arguments_with_step_and_proposition.file_ids
-        })
+        self.queue_argument_state_change()
         return self.gptjson()

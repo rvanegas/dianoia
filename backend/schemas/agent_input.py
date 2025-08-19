@@ -8,39 +8,28 @@ from pydantic import BaseModel, Field
 from schemas.step import Step
 
 
-class AgentContext(BaseModel):
-    """Context data provided to all agents"""
+class AgentData(BaseModel):
+    """Data that agents actually use for processing"""
     assumptions: List[Step]
     argument: List[Step]
-    file_ids: List[str] = []
-
-
-class TaskData(BaseModel):
-    """Task-specific data for agent processing"""
+    latest_results: List[Dict[str, Any]] = []  # Latest agent results for context
     target_type: Literal["argument", "proposition"]
     target_content: Optional[str] = None  # proposition text if target_type is 'proposition'
 
 
-class AgentMetadata(BaseModel):
-    """Metadata about the agent task"""
-    triggered_by: Literal["user_action", "agent_cascade", "scheduled", "manual"]
-    trigger_source: str
-
-
 class AgentInput(BaseModel):
-    """Normalized input schema for all agents"""
-    # Core identification
+    """Complete input schema for agent coordination"""
+    # Identifiers (needed for system operation)
     conversation_id: str
-    snapshot_id: str
+    snapshot_id: str  # Required - no default value
     
-    # Context data
-    context: AgentContext
+    # Agent data (what gets passed to the agent)
+    agent_data: AgentData
     
-    # Task-specific data
-    task_data: TaskData
-    
-    # Metadata
-    metadata: AgentMetadata
+    # Metadata (system-level info, not used by agents)
+    file_ids: List[str] = []
+    triggered_by: Literal["user_action", "agent_cascade", "scheduled", "manual"] = "user_action"
+    trigger_source: str = ""
 
 
 class FilteredAgentInput(AgentInput):
@@ -53,9 +42,9 @@ class FilteredAgentInput(AgentInput):
         filtered_input = cls.model_validate(base_input.model_dump())
         
         # Filter out formalization data for content evaluation
-        for step in filtered_input.context.assumptions:
+        for step in filtered_input.agent_data.assumptions:
             step.formalization = None
-        for step in filtered_input.context.argument:
+        for step in filtered_input.agent_data.argument:
             step.formalization = None
         
         return filtered_input
@@ -67,9 +56,9 @@ class FilteredAgentInput(AgentInput):
         filtered_input = cls.model_validate(base_input.model_dump())
         
         # Filter out content data for formal evaluation
-        for step in filtered_input.context.assumptions:
+        for step in filtered_input.agent_data.assumptions:
             step.proposition = None
-        for step in filtered_input.context.argument:
+        for step in filtered_input.agent_data.argument:
             step.proposition = None
         
         return filtered_input
