@@ -27,7 +27,10 @@ async def get_conversation_results(conversation_id: str = Query(..., description
             'result_content': result.result_content,
             'confidence': result.confidence,
             'reasoning': result.reasoning,
-            'target_metadata': result.target_metadata,
+            'target_metadata': {
+                'target_type': result.target_metadata.target_type,
+                'target_content': result.target_metadata.target_content
+            },
             'snapshot_id': result.snapshot_id,
             'processed_at': result.processed_at
         }

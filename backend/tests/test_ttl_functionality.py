@@ -1,6 +1,6 @@
 import pytest
 import time
-from services.agent_coordinator import AgentResultManager, StoredAgentResult
+from services.agent_coordinator import AgentResultManager, StoredAgentResult, TargetMetadata
 
 
 class TestTTLFunctionality:
@@ -18,7 +18,7 @@ class TestTTLFunctionality:
             result_content={'proposition': 'Test proposition'},
             confidence=0.8,
             reasoning='Test result',
-            target_metadata={'target_type': 'proposition', 'target_content': 'Test proposition'},
+            target_metadata=TargetMetadata(target_type='proposition', target_content='Test proposition'),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -60,7 +60,7 @@ class TestTTLFunctionality:
             result_content={'proposition': 'Recent proposition'},
             confidence=0.9,
             reasoning='Test formalization',
-            target_metadata={'target_type': 'proposition', 'target_content': 'Recent proposition'},
+            target_metadata=TargetMetadata(target_type='proposition', target_content='Recent proposition'),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -83,7 +83,7 @@ class TestTTLFunctionality:
             result_content={'proposition': 'Test proposition'},
             confidence=0.85,
             reasoning='Test evaluation',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
@@ -113,7 +113,7 @@ class TestTTLFunctionality:
                 result_content={'proposition': f'Test proposition {i}'},
                 confidence=0.8,
                 reasoning=f'Test result {i}',
-                target_metadata={'target_type': 'proposition', 'target_content': f'Test proposition {i}'},
+                target_metadata=TargetMetadata(target_type='proposition', target_content=f'Test proposition {i}'),
                 snapshot_id='test_snapshot',
                 processed_at=time.time()
             )
@@ -145,7 +145,7 @@ class TestTTLFunctionality:
             result_content={'proposition': 'Test proposition'},
             confidence=0.85,
             reasoning='Test cleanup evaluation',
-            target_metadata={'target_type': 'argument', 'target_content': None},
+            target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
