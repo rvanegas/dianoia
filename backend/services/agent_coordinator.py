@@ -20,8 +20,7 @@ class AgentTask:
     """Represents a task for an agent to process"""
     id: str
     agent_type: str  # 'builder', 'content_evaluator', 'form_evaluator', 'formalizer', 'rewriter'
-    conversation_id: str
-    data: Dict[str, Any]
+    agent_input: AgentInput
     status: str = 'pending'  # 'pending', 'running', 'completed', 'failed'
     priority: int = 0
     created_at: float = None
@@ -32,6 +31,8 @@ class AgentTask:
     def __post_init__(self):
         if self.created_at is None:
             self.created_at = time.time()
+    
+
 
 
 class AgentResultManager:
@@ -256,8 +257,8 @@ class AgentCoordinator:
                 raise ValueError(f"Unknown agent type: {task.agent_type}")
             
             # Process the task based on agent type
-            # Convert task data back to AgentInput
-            agent_input = AgentInput.model_validate(task.data)
+            # Use the agent_input directly from the task
+            agent_input = task.agent_input
             
             if task.agent_type == 'builder':
                 result = agent.build_argument(agent_input)
@@ -288,12 +289,11 @@ class AgentCoordinator:
             }
             
             # Store result using the disciplined result manager
-            self.result_manager.add_result(task.conversation_id, task.result)
+            self.result_manager.add_result(task.agent_input.conversation_id, task.result)
                         
             # If this was a formalizer task, trigger argument state change reaction
             if task.agent_type == 'formalizer':
-                # Reconstruct argument data from the agent input
-                agent_input = AgentInput.model_validate(task.data)
+                # Use the agent_input directly from the task
                 argument_data = ArgumentData(
                     argument=agent_input.agent_data.argument,
                     assumptions=agent_input.agent_data.assumptions,
@@ -329,8 +329,7 @@ class AgentCoordinator:
         task = AgentTask(
             id=task_id,
             agent_type=agent_type,
-            conversation_id=agent_input.conversation_id,
-            data=agent_input.model_dump(),
+            agent_input=agent_input,
             priority=priority
         )
         
@@ -356,7 +355,7 @@ class AgentCoordinator:
         # Get all tasks for this conversation from history
         conversation_tasks = [
             task for task in self.task_history.values() 
-            if task.conversation_id == conversation_id
+            if task.agent_input.conversation_id == conversation_id
         ]
         
         if not conversation_tasks:
@@ -472,7 +471,7 @@ class AgentCoordinator:
         # Check if there's already a pending or running formal_evaluator task
         active_tasks = self.get_active_tasks()
         for task in active_tasks:
-            if task.agent_type == 'form_evaluator' and task.conversation_id == conversation_id:
+            if task.agent_type == 'form_evaluator' and task.agent_input.conversation_id == conversation_id:
                 logger.info(f"Form evaluator task already active for conversation {conversation_id}")
                 return
         
