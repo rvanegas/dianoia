@@ -1,6 +1,6 @@
 import pytest
 import time
-from services.agent_coordinator import AgentResultManager
+from services.agent_coordinator import AgentResultManager, StoredAgentResult
 
 
 class TestTTLFunctionality:
@@ -12,17 +12,22 @@ class TestTTLFunctionality:
         conversation_id = "test_conversation"
         
         # Add a test result
-        test_result = {
-            'agent_type': 'builder',
-            'operation': 'build_argument',
-            'data': {'proposition': 'Test proposition'}
-        }
+        test_result = StoredAgentResult(
+            agent_type='builder',
+            operation='build_argument',
+            result_content={'proposition': 'Test proposition'},
+            confidence=0.8,
+            reasoning='Test result',
+            target_metadata={'target_type': 'proposition', 'target_content': 'Test proposition'},
+            snapshot_id='test_snapshot',
+            processed_at=time.time()
+        )
         result_manager.add_result(conversation_id, test_result)
         
         # Verify result is added
         results = result_manager.get_results(conversation_id)
         assert len(results) == 1
-        assert results[0]['data']['proposition'] == 'Test proposition'
+        assert results[0].result_content['proposition'] == 'Test proposition'
         
         # Manually set the conversation timestamp to be old (4 days ago)
         old_timestamp = time.time() - (4 * 24 * 60 * 60)  # 4 days ago
@@ -49,17 +54,22 @@ class TestTTLFunctionality:
         conversation_id = "test_conversation"
         
         # Add a test result
-        test_result = {
-            'agent_type': 'formalizer',
-            'operation': 'formalize_proposition',
-            'data': {'proposition': 'Recent proposition'}
-        }
+        test_result = StoredAgentResult(
+            agent_type='formalizer',
+            operation='formalize_proposition',
+            result_content={'proposition': 'Recent proposition'},
+            confidence=0.9,
+            reasoning='Test formalization',
+            target_metadata={'target_type': 'proposition', 'target_content': 'Recent proposition'},
+            snapshot_id='test_snapshot',
+            processed_at=time.time()
+        )
         result_manager.add_result(conversation_id, test_result)
         
         # Verify result is kept (should be recent)
         results = result_manager.get_results(conversation_id)
         assert len(results) == 1
-        assert results[0]['data']['proposition'] == 'Recent proposition'
+        assert results[0].result_content['proposition'] == 'Recent proposition'
     
     def test_ttl_updates_timestamp_on_activity(self):
         """Test that conversation timestamp is updated on activity"""
@@ -67,11 +77,16 @@ class TestTTLFunctionality:
         conversation_id = "test_conversation"
         
         # Add a test result
-        test_result = {
-            'agent_type': 'content_evaluator',
-            'operation': 'evaluate_propositions',
-            'data': {'proposition': 'Test proposition'}
-        }
+        test_result = StoredAgentResult(
+            agent_type='content_evaluator',
+            operation='evaluate_propositions',
+            result_content={'proposition': 'Test proposition'},
+            confidence=0.85,
+            reasoning='Test evaluation',
+            target_metadata={'target_type': 'argument', 'target_content': None},
+            snapshot_id='test_snapshot',
+            processed_at=time.time()
+        )
         result_manager.add_result(conversation_id, test_result)
         
         # Get initial timestamp
@@ -92,11 +107,16 @@ class TestTTLFunctionality:
         # Add multiple conversations
         for i in range(3):
             conversation_id = f"test_conversation_{i}"
-            test_result = {
-                'agent_type': 'builder',
-                'operation': 'build_argument',
-                'data': {'proposition': f'Test proposition {i}'}
-            }
+            test_result = StoredAgentResult(
+                agent_type='builder',
+                operation='build_argument',
+                result_content={'proposition': f'Test proposition {i}'},
+                confidence=0.8,
+                reasoning=f'Test result {i}',
+                target_metadata={'target_type': 'proposition', 'target_content': f'Test proposition {i}'},
+                snapshot_id='test_snapshot',
+                processed_at=time.time()
+            )
             result_manager.add_result(conversation_id, test_result)
         
         # Make two conversations old
@@ -119,11 +139,16 @@ class TestTTLFunctionality:
         conversation_id = "test_conversation"
         
         # Add a test result
-        test_result = {
-            'agent_type': 'content_evaluator',
-            'operation': 'evaluate_propositions',
-            'data': {'proposition': 'Test proposition'}
-        }
+        test_result = StoredAgentResult(
+            agent_type='content_evaluator',
+            operation='evaluate_propositions',
+            result_content={'proposition': 'Test proposition'},
+            confidence=0.85,
+            reasoning='Test cleanup evaluation',
+            target_metadata={'target_type': 'argument', 'target_content': None},
+            snapshot_id='test_snapshot',
+            processed_at=time.time()
+        )
         result_manager.add_result(conversation_id, test_result)
         
         # Verify both results and timestamps exist
