@@ -159,6 +159,41 @@ class AgentResultManager:
         
         return results
     
+    def get_latest_results(self, conversation_id: str, snapshot_id: str) -> List[StoredAgentResult]:
+        """Retrieve latest agent results for a conversation/snapshot context"""
+        all_results = self.get_results(conversation_id)
+        
+        if not all_results:
+            return []
+        
+        # Filter to only results <= current snapshot
+        # Convert snapshot_id to integer for comparison (frontend guarantees this is parseable)
+        current_snapshot = int(snapshot_id)
+        filtered_results = []
+        for result in all_results:
+            result_snapshot = int(result.snapshot_id)
+            if result_snapshot <= current_snapshot:
+                filtered_results.append(result)
+        all_results = filtered_results
+        
+        # Group results by agent type and keep only the latest for each type
+        latest_results = {}
+        for result in all_results:
+            agent_type = result.agent_type
+            if agent_type not in latest_results or result.processed_at > latest_results[agent_type].processed_at:
+                latest_results[agent_type] = result
+        
+        return list(latest_results.values())
+    
+    def get_results_by_target_type(self, conversation_id: str, target_type: str, snapshot_id: str) -> List[StoredAgentResult]:
+        """Get results filtered by target type (argument vs proposition level)"""
+        latest_results = self.get_latest_results(conversation_id, snapshot_id)
+        
+        return [
+            result for result in latest_results
+            if result.target_metadata.target_type == target_type
+        ]
+    
     def cleanup_conversation(self, conversation_id: str):
         """Clean up all results for a conversation"""
         if conversation_id in self.results_by_conversation:
@@ -373,6 +408,66 @@ class AgentCoordinator:
         # logger.debug(f"Retrieved {len(results)} results for conversation {conversation_id}")
         # logger.debug(f"Results: {results}")
         return results
+    
+    def get_latest_results(self, conversation_id: str, snapshot_id: str) -> List[StoredAgentResult]:
+        """Get latest results for a conversation/snapshot context"""
+        return self.result_manager.get_latest_results(conversation_id, snapshot_id)
+    
+    def get_results_by_target_type(self, conversation_id: str, target_type: str, snapshot_id: str) -> List[StoredAgentResult]:
+        """Get results filtered by target type (argument vs proposition level)"""
+        return self.result_manager.get_results_by_target_type(conversation_id, target_type, snapshot_id)
+    
+    def create_agent_input(self, conversation_id: str, snapshot_id: str, agent_data: AgentData, 
+                          file_ids: List[str] = None, triggered_by: str = 'system', 
+                          trigger_source: str = 'result_propagation') -> AgentInput:
+        """Create agent input with latest results context"""
+        # Get latest results for context
+        latest_results = self.get_latest_results(conversation_id, snapshot_id)
+        
+        # Convert StoredAgentResult objects to dict format for AgentData
+        results_dicts = []
+        for result in latest_results:
+            result_dict = {
+                'agent_type': result.agent_type,
+                'operation': result.operation,
+                'result_content': result.result_content,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning,
+                'target_metadata': {
+                    'target_type': result.target_metadata.target_type,
+                    'target_content': result.target_metadata.target_content
+                },
+                'snapshot_id': result.snapshot_id,
+                'processed_at': result.processed_at
+            }
+            results_dicts.append(result_dict)
+        
+        # Update agent_data with latest results
+        agent_data.latest_results = results_dicts
+        
+        return AgentInput(
+            conversation_id=conversation_id,
+            snapshot_id=snapshot_id,
+            agent_data=agent_data,
+            file_ids=file_ids or [],
+            triggered_by=triggered_by,
+            trigger_source=trigger_source
+        )
+    
+    def create_agent_result(self, agent_type: str, operation: str, result_content: Dict[str, Any],
+                           confidence: float, reasoning: str, target_metadata: TargetMetadata,
+                           snapshot_id: str) -> StoredAgentResult:
+        """Create properly structured agent result"""
+        return StoredAgentResult(
+            agent_type=agent_type,
+            operation=operation,
+            result_content=result_content,
+            confidence=confidence,
+            reasoning=reasoning,
+            target_metadata=target_metadata,
+            snapshot_id=snapshot_id,
+            processed_at=time.time()
+        )
     
     def are_conversation_tasks_complete(self, conversation_id: str) -> bool:
         """Check if all tasks for a conversation are complete"""
