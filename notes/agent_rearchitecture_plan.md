@@ -644,12 +644,12 @@ interface AgentRealTimeUpdates {
    - Standardized result schema
    - Added weak inference identification prompts
 
-3. **Update Existing FormalizationAgent**
-   - Enhance existing `FormalizationAgent` in `agents.py`
-   - Update prompts for proposition formalization
-   - Add prompts for holistic argument formalization
-   - Standardize result schema
-   - Add prompts for predicate and name consistency checking
+3. ✅ **Update Existing FormalizationAgent**
+   - Enhanced existing `FormalizationAgent` in `agents.py`
+   - Updated to use `FilteredAgentInput` for proper input handling
+   - Enhanced prompts to work with new `AgentInput` structure
+   - Standardized result schema with proper JSON structure
+   - Added support for existing formalizations for consistency checking
 
 4. **Update Existing FormEvaluationAgent**
    - Enhance existing `FormEvaluationAgent` in `agents.py`
