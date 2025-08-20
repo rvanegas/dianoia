@@ -62,3 +62,13 @@ class FilteredAgentInput(AgentInput):
             step.proposition = None
         
         return filtered_input
+    
+    @classmethod
+    def for_formalization(cls, base_input: AgentInput) -> "FilteredAgentInput":
+        """Create input for formalization agent (includes all data for context)"""
+        # Create a deep copy of the base input as FilteredAgentInput
+        filtered_input = cls.model_validate(base_input.model_dump())
+        
+        # Keep all data for formalization context
+        # The formalization agent needs to see existing formalizations for consistency
+        return filtered_input

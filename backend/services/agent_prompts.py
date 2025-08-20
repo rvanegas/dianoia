@@ -532,38 +532,52 @@ agent_gpt_evaluate_form = Gpt(
 agent_formalize_system_prompt = """
 You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations using the constraints defined in core/logic.py.
 
-### Task: Formalize Propositions
+### Task: Formalize Arguments
 
-You will receive a proposition that needs formalization. Your goal is to convert the natural language proposition into a formal logical representation that follows the constraints of the logic system.
+You will receive an argument with multiple propositions that need formalization. Your goal is to convert all natural language propositions into formal logical representations that follow the constraints of the logic system, ensuring consistency across the entire argument.
 
 ### Input Format
-- proposition: The natural language proposition to formalize
-- argument_data: Full argument context including all propositions and structure
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects in the main argument
+- agent_data.assumptions: List of Step objects for background assumptions
+- agent_data.target_type: Type of content being formalized (e.g., "argument")
+- agent_data.target_content: The argument being formalized (if applicable)
 - file_ids: List of file IDs for context
-- existing_formalizations: List of existing formalizations in the same argument for consistency
+
+Each Step object contains:
+- symbol: String identifier (e.g., "A", "B", "C")
+- proposition: The natural language proposition
+- justifiers: List of symbols that justify this step
+- formalization: Existing formal logic representation (if any)
 
 ### Formal Logic Constraints
 
-The formalization must follow these constraints from core/logic.py:
+The formalization must follow these exact constraints from the logic system:
 
 1. **Terms**:
-   - Variables: Must be single letters p-z (lowercase)
-   - Constants: Must be single letters a-o (lowercase)
+   - **Variables**: Must be single letters p-z (lowercase) - regex: `[p-z]`
+   - **Constants**: Must be single letters a-o (lowercase) - regex: `[a-o]`
 
 2. **Formulas**:
-   - Predicate: P(t1, t2, ...) where P is predicate name, t1, t2, ... are terms
-   - PropVar: Single uppercase letter A-Z
-   - Equality: t1 = t2 where t1, t2 are terms
-   - Not: not φ (negation)
-   - BinaryOp: φ and ψ, φ or ψ, φ -> ψ (and, or, implies)
-   - Quantifier: forall x.φ, exists x.φ (forall, exists)
-   - Modal: []φ, <>φ (box, diamond)
+   - **Predicate**: P(t1, t2, ...) where P is predicate name, t1, t2, ... are terms
+   - **PropVar**: Single uppercase letter A-Z - regex: `[A-Z]`
+   - **Equality**: t1 = t2 where t1, t2 are terms
+   - **Not**: `not φ` (negation)
+   - **BinaryOp**: `(φ and ψ)`, `(φ or ψ)`, `(φ -> ψ)` (and, or, implies)
+   - **Quantifier**: `forall x. (φ)`, `exists x. (φ)` (forall, exists)
+   - **Modal**: `[]φ`, `<>φ` (box, diamond)
 
 3. **Naming Conventions**:
-   - Predicate names: Use abstract, non-descriptive names like "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" to avoid semantic content that could distract from logical structure
-   - Variables: Use p, q, r, s, t, u, v, w, x, y, z
-   - Constants: Use a, b, c, d, e, f, g, h, i, j, k, l, m, n, o
-   - PropVars: Use A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+   - **Predicate names**: Use abstract, non-descriptive names like "P", "Q", "R" to avoid semantic content that could distract from logical structure
+   - **Constants**: Use a-o (lowercase)
+   - **Variables**: Use p-z (lowercase) 
+   - **PropVars**: Use A-Z (uppercase)
+
+4. **ASCII Representation Rules**:
+   - **Binary operators**: Use `and`, `or`, `->` (not symbols)
+   - **Quantifiers**: Use `forall x. (φ)`, `exists x. (φ)` format
+   - **Modals**: Use `[]φ` for box, `<>φ` for diamond
+   - **Negation**: Use `not φ` format
 
 ### Guidelines
 1. Preserve the logical meaning of the original proposition
@@ -585,36 +599,109 @@ The formalization must follow these constraints from core/logic.py:
 ### Examples
 
 Input:
-proposition: "Socrates is mortal"
-argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition": "All men are mortal"}, {"proposition": "Socrates is mortal"}]}
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "Socrates is a man",
+        "justifiers": []
+      },
+      {
+        "symbol": "B",
+        "proposition": "All men are mortal",
+        "justifiers": []
+      },
+      {
+        "symbol": "C",
+        "proposition": "Socrates is mortal",
+        "justifiers": ["A", "B"]
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
 
 Output:
 {
-  "formalization": {
-    "ascii": "P(a)",
-    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
-  },
+  "formalizations": [
+    {
+      "symbol": "A",
+      "ascii": "P(a)",
+      "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
+    },
+    {
+      "symbol": "B",
+      "ascii": "forall x. (P(x) -> Q(x))",
+      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    },
+    {
+      "symbol": "C",
+      "ascii": "Q(a)",
+      "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
+    }
+  ],
   "confidence": 0.95,
-  "reasoning": "Direct predicate application for individual property using abstract predicate P"
+  "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
 }
 
 Input:
-proposition: "All men are mortal"
-argument_data: {"argument": [{"proposition": "Socrates is a man"}, {"proposition": "All men are mortal"}, {"proposition": "Socrates is mortal"}]}
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "All mice are small",
+        "justifiers": [],
+        "formalization": "forall x. (P(x) -> Q(x))"
+      },
+      {
+        "symbol": "B",
+        "proposition": "Mice are small",
+        "justifiers": []
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
 
 Output:
 {
-  "formalization": {
-    "ascii": "forall x. (P(x) -> Q(x))",
-    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
-  },
-  "confidence": 0.9,
-  "reasoning": "Universal quantification with conditional for 'all' statement using abstract predicates P and Q"
+  "formalizations": [
+    {
+      "symbol": "A",
+      "ascii": "forall x. (P(x) -> Q(x))",
+      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    },
+    {
+      "symbol": "B",
+      "ascii": "forall x. (P(x) -> Q(x))",
+      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    }
+  ],
+  "confidence": 0.95,
+  "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
 }
 
 Input:
-proposition: "It is possible that it will rain tomorrow"
-argument_data: {"argument": [{"proposition": "It is possible that it will rain tomorrow"}]}
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "It is possible that it will rain tomorrow",
+        "justifiers": []
+      }
+    ],
+    "assumptions": [],
+    "target_type": "proposition",
+    "target_content": "It is possible that it will rain tomorrow"
+  }
+}
 
 Output:
 {
@@ -622,15 +709,30 @@ Output:
     "ascii": "<>P(a)",
     "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
   },
-  "confidence": 0.85,
   "reasoning": "Modal diamond operator for possibility claim using abstract predicate P"
 }
 
 Input:
-proposition: "Mice are small"
-existing_formalizations: [
-  {"proposition": "All mice are small", "formalization": "forall x. (P(x) -> Q(x))", "reasoning": "Universal quantification with conditional using abstract predicates P and Q"}
-]
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "All mice are small",
+        "justifiers": [],
+        "formalization": "forall x. (P(x) -> Q(x))"
+      },
+      {
+        "symbol": "B",
+        "proposition": "Mice are small",
+        "justifiers": []
+      }
+    ],
+    "assumptions": [],
+    "target_type": "proposition",
+    "target_content": "Mice are small"
+  }
+}
 
 Output:
 {
@@ -638,7 +740,6 @@ Output:
     "ascii": "forall x. (P(x) -> Q(x))",
     "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
   },
-  "confidence": 0.95,
   "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
 }
 """
@@ -649,18 +750,22 @@ agent_gpt_formalize = Gpt(
     response_format_base={
         "type": "object",
         "properties": {
-            "formalization": {
-                "type": "object",
-                "properties": {
-                    "ascii": {"type": "string"}
-                },
-                "required": ["ascii"],
-                "additionalProperties": False
+            "formalizations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string"},
+                        "ascii": {"type": "string"}
+                    },
+                    "required": ["symbol", "ascii"],
+                    "additionalProperties": False
+                }
             },
             "confidence": {"type": "number"},
             "reasoning": {"type": "string"}
         },
-        "required": ["formalization", "confidence", "reasoning"],
+        "required": ["formalizations", "confidence", "reasoning"],
         "additionalProperties": False
     }
 ) 
