@@ -126,51 +126,94 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                 {result.confidence.toFixed(2)} confidence
               </span>
             </div>
-            <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
-              💭 {result.reasoning}
-            </div>
-            {result.result_content?.evaluation && (
+            {result.result_content && (
               <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-blue-50 p-2 rounded">
-                    <span className="font-medium">Validity:</span> {(result.result_content.evaluation.argument_validity * 100).toFixed(0)}%
-                  </div>
-                </div>
-                {result.result_content.evaluation.proposition_evaluations && result.result_content.evaluation.proposition_evaluations.length > 0 && (
+                {/* Truth Evaluations */}
+                {result.result_content.truth_evaluations && result.result_content.truth_evaluations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-gray-700 mb-2">
-                      📊 Proposition Truth Values:
+                      📊 Truth Evaluations:
                     </div>
                     <div className="space-y-1">
-                      {result.result_content.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
-                        <div key={pIndex} className="text-sm p-2 bg-gray-50 rounded border border-gray-200">
+                      {result.result_content.truth_evaluations.map((evaluation: any, index: number) => (
+                        <div key={index} className="text-sm p-2 bg-gray-50 rounded border border-gray-200">
                           <div className="flex justify-between items-start">
-                            <span className="text-gray-700 flex-1">{prop.proposition}</span>
+                            <span className="text-gray-700 flex-1">
+                              <span className="font-medium">{evaluation.symbol}:</span> {evaluation.reasoning}
+                            </span>
                             <span className={`font-medium ml-2 px-2 py-1 rounded text-xs ${
-                              prop.truth_value >= 0.8 ? 'bg-green-100 text-green-800' :
-                              prop.truth_value >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                              evaluation.truth_value >= 0.8 ? 'bg-green-100 text-green-800' :
+                              evaluation.truth_value >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-red-100 text-red-800'
                             }`}>
-                              {(prop.truth_value * 100).toFixed(0)}%
+                              {(evaluation.truth_value * 100).toFixed(0)}%
                             </span>
                           </div>
-                          {prop.reasoning && (
-                            <div className="text-xs text-gray-500 mt-1 italic">
-                              {prop.reasoning}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {result.result_content.evaluation.logical_issues && result.result_content.evaluation.logical_issues.length > 0 && (
+
+                {/* Validity Evaluations */}
+                {result.result_content.validity_evaluations && result.result_content.validity_evaluations.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      🔗 Validity Evaluations:
+                    </div>
+                    <div className="space-y-1">
+                      {result.result_content.validity_evaluations.map((evaluation: any, index: number) => (
+                        <div key={index} className="text-sm p-2 bg-blue-50 rounded border border-blue-200">
+                          <div className="flex justify-between items-start">
+                            <span className="text-gray-700 flex-1">
+                              <span className="font-medium">{evaluation.symbol}:</span> {evaluation.reasoning}
+                            </span>
+                            <span className={`font-medium ml-2 px-2 py-1 rounded text-xs ${
+                              evaluation.validity_value >= 0.8 ? 'bg-green-100 text-green-800' :
+                              evaluation.validity_value >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {(evaluation.validity_value * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Incoherent Sets */}
+                {result.result_content.incoherent_sets && result.result_content.incoherent_sets.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium text-red-700 mb-2">
+                      ⚠️ Incoherent Sets:
+                    </div>
+                    <div className="space-y-2">
+                      {result.result_content.incoherent_sets.map((incoherentSet: any, iIndex: number) => (
+                        <div key={iIndex} className="text-sm p-2 bg-red-50 rounded border border-red-200">
+                          <div className="flex justify-between items-start">
+                            <span className="text-red-700 flex-1">
+                              <span className="font-medium">Steps {incoherentSet.symbols.join(', ')}:</span>
+                              <span className="ml-2 text-xs">
+                                {incoherentSet.incoherence_value === 1.0 ? 'Logical Contradiction' : 
+                                 `Incoherence Level: ${(incoherentSet.incoherence_value * 100).toFixed(0)}%`}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Logical Issues */}
+                {result.result_content.logical_issues && result.result_content.logical_issues.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-red-700 mb-2">
                       ⚠️ Logical Issues:
                     </div>
                     <ul className="space-y-1">
-                      {result.result_content.evaluation.logical_issues.map((issue: string, iIndex: number) => (
+                      {result.result_content.logical_issues.map((issue: string, iIndex: number) => (
                         <li key={iIndex} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
                           {issue}
                         </li>
@@ -178,13 +221,15 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                     </ul>
                   </div>
                 )}
-                {result.result_content.evaluation.recommendations && result.result_content.evaluation.recommendations.length > 0 && (
+
+                {/* Recommendations */}
+                {result.result_content.recommendations && result.result_content.recommendations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-blue-700 mb-2">
                       💡 Recommendations:
                     </div>
                     <ul className="space-y-1">
-                      {result.result_content.evaluation.recommendations.map((rec: string, rIndex: number) => (
+                      {result.result_content.recommendations.map((rec: string, rIndex: number) => (
                         <li key={rIndex} className="text-sm text-blue-700 p-2 bg-blue-50 rounded border border-blue-200">
                           {rec}
                         </li>

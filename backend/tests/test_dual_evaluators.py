@@ -16,13 +16,16 @@ class TestDualEvaluators:
         
         # Mock the GPT response for content evaluation
         mock_response = {
-            "proposition_evaluations": [
-                {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"},
-                {"proposition": "All men are mortal", "truth_value": 0.95, "reasoning": "Universal biological truth"},
-                {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
+            "truth_evaluations": [
+                {"symbol": "A", "truth_value": 0.9, "reasoning": "Historical fact"},
+                {"symbol": "B", "truth_value": 0.95, "reasoning": "Universal biological truth"},
+                {"symbol": "C", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
             ],
-            "overall_truth_score": 0.95,
-            "truth_issues": [],
+            "validity_evaluations": [
+                {"symbol": "C", "validity_value": 1.0, "reasoning": "Valid deduction from A and B"}
+            ],
+            "incoherent_sets": [],
+            "logical_issues": [],
             "recommendations": ["Argument is logically sound and well-structured"]
         }
         
@@ -57,7 +60,7 @@ class TestDualEvaluators:
             # Verify the result
             assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.result_content["evaluation_mode"] == "content_truth"
+            assert result.result_content["evaluation_mode"] == "content_truth_coherence"
     
     def test_form_evaluator(self):
         """Test that form evaluator works correctly"""

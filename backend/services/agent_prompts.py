@@ -73,87 +73,254 @@ agent_gpt_justify = Gpt(
 
 # Agent-specific system prompt for content evaluation
 agent_evaluate_content_system_prompt = """
-You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, and soundness of propositions and arguments based on their content.
+You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, coherence, and identify weak inferences in natural language content.
 
 For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
 
 ### Input Format
-- argument: List of propositions in the main argument
-- assumptions: List of background assumptions
-- thesis: The main thesis being argued
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects in the main argument
+- agent_data.assumptions: List of Step objects for background assumptions
+- agent_data.target_type: Type of content being evaluated (e.g., "argument", "proposition")
+- agent_data.target_content: Specific content being targeted (if applicable)
+
+Each Step object contains:
+- symbol: String identifier (e.g., "A", "B", "C")
+- proposition: The natural language proposition
+- justifiers: List of symbols that justify this step
+- valid_content: Content validity from previous evaluation (optional)
+- valid_formal: Formal validity from previous evaluation (optional)
+- formalization: Formal logic representation (optional)
 
 ### Task
 
-You will receive argument data including propositions and context. You will evaluate the propositions and return an array of numbers from 0.0 to 1.0, rounded to nearest 0.05, each corresponding to a given proposition from "argument" in the same order. This array is returned as the "truth" property.
+You will receive argument data with Step objects containing symbols, propositions, and justifiers. You will evaluate and return comprehensive assessments including:
 
-Additionally, concerning the last proposition in the list, you will return one number from 0.0 to 1.0, rounded to the nearest 0.05, corresponding to the validity of the inference from the other propositions to the last one. That is, assuming that the other propositions in "argument", and all those in "assumptions", are certainly true, then this number represents the likelihood that the last proposition in "argument" is true. In case of deduction, set value to 1.0. In case of contradiction, set value to 0.0. Otherwise, determine the implicit premise that would make the inference a deduction. This number is returned as the "valid" property.
+1. **Truth Evaluation**: Individual proposition assessments by symbol (truth values from 0.0 to 1.0)
+2. **Validity Assessment**: Validity of each step in relation to its justifiers (validity values from 0.0 to 1.0)
+3. **Coherence Analysis**: How well the propositions work together as a unified argument
+4. **Weak Inference Identification**: Steps with the lowest validity scores
 
 ### Considerations
 
-For each proposition in "argument", the number returned in the "truth" array should be 1.0 if the proposition is certainly true given the assumptions, 0.0 if it is certainly false given the assumptions, or a value representing the degree of likelihood given the assumptions.
+**Truth Evaluation**:
+- For each Step, assess the truth value of its proposition given the assumptions
+- 1.0 = certainly true, 0.0 = certainly false, intermediate values for degrees of 
+  likelihood, in increments of 0.1
+- Consider empirical evidence, logical consistency, and background knowledge
+- Return truth values indexed by Step symbol
+
+**Validity Assessment**:
+- For each Step with justifiers, evaluate the validity of the inference from its justifiers to its proposition
+- 1.0 = deductively valid, 0.0 = contradictory, intermediate values for inductive/abductive strength
+- Consider the logical relationship between the Step's proposition and its justifiers
+- Steps without justifiers (premises/assumptions) should not receive validity values
+- Return validity values indexed by Step symbol (only for steps with justifiers)
+
+**Coherence Analysis**:
+- Evaluate how well the propositions form a unified argument
+- Check for internal consistency and logical flow
+- Identify gaps, contradictions, or redundancies
+- Identify sets of steps that are mutually incoherent
+- Assign incoherence values: 1.0 = logical contradiction, lower values for lesser incoherence
+
+**Weak Inference Identification**:
+- Weak inferences are implicitly identified by low validity scores in validity_evaluations
+- No need to explicitly list them - they can be found by examining the validity values
+- Provide specific recommendations for strengthening weak inferences
 
 ### Examples
 
-# valid but not sound
-
-(A) Socrates is a god.
-(B) All gods are immortal.
-(C) Socrates is immortal.
-
-truth: [0.0, 1.0, 0.0]
-valid: 1.0
-
-# valid and sound
-
-(A) Socrates is a man.
-(B) All men are mortal.
-(C) Socrates is mortal.
-
-truth: [1.0, 1.0, 1.0]
-valid: 1.0
-
-# partly valid
-
-(A) Socrates is a man.
-(B) Most men are mortal.
-(C) Socrates is mortal.
-
-truth: [1.0, 1.0, 1.0]
-valid: 0.7
-
-# deductively invalid though true, abductively reasonable
-
-(A) Socrates is mortal.
-(B) All men are mortal
-(C) Socrates is a man.
-
-truth: [1.0, 1.0, 1.0]
-valid: 0.2
-
-### Output Format
-Provide evaluations for:
-- Individual proposition assessments (truth values)
-- Overall argument validity
-- Identified logical issues
-- Recommendations for improvement
-
-### Examples
+# Valid but not sound argument
 
 Input:
-thesis: "Socrates is mortal"
-argument: ["Socrates is a man", "All men are mortal", "Socrates is mortal"]
-assumptions: []
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "Socrates is a god",
+        "justifiers": []
+      },
+      {
+        "symbol": "B", 
+        "proposition": "All gods are immortal",
+        "justifiers": []
+      },
+      {
+        "symbol": "C",
+        "proposition": "Socrates is immortal", 
+        "justifiers": ["A", "B"]
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
 
 Output:
 {
-  "proposition_evaluations": [
-    {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"},
-    {"proposition": "All men are mortal", "truth_value": 0.95, "reasoning": "Universal biological truth"},
-    {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
+  "truth_evaluations": [
+    {"symbol": "A", "truth_value": 0.0, "reasoning": "Contradicts historical and theological knowledge"},
+    {"symbol": "B", "truth_value": 0.8, "reasoning": "Common theological assumption, though debatable"},
+    {"symbol": "C", "truth_value": 0.0, "reasoning": "False conclusion from false premise"}
   ],
-  "argument_validity": 0.95,
+  "validity_evaluations": [
+    {"symbol": "C", "validity_value": 1.0, "reasoning": "Valid deduction from A and B, though premises are false"}
+  ],
+
+  "incoherent_sets": [],
+  "logical_issues": ["Argument is valid but unsound due to false premise"],
+  "recommendations": [
+    "Replace false premise A with true statement about Socrates",
+    "Provide evidence for theological assumptions in B if used"
+  ]
+}
+
+# Coherent and sound argument
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "Socrates is a man",
+        "justifiers": []
+      },
+      {
+        "symbol": "B",
+        "proposition": "All men are mortal", 
+        "justifiers": []
+      },
+      {
+        "symbol": "C",
+        "proposition": "Socrates is mortal",
+        "justifiers": ["A", "B"]
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "A", "truth_value": 0.95, "reasoning": "Historical fact, well-documented"},
+    {"symbol": "B", "truth_value": 0.98, "reasoning": "Universal biological truth, no known exceptions"},
+    {"symbol": "C", "truth_value": 0.95, "reasoning": "Valid conclusion from true premises"}
+  ],
+  "validity_evaluations": [
+    {"symbol": "C", "validity_value": 1.0, "reasoning": "Valid deduction from A and B"}
+  ],
+
+  "incoherent_sets": [],
   "logical_issues": [],
   "recommendations": ["Argument is logically sound and well-structured"]
+}
+
+# Argument with logical contradiction
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "All humans are mortal",
+        "justifiers": []
+      },
+      {
+        "symbol": "B",
+        "proposition": "Socrates is human",
+        "justifiers": []
+      },
+      {
+        "symbol": "C",
+        "proposition": "Socrates is immortal",
+        "justifiers": ["A", "B"]
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "A", "truth_value": 0.98, "reasoning": "Universal biological truth"},
+    {"symbol": "B", "truth_value": 0.95, "reasoning": "Historical fact"},
+    {"symbol": "C", "truth_value": 0.0, "reasoning": "Contradicts premises A and B"}
+  ],
+  "validity_evaluations": [
+    {"symbol": "C", "validity_value": 0.0, "reasoning": "Logical contradiction with premises"}
+  ],
+  "incoherent_sets": [
+    {
+      "symbols": ["A", "B", "C"],
+      "incoherence_value": 1.0
+    }
+  ],
+  "logical_issues": ["Contains logical contradiction"],
+  "recommendations": [
+    "Fix contradiction in C - Socrates cannot be both mortal (from A+B) and immortal"
+  ]
+}
+
+# Argument with weak inferences
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "The policy worked in another country",
+        "justifiers": []
+      },
+      {
+        "symbol": "B",
+        "proposition": "Our country is similar",
+        "justifiers": []
+      },
+      {
+        "symbol": "C",
+        "proposition": "The policy will work here",
+        "justifiers": ["A", "B"]
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "A", "truth_value": 0.7, "reasoning": "Limited evidence, context-dependent"},
+    {"symbol": "B", "truth_value": 0.6, "reasoning": "Vague similarity claim, needs specification"},
+    {"symbol": "C", "truth_value": 0.5, "reasoning": "Weak conclusion from weak premises"}
+  ],
+  "validity_evaluations": [
+    {"symbol": "C", "validity_value": 0.6, "reasoning": "Weak analogical inference from A and B"}
+  ],
+
+  "incoherent_sets": [
+    {
+      "symbols": ["A", "B", "C"],
+      "incoherence_value": 0.7
+    }
+  ],
+  "logical_issues": ["Relies on weak analogical reasoning"],
+  "recommendations": [
+    "Provide specific evidence of policy success in other country (A)",
+    "Specify relevant similarities and differences between countries (B)",
+    "Strengthen analogical reasoning in C"
+  ]
 }
 """
 
@@ -163,20 +330,49 @@ agent_gpt_evaluate_content = Gpt(
     response_format_base={
         "type": "object",
         "properties": {
-            "proposition_evaluations": {
+            "truth_evaluations": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "proposition": {"type": "string"},
+                        "symbol": {"type": "string"},
                         "truth_value": {"type": "number"},
                         "reasoning": {"type": "string"}
                     },
-                    "required": ["proposition", "truth_value", "reasoning"],
+                    "required": ["symbol", "truth_value", "reasoning"],
                     "additionalProperties": False
                 }
             },
-            "argument_validity": {"type": "number"},
+            "validity_evaluations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string"},
+                        "validity_value": {"type": "number"},
+                        "reasoning": {"type": "string"}
+                    },
+                    "required": ["symbol", "validity_value", "reasoning"],
+                    "additionalProperties": False
+                }
+            },
+
+
+            "incoherent_sets": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbols": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "incoherence_value": {"type": "number"}
+                    },
+                    "required": ["symbols", "incoherence_value"],
+                    "additionalProperties": False
+                }
+            },
             "logical_issues": {
                 "type": "array",
                 "items": {"type": "string"}
@@ -186,7 +382,7 @@ agent_gpt_evaluate_content = Gpt(
                 "items": {"type": "string"}
             }
         },
-        "required": ["proposition_evaluations", "argument_validity", "logical_issues", "recommendations"],
+        "required": ["truth_evaluations", "validity_evaluations", "incoherent_sets", "logical_issues", "recommendations"],
         "additionalProperties": False
     }
 )

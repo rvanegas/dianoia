@@ -118,15 +118,7 @@ class ContentEvaluationAgent:
             evaluation_response = agent_gpt_evaluate_content.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
             
-            # Log key evaluation metrics
-            proposition_count = len(evaluation_result.get("proposition_evaluations", []))
-            overall_truth_score = evaluation_result.get("overall_truth_score", 0.0)
-            truth_issues = evaluation_result.get("truth_issues", [])
-            recommendations = evaluation_result.get("recommendations", [])
-            
-            # logger.info(f"ContentEvaluationAgent completed - Propositions: {proposition_count}, Truth Score: {overall_truth_score:.2f}")
-            # if truth_issues:
-            #     logger.info(f"ContentEvaluationAgent found {len(truth_issues)} truth issues: {truth_issues}")
+            # logger.info(f"ContentEvaluationAgent completed")
             # if recommendations:
             #     logger.info(f"ContentEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
@@ -134,17 +126,12 @@ class ContentEvaluationAgent:
                 agent_type=self.name,
                 operation="evaluate_propositions",
                 result_content={
-                    "evaluation": evaluation_result,
-                    "proposition_count": proposition_count,
-                    "overall_truth_score": overall_truth_score,
-                    "truth_issues": truth_issues,
-                    "recommendations": recommendations,
-                    "evaluation_mode": "content_truth",
+                    **evaluation_result,
+                    "evaluation_mode": "content_truth_coherence",
                     "argument": arg_for_result,
                     "assumptions": assumptions_for_result
                 },
-                confidence=overall_truth_score,
-                reasoning=f"Evaluated {proposition_count} propositions for truth with {len(truth_issues)} issues identified",
+
                 target_metadata={
                     'target_type': 'argument'
                 }
