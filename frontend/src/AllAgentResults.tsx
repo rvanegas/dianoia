@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import type { ConversationSnapshot } from './types'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -18,16 +19,119 @@ type AgentResultsProps = {
   sessionId: string
   snapshotVersion: number  // Required prop to track snapshot changes
   snapshotIndex: number  // Required prop for API calls
+  currentSnapshot: ConversationSnapshot  // Current snapshot to apply results to
+  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
 }
 
 type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex }: AgentResultsProps) {
+export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex, currentSnapshot, saveSnapshotInPlace }: AgentResultsProps) {
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const tasksCompleteRef = useRef<boolean>(false)
+
+  // Apply agent results to argument steps
+  const applyAgentResultsToSnapshot = (newResultsByAgent: ResultsByAgent) => {
+    const updatedSnapshot = { 
+      ...currentSnapshot,
+      argument: [...currentSnapshot.argument], // Create new array
+      assumptions: [...currentSnapshot.assumptions] // Create new array
+    }
+    let hasChanges = false
+
+    // Apply ContentEvaluationAgent results
+    const contentResults = newResultsByAgent['content_evaluator']
+    if (contentResults && contentResults.length > 0) {
+      const latestContentResult = contentResults[contentResults.length - 1]
+      const resultContent = latestContentResult.result_content
+
+      // Apply truth evaluations (only to argument steps, not assumptions)
+      if (resultContent.truth_evaluations) {
+        resultContent.truth_evaluations.forEach((evaluation: any) => {
+          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === evaluation.symbol)
+          if (stepIndex !== -1) {
+            const oldStep = updatedSnapshot.argument[stepIndex]
+            // Create new step object to avoid read-only property error
+            const newStep = {
+              ...oldStep,
+              truth: evaluation.truth_value.toString(),
+              evaluated_by_agents: {
+                ...oldStep.evaluated_by_agents,
+                content_evaluation: true
+              }
+            }
+            updatedSnapshot.argument[stepIndex] = newStep
+            hasChanges = true
+          }
+        })
+      }
+
+      // Apply validity evaluations (only to argument steps, not assumptions)
+      if (resultContent.validity_evaluations) {
+        resultContent.validity_evaluations.forEach((evaluation: any) => {
+          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === evaluation.symbol)
+          if (stepIndex !== -1) {
+            const oldStep = updatedSnapshot.argument[stepIndex]
+            // Create new step object to avoid read-only property error
+            const newStep = {
+              ...oldStep,
+              valid: evaluation.validity_value.toString(),
+              evaluated_by_agents: {
+                ...oldStep.evaluated_by_agents,
+                content_evaluation: true
+              }
+            }
+            updatedSnapshot.argument[stepIndex] = newStep
+            hasChanges = true
+          }
+        })
+      }
+    }
+
+    // Apply FormalizationAgent results
+    const formalizationResults = newResultsByAgent['formalizer']
+    if (formalizationResults && formalizationResults.length > 0) {
+      const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
+      const resultContent = latestFormalizationResult.result_content
+
+      // Apply formalizations
+      if (resultContent.formalizations) {
+        resultContent.formalizations.forEach((formalization: any) => {
+          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === formalization.symbol)
+          if (stepIndex !== -1) {
+            const oldStep = updatedSnapshot.argument[stepIndex]
+            // Create new step object to avoid read-only property error
+            const newStep = {
+              ...oldStep,
+              formalization: {
+                ascii: formalization.ascii,
+                json: formalization.json
+              },
+              evaluated_by_agents: {
+                ...oldStep.evaluated_by_agents,
+                formalization: true
+              }
+            }
+            updatedSnapshot.argument[stepIndex] = newStep
+            hasChanges = true
+          }
+        })
+      }
+
+      // Save formalization definitions to snapshot
+      if (resultContent.definitions) {
+        updatedSnapshot.formalization_definitions = resultContent.definitions
+        hasChanges = true
+      }
+    }
+
+    // Save updated snapshot if there were changes
+    if (hasChanges) {
+      saveSnapshotInPlace(updatedSnapshot)
+    }
+  }
 
   const fetchResults = async () => {
     try {
@@ -43,6 +147,8 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       // Only update if we have new results
       if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
         setResultsByAgent(newResultsByAgent)
+        // Apply results to snapshot
+        applyAgentResultsToSnapshot(newResultsByAgent)
       }
       
       // Update tasks complete status

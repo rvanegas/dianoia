@@ -68,7 +68,7 @@ class ArgumentService:
     def new_step(self, proposition: str) -> Step:
         """Make new step"""
         return Step(symbol=self.next_symbol(), proposition=proposition,
-            justifiers=[], truth="0.0", valid="0.0")
+            justifiers=[], truth="", valid="")
 
     def subargument(self, arg: List[Step], conclusion: Step) -> Tuple[Dict[str, Any], List[Step]]:
         """Extract a few steps by way of a justifiers property"""
