@@ -13,7 +13,7 @@ type ConversationSnapshot = {
   argument: StepType[]
   assumptions: StepType[]
   argMode: ArgMode
-  evaluationsPending: boolean
+  // evaluationsPending: boolean // DISABLED: Old evaluation system
   explanation: string | undefined
   file_ids: string[]
 }
