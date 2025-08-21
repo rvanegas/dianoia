@@ -66,9 +66,6 @@ export function useConversationState(
   // export button
   const [copied, setCopied] = useState<boolean>(false)
 
-  // evaluating mode for score evaluation
-  const [evaluatingMode, setEvaluatingMode] = useState<boolean>(false)
-
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -107,8 +104,6 @@ export function useConversationState(
     setInputText,
     copied,
     setCopied,
-    evaluatingMode,
-    setEvaluatingMode,
     inputRef,
     saveSnapshot,
     sessionId
@@ -125,7 +120,6 @@ export function useConversationActions(
   targetIndex: number,
   saveSnapshot: (newSnap: ConversationSnapshot, inPlace?: boolean, convName?: string) => void,
   createConversationFromProposition: (proposition: string) => void,
-  setEvaluatingMode: (mode: boolean) => void,
   conversationId: number,
   sessionId: string,
   snapshotIndex: number
