@@ -596,6 +596,11 @@ The formalization must follow these exact constraints from the logic system:
     - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
     - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
 
+11. **DEFINITIONS**: Provide clear definitions for all abstract names used:
+    - **predicates**: Map each abstract predicate name to its semantic meaning (e.g., "P": "is a man", "Q": "is mortal")
+    - **constants**: Map each abstract constant name to its semantic meaning (e.g., "a": "Socrates", "b": "Plato")
+    - These definitions apply to the entire argument and help users understand the formalization
+
 ### Examples
 
 Input:
@@ -643,6 +648,15 @@ Output:
       "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
     }
   ],
+  "definitions": {
+    "predicates": {
+      "P": "is a man",
+      "Q": "is mortal"
+    },
+    "constants": {
+      "a": "Socrates"
+    }
+  },
   "confidence": 0.95,
   "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
 }
@@ -698,17 +712,29 @@ Input:
       }
     ],
     "assumptions": [],
-    "target_type": "proposition",
-    "target_content": "It is possible that it will rain tomorrow"
+    "target_type": "argument",
+    "target_content": null
   }
 }
 
 Output:
 {
-  "formalization": {
-    "ascii": "<>P(a)",
-    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
+  "formalizations": [
+    {
+      "symbol": "A",
+      "ascii": "<>P(a)",
+      "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
+    }
+  ],
+  "definitions": {
+    "predicates": [
+      {"symbol": "P", "value": "will rain"}
+    ],
+    "constants": [
+      {"symbol": "a", "value": "tomorrow"}
+    ]
   },
+  "confidence": 0.85,
   "reasoning": "Modal diamond operator for possibility claim using abstract predicate P"
 }
 
@@ -729,17 +755,33 @@ Input:
       }
     ],
     "assumptions": [],
-    "target_type": "proposition",
-    "target_content": "Mice are small"
+    "target_type": "argument",
+    "target_content": null
   }
 }
 
 Output:
 {
-  "formalization": {
-    "ascii": "forall x. (P(x) -> Q(x))",
-    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+  "formalizations": [
+    {
+      "symbol": "A",
+      "ascii": "forall x. (P(x) -> Q(x))",
+      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    },
+    {
+      "symbol": "B",
+      "ascii": "forall x. (P(x) -> Q(x))",
+      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    }
+  ],
+  "definitions": {
+    "predicates": [
+      {"symbol": "P", "value": "is a mouse"},
+      {"symbol": "Q", "value": "is small"}
+    ],
+    "constants": []
   },
+  "confidence": 0.95,
   "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
 }
 """
@@ -762,10 +804,49 @@ agent_gpt_formalize = Gpt(
                     "additionalProperties": False
                 }
             },
+            "definitions": {
+                "type": "object",
+                "properties": {
+                    "predicates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "symbol": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["symbol", "value"],
+                            "additionalProperties": False
+                        }
+                    },
+                    "constants": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "symbol": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["symbol", "value"],
+                            "additionalProperties": False
+                        }
+                    }
+                },
+                "required": ["predicates", "constants"],
+                "additionalProperties": False
+            },
             "confidence": {"type": "number"},
             "reasoning": {"type": "string"}
         },
-        "required": ["formalizations", "confidence", "reasoning"],
+        "required": ["formalizations", "definitions", "confidence", "reasoning"],
         "additionalProperties": False
     }
 ) 

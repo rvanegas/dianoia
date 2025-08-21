@@ -33,6 +33,15 @@ class TestFormalizationAgent:
                     "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
                 }
             ],
+            "definitions": {
+                "predicates": [
+                    {"symbol": "P", "value": "is a man"},
+                    {"symbol": "Q", "value": "is mortal"}
+                ],
+                "constants": [
+                    {"symbol": "a", "value": "Socrates"}
+                ]
+            },
             "confidence": 0.9,
             "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
         }
@@ -72,6 +81,12 @@ class TestFormalizationAgent:
             assert len(result.result_content["formalizations"]) == 3
             assert result.result_content["formalizations"][0]["symbol"] == "A"
             assert result.result_content["formalizations"][0]["ascii"] == "P(a)"
+            # Check definitions using array structure
+            predicates = {p["symbol"]: p["value"] for p in result.result_content["definitions"]["predicates"]}
+            constants = {c["symbol"]: c["value"] for c in result.result_content["definitions"]["constants"]}
+            assert predicates["P"] == "is a man"
+            assert predicates["Q"] == "is mortal"
+            assert constants["a"] == "Socrates"
             assert result.result_content["confidence"] == 0.9
             assert "Consistent formalization" in result.result_content["reasoning"]
             assert result.target_metadata["target_type"] == "argument"
