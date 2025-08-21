@@ -138,42 +138,43 @@ class TestAPIArgumentEndpoints:
             # Verify the coordinator was called
             mock_queue.assert_called()
 
-    def test_ai_justify_endpoint(self):
-        """Test the /api/argument/ai-justify endpoint"""
-        with patch('services.agent_coordinator.coordinator.queue_task') as mock_queue:
-            with patch('services.conversation.gpt_justify.call') as mock_justify:
-                mock_justify.return_value = '{"propositions": ["All men are mortal"]}'
-                
-                response = client.post(
-                    "/api/argument/ai-justify",
-                    params={
-                        "conversation_id": "test_session_123:1",
-                        "snapshot_id": "test_snapshot_123"
-                    },
-                    json={
-                        "assumptions": [],
-                        "argument": [
-                            {
-                                "symbol": "A",
-                                "proposition": "Socrates is mortal",
-                                "justifiers": [],
-                                "truth": "0.8",
-                                "valid": "0.9"
-                            }
-                        ],
-                        "loc": "argument",
-                        "index": 0,
-                        "file_ids": []
-                    }
-                )
-                
-                assert response.status_code == 200
-                result = response.json()
-                assert "reply" in result
-                
-                # Verify both services were called
-                mock_queue.assert_called()
-                mock_justify.assert_called()
+    # DISABLED: Old ai-justify endpoint test - replaced by new agent system
+    # def test_ai_justify_endpoint(self):
+    #     """Test the /api/argument/ai-justify endpoint"""
+    #     with patch('services.agent_coordinator.coordinator.queue_task') as mock_queue:
+    #         with patch('services.conversation.gpt_justify.call') as mock_justify:
+    #             mock_justify.return_value = '{"propositions": ["All men are mortal"]}'
+    #             
+    #             response = client.post(
+    #                 "/api/argument/ai-justify",
+    #                 params={
+    #                 "conversation_id": "test_session_123:1",
+    #                 "snapshot_id": "test_snapshot_123"
+    #             },
+    #             json={
+    #                 "assumptions": [],
+    #                 "argument": [
+    #                     {
+    #                         "symbol": "A",
+    #                         "proposition": "Socrates is mortal",
+    #                         "justifiers": [],
+    #                         "truth": "0.8",
+    #                         "valid": "0.9"
+    #                     }
+    #                 ],
+    #                 "loc": "argument",
+    #                 "index": 0,
+    #                 "file_ids": []
+    #             }
+    #         )
+    #             
+    #         assert response.status_code == 200
+    #         result = response.json()
+    #         assert "reply" in result
+    #             
+    #         # Verify both services were called
+    #         mock_queue.assert_called()
+    #         mock_justify.assert_called()
 
     def test_user_justify_endpoint(self):
         """Test the /api/argument/user-justify endpoint"""
@@ -251,45 +252,46 @@ class TestAPIArgumentEndpoints:
             # Verify the explain service was called
             mock_explain.assert_called()
 
-    def test_evaluate_endpoint(self):
-        """Test the /api/argument/evaluate endpoint"""
-        with patch('services.conversation.gpt_evaluate.call') as mock_evaluate:
-            mock_evaluate.return_value = '{"truth": ["1.0", "1.0"], "valid": "1.0"}'
-            
-            response = client.post(
-                "/api/argument/evaluate",
-                params={
-                    "conversation_id": "test_session_123:1",
-                    "snapshot_id": "test_snapshot_123"
-                },
-                json={
-                    "assumptions": [],
-                    "argument": [
-                        {
-                            "symbol": "A",
-                            "proposition": "Socrates is a man",
-                            "justifiers": [],
-                            "truth": "0.8",
-                            "valid": "0.9"
-                        },
-                        {
-                            "symbol": "B",
-                            "proposition": "Socrates is mortal",
-                            "justifiers": ["A"],
-                            "truth": "0.8",
-                            "valid": "0.9"
-                        }
-                    ],
-                    "file_ids": []
-                }
-            )
-            
-            assert response.status_code == 200
-            result = response.json()
-            assert "reply" in result
-            
-            # Verify the evaluate service was called
-            mock_evaluate.assert_called()
+    # DISABLED: Old evaluate endpoint test - replaced by new agent system
+    # def test_evaluate_endpoint(self):
+    #     """Test the /api/argument/evaluate endpoint"""
+    #     with patch('services.conversation.gpt_evaluate.call') as mock_evaluate:
+    #         mock_evaluate.return_value = '{"truth": ["1.0", "1.0"], "valid": "1.0"}'
+    #         
+    #         response = client.post(
+    #             "/api/argument/evaluate",
+    #             params={
+    #                 "conversation_id": "test_session_123:1",
+    #                 "snapshot_id": "test_snapshot_123"
+    #             },
+    #             json={
+    #                 "assumptions": [],
+    #                 "argument": [
+    #                     {
+    #                         "symbol": "A",
+    #                         "proposition": "Socrates is a man",
+    #                         "justifiers": [],
+    #                         "truth": "0.8",
+    #                         "valid": "0.9"
+    #                     },
+    #                     {
+    #                         "symbol": "B",
+    #                         "proposition": "Socrates is mortal",
+    #                         "justifiers": ["A"],
+    #                         "truth": "0.8",
+    #                         "valid": "0.9"
+    #                     }
+    #                 ],
+    #                 "file_ids": []
+    #             }
+    #         )
+    #         
+    #         assert response.status_code == 200
+    #         result = response.json()
+    #         assert "reply" in result
+    #         
+    #         # Verify the evaluate service was called
+    #         mock_evaluate.assert_called()
 
     def test_upload_endpoint(self):
         """Test the /api/argument/upload endpoint"""

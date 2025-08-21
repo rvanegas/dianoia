@@ -31,7 +31,7 @@ function initialSnapshot() : ConversationSnapshot {
   return {
     assumptions: [],
     argument: [],
-    evaluationsPending: false,
+    // evaluationsPending: false, // DISABLED: Old evaluation system
     explanation: '',
     argMode: 'thesis',
     file_ids: []
@@ -247,26 +247,27 @@ export function useConversationActions(
     )
   }
 
-  const handleAIJustify = async (loc: string, index: number) => {
-    setUserMode('waiting')
-    
-    const url = VITE_API_BASE_URL + '/api/argument/ai-justify'
-    const apiPrompt = {
-      ...currentSnapshot,
-      loc, index
-    }
-    
-    await makeApiCall(
-      { url, data: apiPrompt, onSuccess: (responseObject) => {
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-          evaluationsPending: true,
-        }
-        saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: 'AI Justify' }
-    )
-  }
+  // DISABLED: Old AI Justify handler - replaced by new agent system
+  // const handleAIJustify = async (loc: string, index: number) => {
+  //   setUserMode('waiting')
+  //   
+  //   const url = VITE_API_BASE_URL + '/api/argument/ai-justify'
+  //   const apiPrompt = {
+  //     ...currentSnapshot,
+  //     loc, index
+  //   }
+  //   
+  //   await makeApiCall(
+  //     { url, data: apiPrompt, onSuccess: (responseObject) => {
+  //       const newSnapshot = {
+  //         ...currentSnapshot,
+  //         ...responseObject,
+  //         evaluationsPending: true,
+  //       }
+  //       saveSnapshot(newSnapshot)
+  //     }, onFinally: () => setUserMode('ready'), operationName: 'AI Justify' }
+  //   )
+  // }
 
 
 
@@ -285,46 +286,47 @@ export function useConversationActions(
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
-          evaluationsPending: true,
+          // evaluationsPending: true, // DISABLED: Old evaluation system
         }
         saveSnapshot(newSnapshot)
       }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' }
     )
   }
 
+  // DISABLED: Old evaluate steps function - replaced by new agent system
   // verify that user hasn't moved away and potentially replaced 
   // contents of this snapshot. saveSnapshot() is then called 
   // with inPlace = true
-  const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
-    const url = VITE_API_BASE_URL + '/api/argument/evaluate'
-    
-    try {
-      setEvaluatingMode(true)
-      const currentSnapshotRenderCount = snapshotRenderCount.current
-      
-      await makeApiCall({
-        url,
-        data: currentSnapshot,
-        onSuccess: (responseObject) => {
-          if (currentSnapshotRenderCount != snapshotRenderCount.current) return
-          if (!responseObject) {
-            throw new Error('empty responseObject')
-          }
-          const newSnapshot = {
-            ...currentSnapshot,
-            ...responseObject,
-            evaluationsPending: false,
-          }
-          saveSnapshot(newSnapshot, true)
-        },
-        onFinally: () => setEvaluatingMode(false),
-        operationName: 'Evaluate'
-      })
-    } catch (error: any) {
-      // Error handling is already done in makeApiCall
-      setEvaluatingMode(false)
-    }
-  }
+  // const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
+  //   const url = VITE_API_BASE_URL + '/api/argument/evaluate'
+  //   
+  //   try {
+  //     setEvaluatingMode(true)
+  //     const currentSnapshotRenderCount = snapshotRenderCount.current
+  //     
+  //     await makeApiCall({
+  //       url,
+  //       data: currentSnapshot,
+  //       onSuccess: (responseObject) => {
+  //         if (currentSnapshotRenderCount != snapshotRenderCount.current) return
+  //         if (!responseObject) {
+  //           throw new Error('empty responseObject')
+  //         }
+  //         const newSnapshot = {
+  //           ...currentSnapshot,
+  //           ...responseObject,
+  //           evaluationsPending: false,
+  //         }
+  //         saveSnapshot(newSnapshot, true)
+  //       },
+  //       onFinally: () => setEvaluatingMode(false),
+  //       operationName: 'Evaluate'
+  //     })
+  //   } catch (error: any) {
+  //     // Error handling is already done in makeApiCall
+  //     setEvaluatingMode(false)
+  //   }
+  // }
 
   const handleAction = async (
     action: ActionType, loc: string, index: number, errorLabel: string
@@ -342,9 +344,10 @@ export function useConversationActions(
           ...currentSnapshot,
           ...responseObject,
         }
-        if (action == 'remove' || action == 'assume') {
-          newSnapshot.evaluationsPending = true
-        }
+        // DISABLED: Old evaluation system
+        // if (action == 'remove' || action == 'assume') {
+        //   newSnapshot.evaluationsPending = true
+        // }
         saveSnapshot(newSnapshot)
       }, onFinally: () => setUserMode('ready'), operationName: errorLabel }
     )
@@ -356,9 +359,9 @@ export function useConversationActions(
 
   return {
     handleThesis,
-    handleAIJustify,
+    // handleAIJustify, // DISABLED: Old AI Justify handler - replaced by new agent system
     handleUserJustify,
-    evaluateSteps,
+    // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleDispute,
     retryLastOperation,

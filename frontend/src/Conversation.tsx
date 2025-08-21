@@ -9,6 +9,8 @@ import PropositionActions from './PropositionActions'
 
 import AllAgentResults from './AllAgentResults'
 
+
+
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
 
@@ -78,9 +80,9 @@ function Conversation({
 
   const {
     handleThesis,
-    handleAIJustify,
+    // handleAIJustify, // DISABLED: Old AI Justify handler - replaced by new agent system
     handleUserJustify,
-    evaluateSteps,
+    // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleDispute,
     retryLastOperation,
@@ -144,11 +146,12 @@ function Conversation({
     }
   }, [snapshotIndex])
 
-  useEffect(() => {
-    if (currentSnapshot.evaluationsPending) {
-      evaluateSteps(snapshotRenderCount)
-    }
-  }, [currentSnapshot.evaluationsPending])
+  // DISABLED: Old evaluate steps effect - replaced by new agent system
+  // useEffect(() => {
+  //   if (currentSnapshot.evaluationsPending) {
+  //     evaluateSteps(snapshotRenderCount)
+  //   }
+  // }, [currentSnapshot.evaluationsPending])
 
   const loadingIndicator = userMode != 'waiting' && !evaluatingMode ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
@@ -194,7 +197,7 @@ function Conversation({
           loc={loc}
           argumentLength={argument.length}
           userMode={userMode}
-          onAIJustify={handleAIJustify}
+
           onUserJustify={(loc, stepIndex) => {
             setUserMode('input')
             setTargetLoc(loc)
@@ -210,22 +213,23 @@ function Conversation({
         />
       )
 
-      const scoreSpan = () => {
-        let justifier = ''
-        let value = `${step.truth}t`
-        if (step.justifiers.length == 0) {
-          justifier = 'premise'
-        }
-        else {
-          justifier = 'from ' + step.justifiers.join(', ')
-          value += `, ${step.valid}v`
-        }
-        const valueSpan =
-          <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
-            {value}
-          </span>
-        return <span>[{justifier}; {valueSpan}]</span>
-      }
+      // DISABLED: Old truth/valid evaluations display - replaced by new agent system
+      // const scoreSpan = () => {
+      //   let justifier = ''
+      //   let value = `${step.truth}t`
+      //   if (step.justifiers.length == 0) {
+      //     justifier = 'premise'
+      //   }
+      //   else {
+      //     justifier = 'from ' + step.justifiers.join(', ')
+      //     value += `, ${step.valid}v`
+      //   }
+      //   const valueSpan =
+      //     <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
+      //       {value}
+      //     </span>
+      //   return <span>[{justifier}; {valueSpan}]</span>
+      // }
 
       const isEvaluated = argument.length > 1 || step.justifiers.length > 0
       return (
@@ -233,7 +237,9 @@ function Conversation({
           key={step_index}
           chevron={actions}
         >
-          ({step.symbol}) {step.proposition} {isEvaluated && scoreSpan()}
+          ({step.symbol}) {step.proposition}
+          {/* DISABLED: Old truth/valid evaluations display - replaced by new agent system */}
+          {/* {isEvaluated && scoreSpan()} */}
         </FlexRow>
       )
     })
@@ -254,7 +260,7 @@ function Conversation({
             loc="assumptions"
             argumentLength={currentSnapshot.assumptions.length}
             userMode={userMode}
-            onAIJustify={handleAIJustify}
+
             onUserJustify={(loc, stepIndex) => {
               setUserMode('input')
               setTargetLoc(loc)
