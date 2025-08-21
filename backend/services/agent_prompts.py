@@ -79,8 +79,8 @@ For the purposes of this task, we define "valid" to accord with its sense in mat
 
 ### Input Format
 The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument
-- agent_data.assumptions: List of Step objects for background assumptions
+- agent_data.argument: List of Step objects in the main argument (evaluate these for truth)
+- agent_data.assumptions: List of Step objects for background assumptions (do NOT evaluate these - they are taken as true)
 - agent_data.target_type: Type of content being evaluated (e.g., "argument", "proposition")
 - agent_data.target_content: Specific content being targeted (if applicable)
 
@@ -104,11 +104,12 @@ You will receive argument data with Step objects containing symbols, proposition
 ### Considerations
 
 **Truth Evaluation**:
-- For each Step, assess the truth value of its proposition given the assumptions
+- For each Step in the argument, assess the truth value of its proposition given the assumptions
+- IMPORTANT: Do NOT evaluate assumptions - they are taken as true by the user
 - 1.0 = certainly true, 0.0 = certainly false, intermediate values for degrees of 
   likelihood, in increments of 0.1
 - Consider empirical evidence, logical consistency, and background knowledge
-- Return truth values indexed by Step symbol
+- Return truth values indexed by Step symbol (only for argument steps, not assumptions)
 
 **Validity Assessment**:
 - For each Step with justifiers, evaluate the validity of the inference from its justifiers to its proposition
@@ -176,6 +177,41 @@ Output:
     "Replace false premise A with true statement about Socrates",
     "Provide evidence for theological assumptions in B if used"
   ]
+}
+
+# Argument with assumptions (assumptions are NOT evaluated)
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "B",
+        "proposition": "The sun has legs",
+        "justifiers": []
+      }
+    ],
+    "assumptions": [
+      {
+        "symbol": "A",
+        "proposition": "The sun has four legs",
+        "justifiers": []
+      }
+    ],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "B", "truth_value": 1.0, "reasoning": "True given the assumption that the sun has four legs"}
+  ],
+  "validity_evaluations": [],
+  "incoherent_sets": [],
+  "logical_issues": [],
+  "recommendations": ["Argument is valid given the assumptions"]
 }
 
 # Coherent and sound argument

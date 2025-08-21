@@ -69,23 +69,24 @@ export function useConversationState(
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // this saves new versions of argument. if inplace is true, then only annotations
-  // should change
-  const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false, convName: string = '') => {
+  // this saves new versions of argument
+  const saveSnapshot = (newSnap: ConversationSnapshot, convName: string = '') => {
     const oldSnaps = conversation.snapshots
-    let newSnaps
-    if (inPlace) {
-      newSnaps = [...oldSnaps.slice(0, snapshotIndex), newSnap,
-        ...oldSnaps.slice(snapshotIndex + 1)]
-    }
-    else {
-      newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
-      snapshotRenderCount.current += 1
-      const newSnapshotIndex = snapshotIndex + 1
-      setSnapshotIndex(newSnapshotIndex)
-    }
+    const newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
+    snapshotRenderCount.current += 1
+    const newSnapshotIndex = snapshotIndex + 1
+    setSnapshotIndex(newSnapshotIndex)
     const newConversation = {...conversation, snapshots: newSnaps}
     if (convName) newConversation.name = convName
+    setConversation(newConversation)
+  }
+
+  const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
+    const oldSnaps = conversation.snapshots
+    let newSnaps
+    newSnaps = [...oldSnaps.slice(0, snapshotIndex), newSnap,
+      ...oldSnaps.slice(snapshotIndex + 1)]
+    const newConversation = {...conversation, snapshots: newSnaps}
     setConversation(newConversation)
   }
 
@@ -106,6 +107,7 @@ export function useConversationState(
     setCopied,
     inputRef,
     saveSnapshot,
+    saveSnapshotInPlace,
     sessionId
   }
 }
@@ -118,7 +120,7 @@ export function useConversationActions(
   setInputText: (text: string) => void,
   targetLoc: string,
   targetIndex: number,
-  saveSnapshot: (newSnap: ConversationSnapshot, inPlace?: boolean, convName?: string) => void,
+  saveSnapshot: (newSnap: ConversationSnapshot, convName?: string) => void,
   createConversationFromProposition: (proposition: string) => void,
   conversationId: number,
   sessionId: string,
@@ -235,7 +237,7 @@ export function useConversationActions(
             ...thesisResponseObject,
             argMode,
           }
-          saveSnapshot(finalSnapshot, false, responseObject.name)
+          saveSnapshot(finalSnapshot, responseObject.name)
         }, onFinally: () => {}, operationName: 'Generate Name'
       }
     )
