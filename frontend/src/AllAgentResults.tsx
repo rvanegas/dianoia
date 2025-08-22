@@ -32,6 +32,10 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   const [error, setError] = useState<string | null>(null)
   const tasksCompleteRef = useRef<boolean>(false)
 
+  // Note: This component resets its state when snapshotIndex changes to ensure
+  // proper behavior with undo/redo operations. Each snapshot will fetch its own
+  // agent results independently.
+
   // Apply agent results to argument steps
   const applyAgentResultsToSnapshot = (newResultsByAgent: ResultsByAgent) => {
     const updatedSnapshot = { 
@@ -161,20 +165,22 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   }
 
   useEffect(() => {
-    // Reset tasks complete status when conversation or snapshot changes
+    // Reset state when conversation or snapshot changes
+    setResultsByAgent({})
+    setError(null)
     tasksCompleteRef.current = false
     
-    // Set up polling every 2 seconds, but only if tasks are not complete
+    // Set up polling every 1 second, but only if tasks are not complete
     const interval = setInterval(() => {
       if (!tasksCompleteRef.current) {
         fetchResults()
       }
-    }, 2000)
+    }, 1000)
     
     return () => {
       clearInterval(interval)
     }
-  }, [conversationId, sessionId, snapshotVersion]) // Removed tasksComplete from dependencies
+  }, [conversationId, sessionId, snapshotVersion, snapshotIndex]) // Added snapshotIndex to dependencies
 
   // Don't show anything if no results
   if (Object.keys(resultsByAgent).length === 0) {
