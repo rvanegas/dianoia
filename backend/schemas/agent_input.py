@@ -55,11 +55,11 @@ class FilteredAgentInput(AgentInput):
         # Create a deep copy of the base input as FilteredAgentInput
         filtered_input = cls.model_validate(base_input.model_dump())
         
-        # Filter out content data for formal evaluation
+        # Filter out content data for formal evaluation by setting to empty string
         for step in filtered_input.agent_data.assumptions:
-            step.proposition = None
+            step.proposition = ""
         for step in filtered_input.agent_data.argument:
-            step.proposition = None
+            step.proposition = ""
         
         return filtered_input
     

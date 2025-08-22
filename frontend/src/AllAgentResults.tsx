@@ -36,8 +36,51 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   // proper behavior with undo/redo operations. Each snapshot will fetch its own
   // agent results independently.
 
+  // Check if all formalizations are endorsed (for UI display purposes)
+  const areAllFormalizationsEndorsed = () => {
+    const allSteps = [...currentSnapshot.argument, ...currentSnapshot.assumptions]
+    const stepsWithFormalizations = allSteps.filter(step => step.formalization)
+    
+    if (stepsWithFormalizations.length === 0) return false
+    
+    return stepsWithFormalizations.every(step => step.formalization?.endorsed)
+  }
+
+  // Trigger formal evaluator when user is ready
+  const triggerFormalEvaluator = async () => {
+    console.log('Triggering formal evaluator agent')
+    
+    try {
+      const url = new URL(`${VITE_API_BASE_URL}/api/agents/evaluate-form`)
+      url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
+      url.searchParams.set('snapshot_id', snapshotIndex.toString())
+      
+      const payload = {
+        assumptions: currentSnapshot.assumptions,
+        argument: currentSnapshot.argument,
+        explanation: currentSnapshot.explanation,
+        file_ids: currentSnapshot.file_ids
+      }
+      
+      const response = await axios.post(url.toString(), payload)
+      console.log('Formal evaluator agent triggered successfully:', response.data)
+      
+      // Reset polling state to start fetching results again
+      tasksCompleteRef.current = false
+      setResultsByAgent({})
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        // Validation error - show specific message
+        console.log('Formal evaluator validation failed:', error.response.data.detail)
+      } else {
+        console.error('Failed to trigger formal evaluator agent:', error)
+      }
+    }
+  }
+
   // Apply agent results to argument steps
   const applyAgentResultsToSnapshot = (newResultsByAgent: ResultsByAgent) => {
+    // Get the current conversation state to ensure we have the latest snapshot
     const updatedSnapshot = { 
       ...currentSnapshot,
       argument: [...currentSnapshot.argument], // Create new array
@@ -60,11 +103,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             // Create new step object to avoid read-only property error
             const newStep = {
               ...oldStep,
-              truth: evaluation.truth_value.toString(),
-              evaluated_by_agents: {
-                ...oldStep.evaluated_by_agents,
-                content_evaluation: true
-              }
+              truth: evaluation.truth_value.toString()
             }
             updatedSnapshot.argument[stepIndex] = newStep
             hasChanges = true
@@ -81,11 +120,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             // Create new step object to avoid read-only property error
             const newStep = {
               ...oldStep,
-              valid: evaluation.validity_value.toString(),
-              evaluated_by_agents: {
-                ...oldStep.evaluated_by_agents,
-                content_evaluation: true
-              }
+              valid: evaluation.validity_value.toString()
             }
             updatedSnapshot.argument[stepIndex] = newStep
             hasChanges = true
@@ -100,22 +135,25 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
       const resultContent = latestFormalizationResult.result_content
 
-      // Apply formalizations
+      // Apply formalizations (but don't replace endorsed ones)
       if (resultContent.formalizations) {
         resultContent.formalizations.forEach((formalization: any) => {
           const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === formalization.symbol)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
+            
+            // Skip if this step already has an endorsed formalization
+            if (oldStep.formalization?.endorsed) {
+              return
+            }
+            
             // Create new step object to avoid read-only property error
             const newStep = {
               ...oldStep,
               formalization: {
                 ascii: formalization.ascii,
-                json: formalization.json
-              },
-              evaluated_by_agents: {
-                ...oldStep.evaluated_by_agents,
-                formalization: true
+                json_structure: formalization.json_structure,
+                endorsed: false
               }
             }
             updatedSnapshot.argument[stepIndex] = newStep
@@ -181,6 +219,11 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       clearInterval(interval)
     }
   }, [conversationId, sessionId, snapshotVersion, snapshotIndex]) // Added snapshotIndex to dependencies
+
+
+
+  // Check if all formalizations are endorsed
+  const allFormalizationsEndorsed = areAllFormalizationsEndorsed()
 
   // Don't show anything if no results
   if (Object.keys(resultsByAgent).length === 0) {
@@ -374,65 +417,79 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
               💭 {result.reasoning}
             </div>
-            {result.result_content?.evaluation && (
-              <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-orange-50 p-2 rounded border border-orange-200">
-                    <span className="font-medium">Formal Validity:</span> {(result.result_content.evaluation.argument_validity * 100).toFixed(0)}%
-                  </div>
+            
+            {/* Argument Validity */}
+            {result.result_content?.argument_validity !== undefined && (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  🎯 Overall Argument Validity:
                 </div>
-                {result.result_content.evaluation.proposition_evaluations && result.result_content.evaluation.proposition_evaluations.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-sm font-medium text-gray-700 mb-2">
-                      📐 Formal Proposition Analysis:
+                <div className={`inline-block px-3 py-1 rounded text-sm font-medium ${
+                  result.result_content.argument_validity >= 0.8 ? 'bg-green-100 text-green-800' :
+                  result.result_content.argument_validity >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {(result.result_content.argument_validity * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+
+            {/* Proposition Evaluations */}
+            {result.result_content?.proposition_evaluations && result.result_content.proposition_evaluations.length > 0 && (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  📊 Proposition Validity Evaluations:
+                </div>
+                <div className="space-y-2">
+                  {result.result_content.proposition_evaluations.map((evaluation: any, index: number) => (
+                    <div key={index} className="p-2 bg-gray-50 rounded border border-gray-200">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-700 flex-1">
+                          <span className="font-medium">{evaluation.symbol}:</span> {evaluation.reasoning}
+                        </span>
+                        <span className={`font-medium ml-2 px-2 py-1 rounded text-xs ${
+                          evaluation.validity >= 0.8 ? 'bg-green-100 text-green-800' :
+                          evaluation.validity >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {(evaluation.validity * 100).toFixed(0)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {result.result_content.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
-                        <div key={pIndex} className="text-sm p-2 bg-orange-50 rounded border border-orange-200">
-                          <div className="flex justify-between items-start">
-                            <span className="text-gray-700 flex-1">{prop.proposition}</span>
-                            <span className="font-medium ml-2 px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
-                              Neither true nor false by form alone
-                            </span>
-                          </div>
-                          {prop.reasoning && (
-                            <div className="text-xs text-gray-500 mt-1 italic">
-                              {prop.reasoning}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {result.result_content.evaluation.logical_issues && result.result_content.evaluation.logical_issues.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-sm font-medium text-red-700 mb-2">
-                      ⚠️ Formal Logic Issues:
-                    </div>
-                    <ul className="space-y-1">
-                      {result.result_content.evaluation.logical_issues.map((issue: string, iIndex: number) => (
-                        <li key={iIndex} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
-                          {issue}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {result.result_content.evaluation.recommendations && result.result_content.evaluation.recommendations.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-sm font-medium text-orange-700 mb-2">
-                      💡 Formal Logic Recommendations:
-                    </div>
-                    <ul className="space-y-1">
-                      {result.result_content.evaluation.recommendations.map((rec: string, rIndex: number) => (
-                        <li key={rIndex} className="text-sm text-orange-700 p-2 bg-orange-50 rounded border border-orange-200">
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Logical Issues */}
+            {result.result_content?.logical_issues && result.result_content.logical_issues.length > 0 && (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  ⚠️ Logical Issues:
+                </div>
+                <ul className="space-y-1">
+                  {result.result_content.logical_issues.map((issue: string, index: number) => (
+                    <li key={index} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
+                      {issue}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {result.result_content?.recommendations && result.result_content.recommendations.length > 0 && (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  💡 Recommendations:
+                </div>
+                <ul className="space-y-1">
+                  {result.result_content.recommendations.map((recommendation: string, index: number) => (
+                    <li key={index} className="text-sm text-blue-700 p-2 bg-blue-50 rounded border border-blue-200">
+                      {recommendation}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
@@ -511,11 +568,11 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                       <div className="text-sm font-mono text-gray-800 mt-1">
                         {formalization.ascii}
                       </div>
-                      {formalization.json && Object.keys(formalization.json).length > 0 && (
+                      {formalization.json_structure && Object.keys(formalization.json_structure).length > 0 && (
                         <div className="mt-2">
                           <div className="text-xs text-gray-500 mb-1">JSON Structure:</div>
                           <div className="text-xs font-mono text-gray-700 bg-white p-2 rounded border overflow-x-auto">
-                            <pre className="whitespace-pre-wrap">{JSON.stringify(formalization.json, null, 2)}</pre>
+                            <pre className="whitespace-pre-wrap">{JSON.stringify(formalization.json_structure, null, 2)}</pre>
                           </div>
                         </div>
                       )}
@@ -530,9 +587,32 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     )
   }
 
+
+
   return (
     <div className="mt-4 space-y-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>
+      
+      {/* Formalization Status and Trigger */}
+      {allFormalizationsEndorsed && (
+        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <span className="text-green-700 mr-2">✅</span>
+              <span className="text-green-800 font-medium">All formalizations endorsed</span>
+            </div>
+            <button
+              onClick={triggerFormalEvaluator}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              🧮 Run Formal Evaluation
+            </button>
+          </div>
+          <p className="text-green-700 text-sm mt-2">
+            Ready to evaluate the logical validity of your formalized argument.
+          </p>
+        </div>
+      )}
       {error && (
         <div className="text-red-600 mb-2 p-2 bg-red-50 rounded border border-red-200">
           Error loading results: {error}
