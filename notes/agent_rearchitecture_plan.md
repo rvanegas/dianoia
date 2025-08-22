@@ -979,3 +979,78 @@ The new architecture provides:
 - **Enhanced User Experience**: Rich frontend integration and controls
 
 This foundation enables future enhancements such as agent learning, collaborative agent networks, and advanced reasoning capabilities.
+
+## 8. Data Contract Standardization
+
+### Problem
+Currently, the frontend and backend use different data structures that require filtering and transformation:
+- Frontend sends `ConversationSnapshot` with fields like `argMode` that backend doesn't need
+- Backend expects `Arguments` schema that doesn't match frontend exactly
+- `FilteredAgentInput` classes are needed to transform data for specific agents
+- Schema mismatches cause validation errors and require workarounds
+
+### Solution: Identical Data Contracts
+
+Create standardized data classes that are identical between frontend and backend:
+
+#### Core Data Classes
+```typescript
+// Shared between frontend and backend
+interface Step {
+  symbol: string
+  proposition: string
+  justifiers: string[]
+  truth: string
+  valid: string
+  formalization?: Formalization
+}
+
+interface Formalization {
+  ascii: string
+  json_structure: any
+  endorsed: boolean
+}
+
+interface AgentArguments {
+  assumptions: Step[]
+  argument: Step[]
+  explanation: string | null
+  file_ids: string[]
+}
+```
+
+#### Metadata Separation
+```typescript
+// Frontend-only metadata
+interface FrontendMetadata {
+  argMode: 'thesis' | 'development'
+  snapshotIndex: number
+  conversationId: number
+  // ... other UI state
+}
+
+// Backend-only metadata
+interface BackendMetadata {
+  conversation_id: string
+  snapshot_id: string
+  agent_coordination: AgentCoordinationData
+  // ... other backend state
+}
+```
+
+#### Benefits
+1. **No filtering needed**: Frontend and backend use identical core data structures
+2. **Type safety**: Shared TypeScript interfaces ensure consistency
+3. **Clear separation**: UI state and backend state are clearly separated
+4. **Simplified agents**: Agents work with clean, standardized data
+5. **Easier testing**: Identical schemas make testing more straightforward
+
+#### Implementation Plan
+1. Create shared data contracts in a common location
+2. Update frontend to use `AgentArguments` instead of `ConversationSnapshot` for API calls
+3. Update backend to use `AgentArguments` instead of `Arguments`
+4. Remove `FilteredAgentInput` classes - agents work with standard data
+5. Separate metadata into frontend/backend specific structures
+6. Update all agent implementations to use standardized interfaces
+
+This approach eliminates the need for data transformation and filtering, making the system more maintainable and reducing potential for schema mismatches.

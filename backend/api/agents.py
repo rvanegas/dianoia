@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import Dict, Any
 
 from services.agent_coordinator import coordinator
-# from models.argument import Arguments
+from services.agents import FormalEvaluatorAgent
+from schemas.arguments import Arguments
 from core.utils import logger
 # import time
 
@@ -15,63 +16,36 @@ async def get_conversation_results(
     snapshot_id: str = Query(..., description="Snapshot ID for filtering results")
 ) -> Dict[str, Any]:
     """Get latest agent results for a conversation/snapshot, grouped by agent type"""
-    # Use the new StaleResultsPropagation system to get latest results
-    all_results = coordinator.get_latest_results(conversation_id, snapshot_id)
-    
-    # Group results by agent type
-    results_by_agent = {}
-    for result in all_results:
-        agent_type = result.agent_type
-        if agent_type not in results_by_agent:
-            results_by_agent[agent_type] = []
-        # Convert StoredAgentResult to dict for API response
-        result_dict = {
-            'agent_type': result.agent_type,
-            'operation': result.operation,
-            'result_content': result.result_content,
-            'confidence': result.confidence,
-            'reasoning': result.reasoning,
-            'target_metadata': {
-                'target_type': result.target_metadata.target_type,
-                'target_content': result.target_metadata.target_content
-            },
-            'snapshot_id': result.snapshot_id,
-            'processed_at': result.processed_at
-        }
-        results_by_agent[agent_type].append(result_dict)
-    
-    # Check if all tasks for this conversation are complete
-    tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id)
-    
-    return {
-        "conversation_id": conversation_id,
-        "snapshot_id": snapshot_id,
-        "results_by_agent": results_by_agent,
-        "total_count": len(all_results),
-        "agent_types": list(results_by_agent.keys()),
-        "tasks_complete": tasks_complete
-    }
+    return coordinator.result_manager.get_formatted_results(conversation_id, snapshot_id)
+
+@router.post("/evaluate-form")
+async def trigger_formal_evaluation(
+    args: Arguments,
+    conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)"),
+    snapshot_id: str = Query(..., description="Snapshot ID for agent coordination")
+) -> Dict[str, Any]:
+    """Trigger formal evaluation agent for endorsed formalizations"""
+    try:
+        # Set conversation_id on args
+        args.conversation_id = conversation_id
+        
+        # Validate and queue formal evaluation task
+        agent = FormalEvaluatorAgent(coordinator)
+        validation_result = agent.validate_formalizations(args)
+        
+        if not validation_result["is_valid"]:
+            raise HTTPException(
+                status_code=400, 
+                detail=validation_result["error_message"]
+            )
+        
+        return agent.create_and_queue_formal_evaluation_task(conversation_id, snapshot_id, args)
+        
+    except Exception as e:
+        logger.error(f"Error triggering formal evaluation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/active")
 async def get_active_tasks(conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)")) -> Dict[str, Any]:
     """Get all currently active tasks for a specific conversation"""
-    active_tasks = coordinator.get_active_tasks()
-    
-    # Filter tasks by conversation_id
-    filtered_tasks = [
-        task for task in active_tasks 
-        if task.agent_input.conversation_id == conversation_id
-    ]
-    
-    return {
-        "active_tasks": [
-            {
-                "task_id": task.id,
-                "agent_type": task.agent_type,
-                "status": task.status,
-                "conversation_id": task.agent_input.conversation_id
-            }
-            for task in filtered_tasks
-        ],
-        "count": len(filtered_tasks)
-    } 
+    return coordinator.result_manager.get_active_tasks_formatted(conversation_id) 

@@ -4,7 +4,7 @@ import axios from 'axios'
 import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
 
 type UserMode = 'waiting' | 'ready' | 'input'
-type ActionType = 'remove' | 'assume' | 'explain'
+type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
 
 // Type for API operation information
 type ApiOperationInfo = {
@@ -121,6 +121,7 @@ export function useConversationActions(
   targetLoc: string,
   targetIndex: number,
   saveSnapshot: (newSnap: ConversationSnapshot, convName?: string) => void,
+  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
   createConversationFromProposition: (proposition: string) => void,
   conversationId: number,
   sessionId: string,
@@ -349,6 +350,39 @@ export function useConversationActions(
     )
   }
 
+  const handleEndorseFormalization = async (
+    loc: string, index: number, endorsed: boolean
+  ) => {
+    // Update endorsement status locally in the snapshot
+    const newSnapshot = { ...currentSnapshot }
+    
+    if (loc === 'argument' && newSnapshot.argument[index]?.formalization) {
+      // Create new array and formalization object to avoid read-only property error
+      newSnapshot.argument = [...newSnapshot.argument]
+      newSnapshot.argument[index] = {
+        ...newSnapshot.argument[index],
+        formalization: {
+          ascii: newSnapshot.argument[index].formalization!.ascii,
+          json_structure: newSnapshot.argument[index].formalization!.json_structure,
+          endorsed: endorsed
+        }
+      }
+    } else if (loc === 'assumptions' && newSnapshot.assumptions[index]?.formalization) {
+      // Create new array and formalization object to avoid read-only property error
+      newSnapshot.assumptions = [...newSnapshot.assumptions]
+      newSnapshot.assumptions[index] = {
+        ...newSnapshot.assumptions[index],
+        formalization: {
+          ascii: newSnapshot.assumptions[index].formalization!.ascii,
+          json_structure: newSnapshot.assumptions[index].formalization!.json_structure,
+          endorsed: endorsed
+        }
+      }
+    }
+    
+    saveSnapshotInPlace(newSnapshot)
+  }
+
   const handleDispute = async (step: StepType) => {
     createConversationFromProposition(step.proposition)
   }
@@ -359,6 +393,7 @@ export function useConversationActions(
     handleUserJustify,
     // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
+    handleEndorseFormalization,
     handleDispute,
     retryLastOperation,
     lastFailedOperation

@@ -156,110 +156,53 @@ class ContentEvaluationAgent:
             return result
 
 
-class FormEvaluationAgent:
+class FormalEvaluatorAgent:
     """Agent that evaluates only the logical validity of formalized arguments"""
     
     def __init__(self, coordinator):
         if coordinator is None:
-            raise ValueError("FormEvaluationAgent requires a coordinator")
+            raise ValueError("FormalEvaluatorAgent requires a coordinator")
         self.name = "form_evaluator"
         self.coordinator = coordinator
-    
-    def _get_formalizations_for_argument(self, agent_input: FilteredAgentInput) -> List[str]:
-        """Get formalizations for all propositions in the argument"""
-        argument = agent_input.agent_data.argument
-        assumptions = agent_input.agent_data.assumptions
-        
-        # Extract formalizations from argument and assumption steps
-        formalizations = []
-        missing_formalizations = []
-        
-        # Check argument steps
-        for step in argument:
-            if step.formalization:
-                formalizations.append(step.formalization)
-            else:
-                missing_formalizations.append(f"argument step {step.symbol}")
-        
-        # Check assumption steps
-        for step in assumptions:
-            if step.formalization:
-                formalizations.append(step.formalization)
-            else:
-                missing_formalizations.append(f"assumption step {step.symbol}")
-        
-        if missing_formalizations:
-            error_msg = f"Missing formalizations for steps: {missing_formalizations}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-        
-        if not formalizations:
-            error_msg = "No formalizations found for form evaluation"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-        
-        return formalizations
 
     def evaluate_propositions(self, agent_input: FilteredAgentInput) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
-            # logger.info(f"FormEvaluationAgent starting task for conversation: {agent_input.conversation_id}")
-            # logger.debug(f"FormEvaluationAgent starting task with data: {agent_input}")
+            # logger.info(f"FormalEvaluatorAgent starting task for conversation: {agent_input.conversation_id}")
+            # logger.debug(f"FormalEvaluatorAgent starting task with data: {agent_input}")
             
-            # Use direct access for AgentInput
-            file_ids = agent_input.file_ids
-            formalizations = self._get_formalizations_for_argument(agent_input)
-            assumptions_for_result = agent_input.agent_data.assumptions
-            argument_for_result = agent_input.agent_data.argument
+            # Use FilteredAgentInput to focus on formal logic only
+            filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
+            file_ids = filtered_input.file_ids
+            payload = filtered_input.model_dump()
+            arg_for_result = filtered_input.agent_data.argument
+            assumptions_for_result = filtered_input.agent_data.assumptions
             
-            # Create a clean data structure for the form evaluator - ONLY formalizations
-            form_evaluation_data = {
-                'formalizations': formalizations
-            }
-            
-            # logger.debug(f"FormEvaluationAgent sending clean data: {form_evaluation_data}")
-            
-            # Pass the clean data to the agent for evaluation
-            evaluation_response = agent_gpt_evaluate_form.call(json.dumps(form_evaluation_data), file_ids)
+            # Pass the data directly to the agent
+            evaluation_response = agent_gpt_evaluate_form.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
             
-            # Log key evaluation metrics
-            proposition_count = len(evaluation_result.get("proposition_evaluations", []))
-            argument_validity = evaluation_result.get("argument_validity", 0.0)
-            logical_issues = evaluation_result.get("logical_issues", [])
-            recommendations = evaluation_result.get("recommendations", [])
-            
-            # logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
-            # if logical_issues:
-            #     logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
-            # if recommendations:
-            #     logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            # logger.info(f"FormalEvaluatorAgent completed")
             
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
                 result_content={
-                    "evaluation": evaluation_result,
-                    "argument_validity": argument_validity,
-                    "proposition_count": proposition_count,
-                    "logical_issues": logical_issues,
-                    "recommendations": recommendations,
+                    **evaluation_result,
                     "evaluation_mode": "formal_validity",
-                    "argument": argument_for_result,
+                    "argument": arg_for_result,
                     "assumptions": assumptions_for_result
                 },
-                confidence=argument_validity,
-                reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified",
                 target_metadata={
                     'target_type': 'argument'
                 }
             )
             
-            # logger.info(f"FormEvaluationAgent task completed successfully. Output: {result}")
+            # logger.debug(f"FormalEvaluatorAgent task completed successfully. Output: {result}")
             return result
             
         except Exception as e:
-            logger.error(f"Form evaluator agent error: {e}")
+            logger.error(f"Formal evaluator agent error: {e}")
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
@@ -270,8 +213,82 @@ class FormEvaluationAgent:
                     'target_type': 'argument'
                 }
             )
-            # logger.debug(f"FormEvaluationAgent task failed. Output: {result}")
+            # logger.debug(f"FormalEvaluatorAgent task failed. Output: {result}")
             return result
+    
+    def validate_formalizations(self, args) -> Dict[str, Any]:
+        """Validate that all steps have endorsed formalizations"""
+        return self._validate_formalizations(args)
+    
+    def create_and_queue_formal_evaluation_task(self, conversation_id: str, snapshot_id: str, args) -> Dict[str, Any]:
+        """Create agent input and queue formal evaluation task"""
+        from schemas.agent_input import AgentInput, AgentData
+        
+        # Create agent input for formal evaluation
+        agent_input = AgentInput(
+            conversation_id=conversation_id,
+            snapshot_id=snapshot_id,
+            agent_data=AgentData(
+                assumptions=args.assumptions,
+                argument=args.argument,
+                latest_results=[],
+                target_type='argument',
+                target_content=None
+            ),
+            file_ids=args.file_ids,
+            triggered_by='user_action',
+            trigger_source='formalization_endorsed'
+        )
+        
+        # Queue the formal evaluation task
+        self.coordinator.queue_task(
+            agent_type='form_evaluator',
+            agent_input=agent_input
+        )
+        
+        return {
+            "message": "Formal evaluation agent triggered successfully",
+            "conversation_id": conversation_id,
+            "snapshot_id": snapshot_id,
+            "validated_steps": len(args.argument + args.assumptions),
+            "endorsed_formalizations": len(args.argument + args.assumptions)
+        }
+    
+    def _validate_formalizations(self, args) -> Dict[str, Any]:
+        """Validate that all steps have formalizations and all are endorsed"""
+        all_steps = args.argument + args.assumptions
+        
+        # Check if any steps are missing formalizations
+        steps_without_formalizations = [
+            step.symbol for step in all_steps 
+            if not step.formalization
+        ]
+        
+        if steps_without_formalizations:
+            return {
+                "is_valid": False,
+                "error_message": f"Steps missing formalizations: {steps_without_formalizations}",
+                "total_steps": len(all_steps)
+            }
+        
+        # Check if any formalizations are not endorsed
+        unendorsed_formalizations = [
+            step.symbol for step in all_steps 
+            if step.formalization and not step.formalization.endorsed
+        ]
+        
+        if unendorsed_formalizations:
+            return {
+                "is_valid": False,
+                "error_message": f"Formalizations not endorsed: {unendorsed_formalizations}",
+                "total_steps": len(all_steps)
+            }
+        
+        return {
+            "is_valid": True,
+            "error_message": None,
+            "total_steps": len(all_steps)
+        }
 
 
 class FormalizationAgent:
@@ -376,3 +393,6 @@ class RewriterAgent:
     
     def rewrite_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
         pass
+
+
+

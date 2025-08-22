@@ -1,6 +1,6 @@
 import './App.css'
 
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useRef} from 'react'
 
 import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
@@ -83,6 +83,7 @@ function Conversation({
     handleUserJustify,
     // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
+    handleEndorseFormalization,
     handleDispute,
     retryLastOperation,
     lastFailedOperation
@@ -94,6 +95,7 @@ function Conversation({
     targetLoc,
     targetIndex,
     saveSnapshot,
+    saveSnapshotInPlace,
     createConversationFromProposition,
     conversation.id,
     sessionId,
@@ -205,6 +207,8 @@ function Conversation({
           onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
           onDispute={handleDispute}
           onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
+          onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+
           setUserMode={setUserMode}
           setTargetLoc={setTargetLoc}
           setTargetIndex={setTargetIndex}
@@ -259,8 +263,15 @@ function Conversation({
             {/* Formalization */}
             {hasFormalization && step.formalization && (
               <div className="text-xs">
-                <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-mono">
-                  {step.formalization.ascii}
+                <div className={`px-2 py-1 rounded font-mono flex items-center gap-2 ${
+                  step.formalization.endorsed 
+                    ? 'bg-green-100 text-green-800 border border-green-300' 
+                    : 'bg-purple-100 text-purple-800 border border-purple-300'
+                }`}>
+                  <span>{step.formalization.ascii}</span>
+                  {step.formalization.endorsed && (
+                    <span className="text-green-600">✓</span>
+                  )}
                 </div>
               </div>
             )}
@@ -353,6 +364,8 @@ function Conversation({
             onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
             onDispute={handleDispute}
             onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
+            onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+
             setUserMode={setUserMode}
             setTargetLoc={setTargetLoc}
             setTargetIndex={setTargetIndex}
@@ -391,8 +404,15 @@ function Conversation({
               {/* Formalization */}
               {hasFormalization && step.formalization && (
                 <div className="text-xs">
-                  <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-mono">
-                    {step.formalization.ascii}
+                  <div className={`px-2 py-1 rounded font-mono flex items-center gap-2 ${
+                    step.formalization.endorsed 
+                      ? 'bg-green-100 text-green-800 border border-green-300' 
+                      : 'bg-purple-100 text-purple-800 border border-purple-300'
+                  }`}>
+                    <span>{step.formalization.ascii}</span>
+                    {step.formalization.endorsed && (
+                      <span className="text-green-600">✓</span>
+                    )}
                   </div>
                 </div>
               )}

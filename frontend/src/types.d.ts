@@ -9,13 +9,10 @@ export type StepType = {
   valid: string
   formalization?: {
     ascii: string
-    json: any
+    json_structure: any
+    endorsed: boolean
   }
-  // Track if this step has been evaluated by agents
-  evaluated_by_agents?: {
-    content_evaluation?: boolean
-    formalization?: boolean
-  }
+
 }
 
 type ConversationSnapshot = {
