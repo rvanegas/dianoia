@@ -99,7 +99,8 @@ function Conversation({
     createConversationFromProposition,
     conversation.id,
     sessionId,
-    snapshotIndex
+    snapshotIndex,
+    conversation
   )
 
   const {
@@ -494,7 +495,7 @@ function Conversation({
       </FlexTable>
       <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
         snapshotVersion={snapshotRenderCount.current} snapshotIndex={snapshotIndex}
-        currentSnapshot={currentSnapshot} saveSnapshotInPlace={saveSnapshotInPlace} />
+        getCurrentConversationState={() => ({ conversation, snapshotIndex })} saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
       {retryButton}
     </div>
