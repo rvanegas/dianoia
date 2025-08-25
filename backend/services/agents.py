@@ -319,8 +319,8 @@ class FormalizationAgent:
     def formalize_proposition(self, agent_input: FilteredAgentInput) -> AgentResult:
         """Formalize a proposition into logical notation"""
         try:
-            logger.info(f"FormalizationAgent starting task for conversation: {agent_input.conversation_id}")
-            logger.debug(f"FormalizationAgent starting task with data: {agent_input}")
+            # logger.info(f"FormalizationAgent starting task for conversation: {agent_input.conversation_id}")
+            # logger.debug(f"FormalizationAgent starting task with data: {agent_input}")
             
             # Use direct access for FilteredAgentInput
             file_ids = agent_input.file_ids
@@ -371,12 +371,12 @@ class FormalizationAgent:
             formalization_result = json.loads(formalization_response)
             
             # Debug logging
-            logger.info(f"FormalizationAgent response: {formalization_result}")
-            logger.info(f"FormalizationAgent response keys: {list(formalization_result.keys())}")
-            if 'formalizations' in formalization_result:
-                logger.info(f"FormalizationAgent formalizations: {formalization_result['formalizations']}")
-            else:
-                logger.warning("FormalizationAgent response missing 'formalizations' key")
+            # logger.info(f"FormalizationAgent response: {formalization_result}")
+            # logger.info(f"FormalizationAgent response keys: {list(formalization_result.keys())}")
+            # if 'formalizations' in formalization_result:
+            #     logger.info(f"FormalizationAgent formalizations: {formalization_result['formalizations']}")
+            # else:
+            #     logger.warning("FormalizationAgent response missing 'formalizations' key")
             
             # Extract formalization results
             confidence = formalization_result.get("confidence", 0.0)
@@ -399,7 +399,7 @@ class FormalizationAgent:
                 }
             )
             
-            logger.info(f"FormalizationAgent task completed successfully. Output: {result}")
+            # logger.info(f"FormalizationAgent task completed successfully. Output: {result}")
             return result
             
         except Exception as e:
