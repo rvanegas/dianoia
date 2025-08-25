@@ -84,6 +84,7 @@ function Conversation({
     // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleEndorseFormalization,
+    handleRejectFormalization,
     handleDispute,
     retryLastOperation,
     lastFailedOperation
@@ -209,6 +210,7 @@ function Conversation({
           onDispute={handleDispute}
           onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
           onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+          onRejectFormalization={(loc, stepIndex) => handleRejectFormalization(loc, stepIndex)}
 
           setUserMode={setUserMode}
           setTargetLoc={setTargetLoc}
@@ -366,6 +368,7 @@ function Conversation({
             onDispute={handleDispute}
             onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
             onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+            onRejectFormalization={(loc, stepIndex) => handleRejectFormalization(loc, stepIndex)}
 
             setUserMode={setUserMode}
             setTargetLoc={setTargetLoc}
@@ -494,7 +497,7 @@ function Conversation({
         )}
       </FlexTable>
       <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
-        snapshotVersion={snapshotRenderCount.current} snapshotIndex={snapshotIndex}
+        snapshotIndex={snapshotIndex}
         getCurrentConversationState={() => ({ conversation, snapshotIndex })} saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
       {retryButton}
