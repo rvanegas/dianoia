@@ -148,19 +148,24 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
 
     // Apply FormalizationAgent results
     const formalizationResults = newResultsByAgent['formalizer']
+    console.log('🔍 Formalization results:', formalizationResults)
     if (formalizationResults && formalizationResults.length > 0) {
       const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
       const resultContent = latestFormalizationResult.result_content
+      console.log('🔍 Latest formalization result content:', resultContent)
 
       // Apply formalizations (but don't replace endorsed ones)
       if (resultContent.formalizations) {
+        console.log('🔍 Applying formalizations:', resultContent.formalizations)
         resultContent.formalizations.forEach((formalization: any) => {
           const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === formalization.symbol)
+          console.log('🔍 Looking for step with symbol:', formalization.symbol, 'found at index:', stepIndex)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             
             // Skip if this step already has an endorsed formalization
             if (oldStep.formalization?.endorsed) {
+              console.log('🔍 Skipping step with endorsed formalization:', formalization.symbol)
               return
             }
             
@@ -169,14 +174,21 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
               ...oldStep,
               formalization: {
                 ascii: formalization.ascii,
-                json_structure: formalization.json_structure,
+                json_structure: typeof formalization.json_structure === 'string' 
+                  ? JSON.parse(formalization.json_structure) 
+                  : formalization.json_structure,
                 endorsed: false
               }
             }
             updatedSnapshot.argument[stepIndex] = newStep
             hasChanges = true
+            console.log('🔍 Applied formalization to step:', formalization.symbol)
+          } else {
+            console.log('🔍 Could not find step with symbol:', formalization.symbol)
           }
         })
+      } else {
+        console.log('🔍 No formalizations in result content')
       }
 
       // Save formalization definitions to snapshot

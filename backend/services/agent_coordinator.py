@@ -384,7 +384,9 @@ class AgentCoordinator:
                 filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
                 result = agent.evaluate_propositions(filtered_input)
             elif task.agent_type == 'formalizer':
-                result = agent.formalize_proposition(agent_input)
+                # Create FilteredAgentInput for formalization
+                filtered_input = FilteredAgentInput.for_formalization(agent_input)
+                result = agent.formalize_proposition(filtered_input)
             elif task.agent_type == 'rewriter':
                 result = agent.rewrite_proposition(agent_input)
             else:
@@ -607,37 +609,37 @@ class AgentCoordinator:
             agent_input=builder_agent_input
         )
         
-        # Queue formalizer for any new propositions
-        existing_formalizations = set()
-        for result in existing_results:
-            if result.agent_type == 'formalizer':
-                existing_proposition = result.result_content.get('proposition')
-                if existing_proposition:
-                    existing_formalizations.add(existing_proposition)
+        # Queue formalizer for the entire argument
+        # Check if we need to formalize any steps
+        needs_formalization = False
+        for step in argument_data.argument + argument_data.assumptions:
+            if not step.formalization or not step.formalization.endorsed:
+                needs_formalization = True
+                break
         
-        # Queue formalizer for propositions that haven't been formalized yet
-        # logger.debug(f"Queueing formalizer tasks for proposition {all_propositions}")
-        for proposition in all_propositions:
-            if proposition not in existing_formalizations:
-                formalizer_agent_input = AgentInput(
-                    conversation_id=conversation_id,
-                    snapshot_id=snapshot_id,
-                    agent_data=AgentData(
-                        assumptions=argument_data.assumptions,
-                        argument=argument_data.argument,
-                        latest_results=[],
-                        target_type='proposition',
-                        target_content=proposition
-                    ),
-                    file_ids=argument_data.file_ids,
-                    triggered_by='user_action',
-                    trigger_source='argument_change'
-                )
-                # logger.debug(f"Queueing formalizer task for proposition {proposition}")
-                self.queue_task(
-                    agent_type='formalizer',
-                    agent_input=formalizer_agent_input
-                )
+        if needs_formalization:
+            logger.info(f"Queueing formalizer task for argument in conversation {conversation_id}")
+            formalizer_agent_input = AgentInput(
+                conversation_id=conversation_id,
+                snapshot_id=snapshot_id,
+                agent_data=AgentData(
+                    assumptions=argument_data.assumptions,
+                    argument=argument_data.argument,
+                    latest_results=[],
+                    target_type='argument',
+                    target_content=None
+                ),
+                file_ids=argument_data.file_ids,
+                triggered_by='user_action',
+                trigger_source='argument_change'
+            )
+            # logger.debug(f"Queueing formalizer task for argument")
+            self.queue_task(
+                agent_type='formalizer',
+                agent_input=formalizer_agent_input
+            )
+        else:
+            logger.info(f"No formalization needed for conversation {conversation_id}")
         
         # Queue content evaluator for argument analysis
         content_evaluator_agent_input = AgentInput(
