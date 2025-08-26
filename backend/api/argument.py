@@ -94,6 +94,15 @@ async def explain(args: ArgumentsWithStep,
     result = service.explain()
     return {"reply": result}
 
+@router.post("/reject-formalization")
+async def reject_formalization(args: ArgumentsWithStep,
+        handler = Depends(get_conversation_handler("Reject formalization"))):
+    """Reject a formalization and trigger re-formalization"""
+    args, snapshot_id = handler(args)
+    service = ArgumentStepService(args, snapshot_id)
+    result = service.reject_formalization()
+    return {"reply": result}
+
 # DISABLED: Old evaluate endpoint - replaced by new agent system
 # @router.post("/evaluate")
 # async def evaluate(args: Arguments,
