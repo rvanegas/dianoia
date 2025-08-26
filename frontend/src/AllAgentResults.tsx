@@ -12,6 +12,7 @@ type AgentResult = {
   reasoning: string
   processed_at: number
   target_metadata?: any
+  snapshot_id: string
 }
 
 type AgentResultsProps = {
@@ -342,6 +343,14 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
       <div className="space-y-3">
         {results.map((result, index) => (
           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                📸 Snapshot {result.snapshot_id}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(result.processed_at * 1000).toLocaleTimeString()}
+              </span>
+            </div>
             <div className="flex justify-between items-start mb-3">
               <span className="font-medium text-blue-700 flex items-center">
                 <span className="mr-2">🔨</span>
@@ -379,6 +388,14 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
       <div className="space-y-3">
         {results.map((result, index) => (
           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                📸 Snapshot {result.snapshot_id}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(result.processed_at * 1000).toLocaleTimeString()}
+              </span>
+            </div>
             <div className="flex justify-between items-start mb-3">
               <span className="font-medium text-purple-700 flex items-center">
                 <span className="mr-2">🔍</span>
@@ -512,6 +529,14 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
       <div className="space-y-3">
         {results.map((result, index) => (
           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                📸 Snapshot {result.snapshot_id}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(result.processed_at * 1000).toLocaleTimeString()}
+              </span>
+            </div>
             <div className="flex justify-between items-start mb-3">
               <span className="font-medium text-orange-700 flex items-center">
                 <span className="mr-2">🧮</span>
@@ -610,6 +635,14 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
       <div className="space-y-3">
         {results.map((result, index) => (
           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                📸 Snapshot {result.snapshot_id}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(result.processed_at * 1000).toLocaleTimeString()}
+              </span>
+            </div>
             <div className="flex justify-between items-start mb-3">
               <span className="font-medium text-green-700 flex items-center">
                 <span className="mr-2">📐</span>

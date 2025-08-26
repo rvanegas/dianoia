@@ -70,7 +70,8 @@ class ArgumentBuilderAgent:
                 target_metadata={
                     'target_type': 'proposition',
                     'target_content': agent_input.agent_data.target_content or ''
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             
             # logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
@@ -87,7 +88,8 @@ class ArgumentBuilderAgent:
                 target_metadata={
                     'target_type': 'proposition',
                     'target_content': agent_input.agent_data.target_content or ''
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             # logger.debug(f"ArgumentBuilderAgent task failed. Output: {result}")
             return result
@@ -131,10 +133,10 @@ class ContentEvaluationAgent:
                     "argument": arg_for_result,
                     "assumptions": assumptions_for_result
                 },
-
                 target_metadata={
                     'target_type': 'argument'
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             
             # logger.debug(f"ContentEvaluationAgent task completed successfully. Output: {result}")
@@ -150,7 +152,8 @@ class ContentEvaluationAgent:
                 reasoning=f"Error in content evaluation: {e}",
                 target_metadata={
                     'target_type': 'argument'
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             # logger.debug(f"ContentEvaluationAgent task failed. Output: {result}")
             return result
@@ -195,7 +198,8 @@ class FormalEvaluatorAgent:
                 },
                 target_metadata={
                     'target_type': 'argument'
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             
             # logger.debug(f"FormalEvaluatorAgent task completed successfully. Output: {result}")
@@ -211,7 +215,8 @@ class FormalEvaluatorAgent:
                 reasoning=f"Error in form evaluation: {e}",
                 target_metadata={
                     'target_type': 'argument'
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             # logger.debug(f"FormalEvaluatorAgent task failed. Output: {result}")
             return result
@@ -357,7 +362,8 @@ class FormalizationAgent:
                     target_metadata={
                         'target_type': 'argument',
                         'target_content': agent_input.agent_data.target_content
-                    }
+                    },
+                    snapshot_id=agent_input.snapshot_id
                 )
                 return result
             
@@ -396,7 +402,8 @@ class FormalizationAgent:
                 target_metadata={
                     'target_type': 'argument',
                     'target_content': agent_input.agent_data.target_content
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             
             # logger.info(f"FormalizationAgent task completed successfully. Output: {result}")
@@ -413,7 +420,8 @@ class FormalizationAgent:
                 target_metadata={
                     'target_type': 'argument',
                     'target_content': agent_input.agent_data.target_content or ''
-                }
+                },
+                snapshot_id=agent_input.snapshot_id
             )
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")
             return result
