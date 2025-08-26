@@ -59,7 +59,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
 
   // Trigger formal evaluator when user is ready
   const triggerFormalEvaluator = async () => {
-    console.log('Triggering formal evaluator agent')
+    // console.log('Triggering formal evaluator agent')
     
     try {
       const url = new URL(`${VITE_API_BASE_URL}/api/agents/evaluate-form`)
@@ -75,7 +75,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
       }
       
       const response = await axios.post(url.toString(), payload)
-      console.log('Formal evaluator agent triggered successfully:', response.data)
+      // console.log('Formal evaluator agent triggered successfully:', response.data)
       
       // Reset polling state to start fetching results again
       tasksCompleteRef.current = false
@@ -335,10 +335,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
   // Check if all formalizations are endorsed
   const allFormalizationsEndorsed = areAllFormalizationsEndorsed()
 
-  // Don't show anything if no results
-  if (Object.keys(resultsByAgent).length === 0) {
-    return null
-  }
+
 
   const renderBuilderResults = (results: AgentResult[]) => {
     return (
@@ -701,7 +698,6 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
 
   return (
     <div className="mt-4 space-y-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>
       
       {/* Formalization Status and Trigger */}
       {allFormalizationsEndorsed && (
@@ -728,8 +724,22 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
           Error loading results: {error}
         </div>
       )}
-      
-      {Object.entries(resultsByAgent).map(([agentType, results]) => (
+
+      {/* Show loading state when no results yet and we're actively polling */}
+      {!error && currentPollingSnapshotRef.current >= 0 && !tasksCompleteRef.current && (
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center text-gray-500">
+            <p>Waiting for agent results...</p>
+          </div>
+        </div>
+      )}
+
+      {Object.keys(resultsByAgent).length > 0 &&
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>
+      }
+
+      {/* Show results only if there are any */}
+      {Object.keys(resultsByAgent).length > 0 && Object.entries(resultsByAgent).map(([agentType, results]) => (
         <div key={agentType} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h4 className="text-md font-semibold mb-3 text-gray-800">
             {agentType === 'builder' && '🔨 Argument Builder'}
@@ -745,6 +755,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
           {agentType === 'formalizer' && renderFormalizerResults(results)}
         </div>
       ))}
+
     </div>
   )
-} 
+}
