@@ -2,6 +2,7 @@ import {useState, useRef} from 'react'
 import axios from 'axios'
 
 import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
+import { useConversationStore } from './conversationStore'
 
 type UserMode = 'waiting' | 'ready' | 'input'
 type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
@@ -129,6 +130,7 @@ export function useConversationActions(
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
+  const { saveConversationName } = useConversationStore()
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
@@ -246,7 +248,8 @@ export function useConversationActions(
             ...thesisResponseObject,
             argMode,
           }
-          saveSnapshot(finalSnapshot, responseObject.name)
+          saveSnapshot(finalSnapshot)
+          saveConversationName(conversation.id, responseObject.name)
         }, onFinally: () => {}, operationName: 'Generate Name'
       }, conversation, snapshotIndex
     )
