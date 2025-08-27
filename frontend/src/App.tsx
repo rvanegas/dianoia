@@ -1,40 +1,38 @@
 import './App.css'
-import {useImmer} from 'use-immer'
 import {useState, useEffect} from 'react'
 
-import type {ConversationType, FileType} from './types'
+import type {FileType} from './types'
 
 import Conversation from './Conversation'
 import FileDropUpload from './FileDropUpload'
 import { ChevronsRight, PanelLeft } from 'lucide-react'
-
-const initialState: ConversationType = {
-  id: 1,
-  name: '',
-  initPrompt: undefined,
-  snapshots: []
-}
+import { useConversationStore } from './conversationStore'
 
 function App() {
-  const [conversations, setConversations] = useImmer<ConversationType[]>(
-    [{...initialState, id: 1}])
-  const [nextConvId, setNextConvId] = useImmer<number>(2)
-  const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
-  const [files, setFiles] = useImmer<FileType[]>([])
+  const {
+    conversations,
+    currentConversationIndex,
+    nextConversationId,
+    updateCurrentConversation,
+    addConversation,
+    setCurrentConversationIndex  
+  } = useConversationStore()
+  
+  const [files, setFiles] = useState<FileType[]>([])
   const [paneOpened, setPaneOpened] = useState<boolean>(false)
 
-  const setConversation = (newConversation: ConversationType) => {
-    setConversations(c => {c[currConvIndex] = newConversation})
+  const setConversation = (newConversation: any) => {
+    updateCurrentConversation(newConversation)
   }
 
   const createConversation = (initPrompt?: string) => {
-    setConversations(c => {c.push({
-      ...initialState, 
-      id: nextConvId, 
-      initPrompt
-    })})
-    setNextConvId(i => i = i+1)
-    setCurrConvIndex(conversations.length)
+    const newConversation = {
+      id: nextConversationId,
+      name: '',
+      initPrompt,
+      snapshots: []
+    }
+    addConversation(newConversation)
   }
 
   const createConversationFromProposition = (proposition: string) => {
@@ -42,29 +40,35 @@ function App() {
   }
 
   const selectConversation = (index: number) => {
-    setCurrConvIndex(index)
+    setCurrentConversationIndex(index)
   }
 
   const newFileUploaded = (newFile: FileType) => {
-    setFiles(f => {f.push(newFile)})
+    setFiles(prevFiles => [...prevFiles, newFile])
   }
 
   const associateFileToConversation = (file_id: string) => {
-    setConversations(c => {
-      const conv = c[currConvIndex]
-      const currentSnapshot = conv.snapshots[conv.snapshots.length - 1]
+    const currentConversation = conversations[currentConversationIndex]
+    if (currentConversation) {
+      const currentSnapshot = currentConversation.snapshots[currentConversation.snapshots.length - 1]
       if (currentSnapshot && !currentSnapshot.file_ids.includes(file_id)) {
-        currentSnapshot.file_ids.push(file_id)
+        const updatedConversation = { ...currentConversation }
+        updatedConversation.snapshots = [...updatedConversation.snapshots]
+        updatedConversation.snapshots[updatedConversation.snapshots.length - 1] = {
+          ...currentSnapshot,
+          file_ids: [...currentSnapshot.file_ids, file_id]
+        }
+        updateCurrentConversation(updatedConversation)
       }
-      setPaneOpened(false)
-    })
+    }
+    setPaneOpened(false)
   }
 
   useEffect(() => {
     if (paneOpened) {
       setPaneOpened(false)
     }
-  }, [currConvIndex])
+  }, [currentConversationIndex])
 
   const paneButton = (
     <button
@@ -101,7 +105,7 @@ function App() {
               w-[100%] text-left p-2 text-zinc-700 dark:text-zinc-300 border-none
               hover:bg-slate-300 dark:hover:bg-zinc-700
               ${
-                conv.id == currConvIndex + 1 ?
+                index === currentConversationIndex ?
                 'bg-slate-300 dark:bg-zinc-700' : ''
               }
             `}
@@ -138,8 +142,8 @@ function App() {
       >
         {paneButton}
         <Conversation
-          key={currConvIndex}
-          conversation={conversations[currConvIndex]}
+          key={currentConversationIndex}
+          conversation={conversations[currentConversationIndex]}
           setConversation={setConversation}
           createConversationFromProposition={createConversationFromProposition}
           files={files}
