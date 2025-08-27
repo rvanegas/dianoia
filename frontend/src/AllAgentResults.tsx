@@ -31,6 +31,8 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
+  const [activeTasks, setActiveTasks] = useState<any[]>([])
+  const [activeTaskCount, setActiveTaskCount] = useState<number>(0)
   const tasksCompleteRef = useRef<boolean>(false)
   const currentPollingSnapshotRef = useRef<number>(-1)
   const intervalRef = useRef<number | null>(null)
@@ -41,6 +43,18 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
     const { conversation, snapshotIndex: currentSnapshotIndex } = getCurrentConversationState()
     const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
     return lastSnapshot || { assumptions: [], argument: [], explanation: '', file_ids: [] }
+  }
+
+  // Helper function to get agent display name
+  const getAgentDisplayName = (agentType: string) => {
+    switch (agentType) {
+      case 'builder': return '🔨 Argument Builder'
+      case 'content_evaluator': return '🔍 Content Evaluator'
+      case 'form_evaluator': return '🧮 Formal Logic Evaluator'
+      case 'formalizer': return '📐 Formalization Agent'
+      case 'rewriter': return '✏️ Rewriter Agent'
+      default: return agentType
+    }
   }
 
   // Note: This component resets its state when snapshotIndex changes to ensure
@@ -227,6 +241,8 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
         // console.log('📡 Response received:', response.status)
         const newResultsByAgent = response.data.results_by_agent || {}
         const newTasksComplete = response.data.tasks_complete || false
+        const newActiveTasks = response.data.active_tasks || []
+        const newActiveTaskCount = response.data.active_task_count || 0
         
         // console.log('📊 Agent results received:', {
         //   resultsByAgent: newResultsByAgent,
@@ -243,6 +259,10 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
         } else {
           // console.log('⏭️ Skipping update - no new data')
         }
+        
+        // Update active tasks data
+        setActiveTasks(newActiveTasks)
+        setActiveTaskCount(newActiveTaskCount)
         
         // Update tasks complete status
         if (newTasksComplete !== tasksCompleteRef.current) {
@@ -760,9 +780,36 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
 
       {/* Show loading state when no results yet and we're actively polling */}
       {!error && currentPollingSnapshotRef.current >= 0 && !tasksCompleteRef.current && (
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="text-center text-gray-500">
-            <p>Waiting for agent results...</p>
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-3">
+              <p className="text-blue-700 font-medium">Processing with AI agents...</p>
+            </div>
+            
+            {activeTaskCount > 0 && (
+              <div className="text-left">
+                <p className="text-blue-600 text-sm mb-2">
+                  {activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''} currently running:
+                </p>
+                <div className="space-y-2">
+                  {activeTasks.map((task, index) => (
+                    <div key={task.task_id || index} className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
+                      <div className="flex items-center">
+                        <span className="text-blue-600 mr-2">
+                          {task.status === 'running' ? '🔄' : '⏳'}
+                        </span>
+                        <span className="text-sm text-blue-800">
+                          {getAgentDisplayName(task.agent_type)}
+                        </span>
+                      </div>
+                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
