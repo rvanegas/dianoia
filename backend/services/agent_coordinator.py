@@ -234,13 +234,32 @@ class AgentResultManager:
         # Check if all tasks for this conversation/snapshot are complete
         tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id, snapshot_id)
         
+        # Get active tasks for this conversation
+        active_tasks = coordinator.get_active_tasks()
+        conversation_active_tasks = [
+            task for task in active_tasks 
+            if task.agent_input.conversation_id == conversation_id and 
+               task.agent_input.snapshot_id == snapshot_id
+        ]
+        
         return {
             "conversation_id": conversation_id,
             "snapshot_id": snapshot_id,
             "results_by_agent": results_by_agent,
             "total_count": len(all_results),
             "agent_types": list(results_by_agent.keys()),
-            "tasks_complete": tasks_complete
+            "tasks_complete": tasks_complete,
+            "active_tasks": [
+                {
+                    "task_id": task.id,
+                    "agent_type": task.agent_type,
+                    "status": task.status,
+                    "conversation_id": task.agent_input.conversation_id,
+                    "snapshot_id": task.agent_input.snapshot_id
+                }
+                for task in conversation_active_tasks
+            ],
+            "active_task_count": len(conversation_active_tasks)
         }
     
     def _group_results_by_agent(self, all_results: List[StoredAgentResult]) -> Dict[str, List[Dict[str, Any]]]:
