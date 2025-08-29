@@ -33,9 +33,10 @@ interface ConversationState {
   setSnapshotRenderCount: (count: number) => void
   setNextConversationId: (id: number) => void
   getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }
+  getCurrentConversationId: () => number
 }
 
-export const useConversationStore = create<ConversationState>((set) => ({
+export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [{ id: 1, name: '', initPrompt: undefined, snapshots: [initialSnapshot()] }],
   currentConversationIndex: 0,
   currentSnapshotIndex: 0,
@@ -122,10 +123,15 @@ export const useConversationStore = create<ConversationState>((set) => ({
     set({ nextConversationId: id }),
 
   getCurrentConversationState: () => {
-    const state = useConversationStore.getState() as ConversationState
+    const state = get()
     return {
       conversation: state.conversations[state.currentConversationIndex],
       snapshotIndex: state.currentSnapshotIndex
     }
+  },
+
+  getCurrentConversationId: () => {
+    const state = get()
+    return state.conversations[state.currentConversationIndex].id
   }
 }))

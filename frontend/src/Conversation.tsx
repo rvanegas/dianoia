@@ -2,7 +2,7 @@ import './App.css'
 
 import {useEffect, useRef} from 'react'
 
-import type {StepType, ConversationType, FileType} from './types'
+import type {StepType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
 import {useConversationStore} from './conversationStore'
@@ -88,7 +88,6 @@ function Conversation({
     saveSnapshot,
     saveSnapshotInPlace,
     createConversationFromProposition,
-    conversation.id,
     conversation
   )
 
@@ -456,7 +455,7 @@ function Conversation({
           </Section>
         )}
       </FlexTable>
-      <AllAgentResults conversationId={conversation.id}
+      <AllAgentResults
         snapshotIndex={snapshotIndex}
         saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
