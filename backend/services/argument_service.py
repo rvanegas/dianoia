@@ -223,9 +223,20 @@ class ArgumentStepService(ArgumentService):
         if step.formalization:
             step.formalization.endorsed = True
         
-        # Queue analysis and discovery for the argument state change
-        # This will automatically trigger the formal evaluator if all formalizations are endorsed
-        self.queue_argument_state_change()
+        # Only trigger formal evaluator check, not other agents
+        # Create argument data for formal evaluator check
+        argument_data = ArgumentData(
+            argument=self.arguments_with_step.arg,
+            assumptions=self.arguments_with_step.assumptions,
+            file_ids=self.arguments_with_step.file_ids
+        )
+        
+        # Check if formal evaluator should be triggered
+        coordinator.queue_formal_evaluator_if_ready(
+            self.arguments_with_step.conversation_id,
+            self.snapshot_id,
+            argument_data
+        )
         
         return self.gptjson()
 
