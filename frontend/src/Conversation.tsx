@@ -75,9 +75,7 @@ function Conversation({
 
   const {
     handleThesis,
-    // handleAIJustify, // DISABLED: Old AI Justify handler - replaced by new agent system
     handleUserJustify,
-    // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleEndorseFormalization,
     handleRejectFormalization,
@@ -100,7 +98,6 @@ function Conversation({
     handleUndo,
     handleRedo
   } = useConversationNavigation(
-    snapshotIndex,
     conversation,
     setSnapshotIndex,
     setUserMode

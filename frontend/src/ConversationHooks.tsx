@@ -366,24 +366,23 @@ export function useConversationActions(
 }
 
 export function useConversationNavigation(
-  snapshotIndex: number,
   conversation: ConversationType,
   setSnapshotIndex: (index: number) => void,
   setUserMode: (mode: UserMode) => void
 ) {
-  const { snapshotRenderCount, setSnapshotRenderCount } = useConversationStore()
+  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex } = useConversationStore()
 
   const handleUndo = () => {
-    if (snapshotIndex <= 0) return
-    const newIndex = snapshotIndex - 1
+    if (currentSnapshotIndex <= 0) return
+    const newIndex = currentSnapshotIndex - 1
     setSnapshotRenderCount(snapshotRenderCount + 1)
     setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
 
   const handleRedo = () => {
-    if (snapshotIndex >= conversation.snapshots.length - 1) return
-    const newIndex = snapshotIndex + 1
+    if (currentSnapshotIndex >= conversation.snapshots.length - 1) return
+    const newIndex = currentSnapshotIndex + 1
     setSnapshotRenderCount(snapshotRenderCount + 1)
     setSnapshotIndex(newIndex)
     setUserMode('ready')
