@@ -22,7 +22,7 @@ interface ConversationState {
   sessionId: string
   
   updateCurrentConversation: (conversation: ConversationType) => void
-  addConversation: (conversation: ConversationType) => void
+  // addConversation: (conversation: ConversationType) => void
   saveConversationName: (conversationId: number, name: string) => void
   saveSnapshot: (conversationId: number, snapshotIndex: number, snapshot: ConversationSnapshot) => void
   saveSnapshotInPlace: (conversationId: number, snapshotIndex: number, snapshot: ConversationSnapshot) => void
@@ -35,6 +35,7 @@ interface ConversationState {
   getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }
   getCurrentConversationId: () => number
   createConversationFromProposition: (proposition: string) => void
+  createConversation: (initPrompt?: string) => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -52,13 +53,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }))
   },
 
-  addConversation: (conversation) => {
-    set(produce((state) => {
-      state.conversations.push(conversation)
-      state.currentConversationIndex = state.conversations.length - 1
-      state.nextConversationId = conversation.id + 1
-    }))
-  },
+  // addConversation: (conversation) => {
+  //   set(produce((state) => {
+  //     // Ensure conversation has at least one snapshot
+  //     if (conversation.snapshots.length === 0) {
+  //       conversation.snapshots = [initialSnapshot()]
+  //     }
+  //     state.conversations.push(conversation)
+  //     state.currentConversationIndex = state.conversations.length - 1
+  //     state.nextConversationId = conversation.id + 1
+  //   }))
+  //   set({ currentSnapshotIndex: 0 })
+  // },
 
   saveConversationName: (conversationId, name) => {
     set(produce((state) => {
@@ -116,7 +122,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       if (conversation && conversation.snapshots.length > 0) {
         state.currentSnapshotIndex = conversation.snapshots.length - 1
       } else {
-        state.currentSnapshotIndex = 0
+        state.currentSnapshotIndex = 0  // Always at least one snapshot
       }
     })),
 
@@ -154,14 +160,28 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       snapshots: [initialSnapshot()]
     }
     
-    // Call the existing addConversation function
+    // Use addConversation to ensure consistent behavior
     set(produce((state) => {
       state.conversations.push(newConversation)
       state.currentConversationIndex = state.conversations.length - 1
       state.nextConversationId = newConversation.id + 1
     }))
-    
-    // Reset currentSnapshotIndex to 0 for new conversation
+    set({ currentSnapshotIndex: 0 })
+  },
+
+  createConversation: (initPrompt?: string) => {
+    const state = get()
+    const newConversation = {
+      id: state.nextConversationId,
+      name: '',
+      initPrompt,
+      snapshots: [initialSnapshot()]
+    }
+    set(produce((state) => {
+      state.conversations.push(newConversation)
+      state.currentConversationIndex = state.conversations.length - 1
+      state.nextConversationId = newConversation.id + 1
+    }))
     set({ currentSnapshotIndex: 0 })
   }
 }))

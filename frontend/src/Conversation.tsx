@@ -116,11 +116,9 @@ function Conversation({
 
   const hasCalledTheses = useRef(false)
   useEffect(() => {
-    if (currentSnapshotIndex == 0 && !hasCalledTheses.current) {
+    if (currentSnapshotIndex == 0 && !hasCalledTheses.current && conversation.initPrompt) {
       hasCalledTheses.current = true
-      if (conversation.initPrompt) {
-        handleThesis(conversation.initPrompt)
-      }
+      handleThesis(conversation.initPrompt)
     }
   }, [currentSnapshotIndex])
 

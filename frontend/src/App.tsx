@@ -12,30 +12,13 @@ function App() {
   const {
     conversations,
     currentConversationIndex,
-    nextConversationId,
     updateCurrentConversation,
-    addConversation,
+    createConversation,
     setCurrentConversationIndex  
   } = useConversationStore()
   
   const [files, setFiles] = useState<FileType[]>([])
   const [paneOpened, setPaneOpened] = useState<boolean>(false)
-
-  const createConversation = (initPrompt?: string) => {
-    const newConversation = {
-      id: nextConversationId,
-      name: '',
-      initPrompt,
-      snapshots: []
-    }
-    addConversation(newConversation)
-  }
-
-
-
-  const selectConversation = (index: number) => {
-    setCurrentConversationIndex(index)
-  }
 
   const newFileUploaded = (newFile: FileType) => {
     setFiles(prevFiles => [...prevFiles, newFile])
@@ -103,7 +86,7 @@ function App() {
                 'bg-slate-300 dark:bg-zinc-700' : ''
               }
             `}
-            onClick={() => selectConversation(index)}>
+            onClick={() => setCurrentConversationIndex(index)}>
             {conv.name || 'New Thesis'}
           </button>
         ))}
