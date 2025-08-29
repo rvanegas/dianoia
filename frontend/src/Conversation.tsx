@@ -97,8 +97,7 @@ function Conversation({
     handleUndo,
     handleRedo
   } = useConversationNavigation(
-    conversation,
-    setUserMode
+    conversation
   )
 
   const handleCopy = async () => {
