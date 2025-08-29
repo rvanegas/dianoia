@@ -26,7 +26,6 @@ export default function AllAgentResults() {
   
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
-  const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
   const [activeTasks, setActiveTasks] = useState<any[]>([])
   const [activeTaskCount, setActiveTaskCount] = useState<number>(0)
   const tasksCompleteRef = useRef<boolean>(false)
@@ -61,47 +60,9 @@ export default function AllAgentResults() {
   const areAllFormalizationsEndorsed = () => {
     const currentSnapshot = getCurrentSnapshot()
     const allSteps = [...currentSnapshot.argument, ...currentSnapshot.assumptions]
-    const stepsWithFormalizations = allSteps.filter((step: any) => step.formalization)
     
-    if (stepsWithFormalizations.length === 0) return false
-    
-    return stepsWithFormalizations.every((step: any) => step.formalization?.endorsed)
-  }
-
-  // Trigger formal evaluator when user is ready
-  const triggerFormalEvaluator = async () => {
-    // console.log('Triggering formal evaluator agent')
-    
-    try {
-      const url = new URL(`${VITE_API_BASE_URL}/api/agents/evaluate-form`)
-      url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
-      url.searchParams.set('snapshot_id', currentSnapshotIndex.toString())
-      
-      const currentSnapshot = getCurrentSnapshot()
-      const payload = {
-        assumptions: currentSnapshot.assumptions,
-        argument: currentSnapshot.argument,
-        explanation: currentSnapshot.explanation,
-        file_ids: currentSnapshot.file_ids
-      }
-      
-      await axios.post(url.toString(), payload)
-      // console.log('Formal evaluator agent triggered successfully:', response.data)
-      
-      // Reset polling state to start fetching results again
-      tasksCompleteRef.current = false
-      currentPollingSnapshotRef.current = -1 // Force restart of polling
-      setResultsByAgent({})
-      setError(null)
-      setPollingKey(prev => prev + 1) // Force useEffect to re-run
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        // Validation error - show specific message
-        console.log('Formal evaluator validation failed:', error.response.data.detail)
-      } else {
-        console.error('Failed to trigger formal evaluator agent:', error)
-      }
-    }
+    // Check that all steps have formalizations and all formalizations are endorsed
+    return allSteps.every((step: any) => step.formalization?.endorsed)
   }
 
   // Apply agent results to argument steps
@@ -158,24 +119,19 @@ export default function AllAgentResults() {
 
     // Apply FormalizationAgent results
     const formalizationResults = newResultsByAgent['formalizer']
-    // console.log('🔍 Formalization results:', formalizationResults)
     if (formalizationResults && formalizationResults.length > 0) {
       const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
       const resultContent = latestFormalizationResult.result_content
-      // console.log('🔍 Latest formalization result content:', resultContent)
 
       // Apply formalizations (but don't replace endorsed ones)
       if (resultContent.formalizations) {
-        // console.log('🔍 Applying formalizations:', resultContent.formalizations)
         resultContent.formalizations.forEach((formalization: any) => {
           const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === formalization.symbol)
-          // console.log('🔍 Looking for step with symbol:', formalization.symbol, 'found at index:', stepIndex)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             
             // Skip if this step already has an endorsed formalization
             if (oldStep.formalization?.endorsed) {
-              // console.log('🔍 Skipping step with endorsed formalization:', formalization.symbol)
               return
             }
             
@@ -192,13 +148,8 @@ export default function AllAgentResults() {
             }
             updatedSnapshot.argument[stepIndex] = newStep
             hasChanges = true
-            // console.log('🔍 Applied formalization to step:', formalization.symbol)
-          } else {
-            // console.log('🔍 Could not find step with symbol:', formalization.symbol)
           }
         })
-      } else {
-        // console.log('🔍 No formalizations in result content')
       }
 
       // Save formalization definitions to snapshot
@@ -217,11 +168,8 @@ export default function AllAgentResults() {
   const fetchResults = async () => {
     // Prevent concurrent fetches
     if (currentFetchRef.current) {
-      // console.log('⏭️ Skipping fetch - already in progress')
       return
     }
-    
-    // console.log('🚀 Starting fetch - creating promise')
     
     // Clear the flag synchronously to prevent race conditions
     currentFetchRef.current = (async () => {
@@ -234,21 +182,13 @@ export default function AllAgentResults() {
           timeout: 15000 // 15 second timeout
         })
         
-        // console.log('📡 Response received:', response.status)
         const newResultsByAgent = response.data.results_by_agent || {}
         const newTasksComplete = response.data.tasks_complete || false
         const newActiveTasks = response.data.active_tasks || []
         const newActiveTaskCount = response.data.active_task_count || 0
         
-        // console.log('📊 Agent results received:', {
-        //   resultsByAgent: newResultsByAgent,
-        //   tasksComplete: newTasksComplete,
-        //   currentTasksComplete: tasksCompleteRef.current
-        // })
-        
         // Only update if we have new results
         if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
-          // console.log('🔄 Updating results - new data detected')
           setResultsByAgent(newResultsByAgent)
           // Apply results to snapshot
           applyAgentResultsToSnapshot(newResultsByAgent)
@@ -262,15 +202,10 @@ export default function AllAgentResults() {
         
         // Update tasks complete status
         if (newTasksComplete !== tasksCompleteRef.current) {
-          // console.log('✅ Tasks complete status changed:', { 
-          //   from: tasksCompleteRef.current, 
-          //   to: newTasksComplete 
-          // })
           tasksCompleteRef.current = newTasksComplete
           
           // Clear interval if tasks are complete
           if (newTasksComplete && intervalRef.current) {
-            // console.log('🛑 Clearing interval - tasks complete')
             clearInterval(intervalRef.current)
             intervalRef.current = null
           }
@@ -291,23 +226,14 @@ export default function AllAgentResults() {
   useEffect(() => {
     // Skip fetching if snapshotIndex is less than 1 (no snapshot history yet)
     if (currentSnapshotIndex < 1) {
-      // console.log('⏭️ Skipping agent results fetch - no snapshot history yet:', { snapshotIndex })
       return
     }
     
     // Skip if we're already polling for this snapshot
     if (currentPollingSnapshotRef.current === currentSnapshotIndex) {
-      // console.log('⏭️ Already polling for snapshot:', { snapshotIndex })
       return
     }
-    
-      // console.log('🔄 useEffect triggered with dependencies:', { 
-      //   conversationId, 
-      //   sessionId, 
-      //   snapshotVersion, 
-      //   snapshotIndex
-      // })
-    
+        
     // Reset state when conversation or snapshot changes
     // console.log('🔄 Resetting agent results state for new snapshot:', { snapshotIndex, snapshotVersion })
     setResultsByAgent({})
@@ -317,42 +243,22 @@ export default function AllAgentResults() {
     
     // Set up polling every 1 second, but only if tasks are not complete
     const interval = setInterval(() => {
-      // console.log('⏰ Polling interval triggered - checking state:', { 
-      //   tasksComplete: tasksCompleteRef.current, 
-      //   isFetching: !!currentFetchRef.current, // Check if a fetch is in progress
-      //   pollingSnapshot: snapshotIndex
-      // })
-      
-      if (!tasksCompleteRef.current) {
-        if (!currentFetchRef.current) {
-          // console.log('⏰ Polling interval triggered - tasks not complete, starting fetch')
-          fetchResults()
-        } else {
-          // console.log('⏰ Polling interval triggered - tasks not complete, but fetch already in progress')
-        }
-      } else {
-        // console.log('⏹️ Polling interval triggered - tasks complete, skipping fetch')
+      if (!tasksCompleteRef.current && !currentFetchRef.current) {
+        fetchResults()
       }
     }, 1000)
     
     // Store interval reference
     intervalRef.current = interval
     
-    // console.log('🚀 Started polling for agent results')
-    
     return () => {
-      // console.log('🛑 Stopped polling for agent results')
       clearInterval(interval)
       intervalRef.current = null
     }
-  }, [conversationId, sessionId, currentSnapshotIndex, pollingKey]) // Added pollingKey to dependencies
-
-
+  }, [conversationId, sessionId, currentSnapshotIndex])
 
   // Check if all formalizations are endorsed
   const allFormalizationsEndorsed = areAllFormalizationsEndorsed()
-
-
 
   const renderBuilderResults = (results: AgentResult[]) => {
     return (
@@ -743,28 +649,17 @@ export default function AllAgentResults() {
     )
   }
 
-
-
   return (
     <div className="mt-4 space-y-6">
-      
-      {/* Formalization Status and Trigger */}
+      {/* Formalization Status */}
       {allFormalizationsEndorsed && (
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <span className="text-green-700 mr-2">✅</span>
-              <span className="text-green-800 font-medium">All formalizations endorsed</span>
-            </div>
-            <button
-              onClick={triggerFormalEvaluator}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              🧮 Run Formal Evaluation
-            </button>
+          <div className="flex items-center">
+            <span className="text-green-700 mr-2">✅</span>
+            <span className="text-green-800 font-medium">All formalizations endorsed</span>
           </div>
           <p className="text-green-700 text-sm mt-2">
-            Ready to evaluate the logical validity of your formalized argument.
+            Formal evaluation will be triggered automatically when all formalizations are endorsed.
           </p>
         </div>
       )}
