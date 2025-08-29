@@ -46,6 +46,7 @@ interface ConversationState {
   getCurrentConversationId: () => number
   createConversationFromProposition: (proposition: string) => void
   createConversation: (initPrompt?: string) => void
+  applyNewArgument: (responseData: any) => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -193,5 +194,30 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       state.nextConversationId = newConversation.id + 1
     }))
     set({ currentSnapshotIndex: 0 })
+  },
+
+  applyNewArgument: (responseData: any) => {
+    set(produce((state) => {
+      const conversation = state.conversations[state.currentConversationIndex]
+      if (conversation) {
+        const currentSnapshot = conversation.snapshots[state.currentSnapshotIndex]
+        
+        // Create new snapshot with the server's response
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseData,
+        }
+        
+        // Remove snapshots after the current index and add the new one
+        conversation.snapshots.splice(state.currentSnapshotIndex + 1)
+        conversation.snapshots.push(newSnapshot)
+        
+        // Update the current snapshot index to point to the new snapshot
+        state.currentSnapshotIndex = conversation.snapshots.length - 1
+        
+        // Increment render count to trigger re-renders
+        state.snapshotRenderCount += 1
+      }
+    }))
   }
 }))
