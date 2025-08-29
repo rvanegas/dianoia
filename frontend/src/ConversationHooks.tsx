@@ -24,17 +24,14 @@ export function useConversationState(
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void
 ) {
-  // Get the session UUID from the store
-  const { sessionId } = useConversationStore()
+  // Get the session UUID and userMode from the store
+  const { sessionId, userMode, setUserMode } = useConversationStore()
 
   const snapshotRenderCount = useRef(0)
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
   const lastSnapshot = conversation.snapshots[snapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
-
-  // ready/waiting/input
-  const [userMode, setUserMode] = useState<UserMode>('ready')
 
   // used by input to save which user-justify action was selected
   const [targetLoc, setTargetLoc] = useState<string>('')
@@ -96,8 +93,6 @@ export function useConversationState(
 
 export function useConversationActions(
   currentSnapshot: ConversationSnapshot,
-  userMode: UserMode,
-  setUserMode: (mode: UserMode) => void,
   setInputText: (text: string) => void,
   targetLoc: string,
   targetIndex: number,
@@ -110,7 +105,7 @@ export function useConversationActions(
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
-  const { saveConversationName, sessionId } = useConversationStore()
+  const { saveConversationName, sessionId, userMode, setUserMode } = useConversationStore()
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
