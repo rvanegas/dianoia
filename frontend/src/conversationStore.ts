@@ -2,6 +2,14 @@ import { create } from 'zustand'
 import { produce } from 'immer'
 import type { ConversationType, ConversationSnapshot } from './types'
 
+type ApiOperationInfo = {
+  url: string
+  data: any
+  onSuccess: (responseObject: any, getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }) => void
+  onFinally?: () => void
+  operationName: string
+}
+
 export function initialSnapshot(): ConversationSnapshot {
   return {
     assumptions: [],
@@ -20,6 +28,7 @@ interface ConversationState {
   userMode: 'waiting' | 'ready' | 'input'
   snapshotRenderCount: number
   sessionId: string
+  lastFailedOperation: ApiOperationInfo | null
   
   updateCurrentConversation: (conversation: ConversationType) => void
   // addConversation: (conversation: ConversationType) => void
@@ -32,6 +41,7 @@ interface ConversationState {
   setUserMode: (mode: 'waiting' | 'ready' | 'input') => void
   setSnapshotRenderCount: (count: number) => void
   setNextConversationId: (id: number) => void
+  setLastFailedOperation: (operation: ApiOperationInfo | null) => void
   getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }
   getCurrentConversationId: () => number
   createConversationFromProposition: (proposition: string) => void
@@ -46,6 +56,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   userMode: 'ready',
   snapshotRenderCount: 0,
   sessionId: crypto.randomUUID(),
+  lastFailedOperation: null,
 
   updateCurrentConversation: (conversation) => {
     set(produce((state) => {
@@ -137,6 +148,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   setNextConversationId: (id) => 
     set({ nextConversationId: id }),
+
+  setLastFailedOperation: (operation) => 
+    set({ lastFailedOperation: operation }),
 
   getCurrentConversationState: () => {
     const state = get()
