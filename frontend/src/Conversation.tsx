@@ -70,8 +70,7 @@ function Conversation({
     setCopied,
     inputRef,
     saveSnapshot,
-    saveSnapshotInPlace,
-    sessionId
+    saveSnapshotInPlace
   } = useConversationState(conversation, setConversation)
 
   const {
@@ -466,7 +465,7 @@ function Conversation({
           </Section>
         )}
       </FlexTable>
-      <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
+      <AllAgentResults conversationId={conversation.id}
         snapshotIndex={snapshotIndex}
         getCurrentConversationState={() => ({ conversation, snapshotIndex })} saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
