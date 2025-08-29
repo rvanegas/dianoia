@@ -18,22 +18,14 @@ type ApiOperationInfo = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-// Generate session UUID once per browser session (module-level)
-let sessionId: string | null = null
 
-function getSessionId(): string {
-  if (!sessionId) {
-    sessionId = crypto.randomUUID()
-  }
-  return sessionId
-}
 
 export function useConversationState(
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void
 ) {
-  // Get the session UUID (generated once per browser session)
-  const sessionId = getSessionId()
+  // Get the session UUID from the store
+  const { sessionId } = useConversationStore()
 
   const snapshotRenderCount = useRef(0)
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
@@ -113,13 +105,12 @@ export function useConversationActions(
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
   createConversationFromProposition: (proposition: string) => void,
   conversationId: number,
-  sessionId: string,
   snapshotIndex: number,
   conversation: ConversationType
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
-  const { saveConversationName } = useConversationStore()
+  const { saveConversationName, sessionId } = useConversationStore()
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {

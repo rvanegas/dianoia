@@ -6,9 +6,7 @@ import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
 import PropositionActions from './PropositionActions'
-
 import AllAgentResults from './AllAgentResults'
-
 
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
@@ -99,7 +97,6 @@ function Conversation({
     saveSnapshotInPlace,
     createConversationFromProposition,
     conversation.id,
-    sessionId,
     snapshotIndex,
     conversation
   )
@@ -147,13 +144,6 @@ function Conversation({
       }
     }
   }, [snapshotIndex])
-
-  // DISABLED: Old evaluate steps effect - replaced by new agent system
-  // useEffect(() => {
-  //   if (currentSnapshot.evaluationsPending) {
-  //     evaluateSteps(snapshotRenderCount)
-  //   }
-  // }, [currentSnapshot.evaluationsPending])
 
   const loadingIndicator = userMode == 'waiting' && (
     <div className="mt-2 flex items-center space-x-4">
