@@ -246,16 +246,7 @@ export function useConversationActions(
     }
     
     await makeApiCall({
-      url, data: apiPrompt, onSuccess: (responseObject) => {
-        const { getCurrentConversationState } = useConversationStore.getState()
-        const { conversation, snapshotIndex } = getCurrentConversationState()
-        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-        }
-        saveSnapshot(newSnapshot)
-      }, 
+      url, data: apiPrompt, onSuccess: applyNewArgument, 
       onFinally: () => setUserMode('ready'), 
       operationName: errorLabel
     })
