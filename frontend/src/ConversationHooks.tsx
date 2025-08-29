@@ -24,10 +24,10 @@ export function useConversationState(
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void
 ) {
-  // Get the session UUID, userMode, and currentSnapshotIndex from the store
-  const { sessionId, userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex } = useConversationStore()
+  // Get the session UUID, userMode, currentSnapshotIndex, and snapshotRenderCount from the store
+  const { sessionId, userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex, 
+    snapshotRenderCount, setSnapshotRenderCount } = useConversationStore()
 
-  const snapshotRenderCount = useRef(0)
   const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
@@ -51,7 +51,7 @@ export function useConversationState(
   const saveSnapshot = (newSnap: ConversationSnapshot, convName: string = '') => {
     const oldSnaps = conversation.snapshots
     const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex + 1), newSnap]
-    snapshotRenderCount.current += 1
+    setSnapshotRenderCount(snapshotRenderCount + 1)
     const newSnapshotIndex = currentSnapshotIndex + 1
     setCurrentSnapshotIndex(newSnapshotIndex)
     const newConversation = {...conversation, snapshots: newSnaps}
@@ -369,13 +369,14 @@ export function useConversationNavigation(
   snapshotIndex: number,
   conversation: ConversationType,
   setSnapshotIndex: (index: number) => void,
-  setUserMode: (mode: UserMode) => void,
-  snapshotRenderCount: React.RefObject<number>
+  setUserMode: (mode: UserMode) => void
 ) {
+  const { snapshotRenderCount, setSnapshotRenderCount } = useConversationStore()
+
   const handleUndo = () => {
     if (snapshotIndex <= 0) return
     const newIndex = snapshotIndex - 1
-    snapshotRenderCount.current += 1
+    setSnapshotRenderCount(snapshotRenderCount + 1)
     setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
@@ -383,7 +384,7 @@ export function useConversationNavigation(
   const handleRedo = () => {
     if (snapshotIndex >= conversation.snapshots.length - 1) return
     const newIndex = snapshotIndex + 1
-    snapshotRenderCount.current += 1
+    setSnapshotRenderCount(snapshotRenderCount + 1)
     setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
