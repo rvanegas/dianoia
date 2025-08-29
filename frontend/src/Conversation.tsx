@@ -45,14 +45,21 @@ const Section = ({ children }: { children: React.ReactNode }) => (
 )
 
 function Conversation({
-  createConversationFromProposition,
   files
 }: {
-  createConversationFromProposition: (proposition: string) => void,
   files: FileType[]
 }) {
-  const { conversations, currentConversationIndex, updateCurrentConversation } = useConversationStore()
+  const { conversations, currentConversationIndex, currentSnapshotIndex, 
+    updateCurrentConversation } = useConversationStore()
   const conversation = conversations[currentConversationIndex]
+  
+  // console.log('🔄 Conversation component render:', {
+  //   currentConversationIndex,
+  //   conversationId: conversation?.id,
+  //   conversationName: conversation?.name,
+  //   initPrompt: conversation?.initPrompt,
+  //   snapshotsLength: conversation?.snapshots?.length
+  // })
   const {
     snapshotIndex,
     currentSnapshot,
@@ -87,7 +94,6 @@ function Conversation({
     targetIndex,
     saveSnapshot,
     saveSnapshotInPlace,
-    createConversationFromProposition,
     conversation
   )
 
@@ -114,20 +120,22 @@ function Conversation({
     }
   }, [userMode])
 
-  const hasFirstSnapshot = useRef(false)
   const hasCalledTheses = useRef(false)
   useEffect(() => {
-    if (snapshotIndex == -1 && !hasFirstSnapshot.current) {
-      hasFirstSnapshot.current = true
-      saveSnapshot(currentSnapshot)
-    }
-    if (snapshotIndex == 0 && !hasCalledTheses.current) {
+    // console.log('🔄 useEffect [currentSnapshotIndex]:', {
+    //   currentSnapshotIndex,
+    //   hasCalledTheses: hasCalledTheses.current,
+    //   initPrompt: conversation.initPrompt
+    // })
+    
+    if (currentSnapshotIndex == 0 && !hasCalledTheses.current) {
       hasCalledTheses.current = true
       if (conversation.initPrompt) {
+        // console.log('🎯 Calling handleThesis with initPrompt:', conversation.initPrompt)
         handleThesis(conversation.initPrompt)
       }
     }
-  }, [snapshotIndex])
+  }, [currentSnapshotIndex])
 
   const loadingIndicator = userMode == 'waiting' && (
     <div className="mt-2 flex items-center space-x-4">
