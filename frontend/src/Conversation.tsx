@@ -95,7 +95,6 @@ function Conversation({
     saveSnapshotInPlace,
     createConversationFromProposition,
     conversation.id,
-    snapshotIndex,
     conversation
   )
 
