@@ -56,7 +56,6 @@ function Conversation({
 }) {
   const {
     snapshotIndex,
-    setSnapshotIndex,
     currentSnapshot,
     userMode,
     setUserMode,
@@ -99,7 +98,6 @@ function Conversation({
     handleRedo
   } = useConversationNavigation(
     conversation,
-    setSnapshotIndex,
     setUserMode
   )
 

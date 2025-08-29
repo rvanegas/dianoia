@@ -367,16 +367,15 @@ export function useConversationActions(
 
 export function useConversationNavigation(
   conversation: ConversationType,
-  setSnapshotIndex: (index: number) => void,
   setUserMode: (mode: UserMode) => void
 ) {
-  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex } = useConversationStore()
+  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex } = useConversationStore()
 
   const handleUndo = () => {
     if (currentSnapshotIndex <= 0) return
     const newIndex = currentSnapshotIndex - 1
     setSnapshotRenderCount(snapshotRenderCount + 1)
-    setSnapshotIndex(newIndex)
+    setCurrentSnapshotIndex(newIndex)
     setUserMode('ready')
   }
 
@@ -384,7 +383,7 @@ export function useConversationNavigation(
     if (currentSnapshotIndex >= conversation.snapshots.length - 1) return
     const newIndex = currentSnapshotIndex + 1
     setSnapshotRenderCount(snapshotRenderCount + 1)
-    setSnapshotIndex(newIndex)
+    setCurrentSnapshotIndex(newIndex)
     setUserMode('ready')
   }
 
