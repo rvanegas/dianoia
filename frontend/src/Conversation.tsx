@@ -87,8 +87,7 @@ function Conversation({
     targetLoc,
     targetIndex,
     saveSnapshot,
-    saveSnapshotInPlace,
-    conversation
+    saveSnapshotInPlace
   )
 
   const {

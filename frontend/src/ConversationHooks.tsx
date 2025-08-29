@@ -48,6 +48,8 @@ export function useConversationState(
 
   // this saves new versions of argument
   const saveSnapshot = (newSnap: ConversationSnapshot, convName: string = '') => {
+    const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
+    const { conversation } = getCurrentConversationState()
     const oldSnaps = conversation.snapshots
     const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex + 1), newSnap]
     setSnapshotRenderCount(snapshotRenderCount + 1)
@@ -55,16 +57,17 @@ export function useConversationState(
     setCurrentSnapshotIndex(newSnapshotIndex)
     const newConversation = {...conversation, snapshots: newSnaps}
     if (convName) newConversation.name = convName
-    setConversation(newConversation)
+    updateCurrentConversation(newConversation)
   }
 
   const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
+    const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
+    const { conversation } = getCurrentConversationState()
     const oldSnaps = conversation.snapshots
-    let newSnaps
-    newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
+    const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
       ...oldSnaps.slice(currentSnapshotIndex + 1)]
     const newConversation = {...conversation, snapshots: newSnaps}
-    setConversation(newConversation)
+    updateCurrentConversation(newConversation)
   }
 
   return {
@@ -95,8 +98,7 @@ export function useConversationActions(
   targetLoc: string,
   targetIndex: number,
   saveSnapshot: (newSnap: ConversationSnapshot, convName?: string) => void,
-  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
-  conversation: ConversationType
+  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
 ) {
   const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex,
     getCurrentConversationId, createConversationFromProposition, lastFailedOperation, setLastFailedOperation } = useConversationStore()
@@ -121,7 +123,7 @@ export function useConversationActions(
   }
 
   // Reusable API call wrapper
-  const makeApiCall = async (operationInfo: ApiOperationInfo, conversation: ConversationType) => {
+  const makeApiCall = async (operationInfo: ApiOperationInfo) => {
     try {
       // Add conversation_id as query parameter (format: session_id:conversation_id)
       const url = new URL(operationInfo.url)
@@ -150,7 +152,8 @@ export function useConversationActions(
       
       // Create a getter function that returns the current conversation state
       const getCurrentConversationState = () => {
-        return { conversation, snapshotIndex: currentSnapshotIndex }
+        const { getCurrentConversationState: getState } = useConversationStore.getState()
+        return getState()
       }
       
       operationInfo.onSuccess(responseObject, getCurrentConversationState)
@@ -169,7 +172,7 @@ export function useConversationActions(
     if (!lastFailedOperation) return
     
     setUserMode('waiting')
-    await makeApiCall(lastFailedOperation, conversation)
+    await makeApiCall(lastFailedOperation)
   }
 
   const handleThesis = async (content?: string) => {
@@ -198,7 +201,7 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
         }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis'
-      }, conversation
+      }
     )
 
     url = VITE_API_BASE_URL + '/api/argument/gen-name'
@@ -221,7 +224,7 @@ export function useConversationActions(
           saveSnapshot(finalSnapshot)
           saveConversationName(conversation.id, responseObject.name)
         }, onFinally: () => {}, operationName: 'Generate Name'
-      }, conversation
+      }
     )
   }
 
@@ -245,8 +248,7 @@ export function useConversationActions(
           // evaluationsPending: true, // DISABLED: Old evaluation system
         }
         saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' },
-      conversation
+      }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' }
     )
   }
 
@@ -273,8 +275,7 @@ export function useConversationActions(
         //   newSnapshot.evaluationsPending = true
         // }
         saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: errorLabel },
-      conversation
+      }, onFinally: () => setUserMode('ready'), operationName: errorLabel }
     )
   }
 
@@ -339,8 +340,7 @@ export function useConversationActions(
         }, 
         onFinally: () => setUserMode('ready'), 
         operationName: 'Reject formalization' 
-      },
-      conversation
+      }
     )
   }
 
