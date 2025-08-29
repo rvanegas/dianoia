@@ -19,7 +19,7 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export function useConversationState() {
   // Get the session UUID, userMode, currentSnapshotIndex, and snapshotRenderCount from the store
-  const { sessionId, userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex, 
+  const { userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex, 
     snapshotRenderCount, setSnapshotRenderCount, getCurrentConversationState } = useConversationStore()
 
   const { conversation } = getCurrentConversationState()
@@ -53,15 +53,15 @@ export function useConversationState() {
     updateCurrentConversation(newConversation)
   }
 
-  const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
-    const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
-    const { conversation } = getCurrentConversationState()
-    const oldSnaps = conversation.snapshots
-    const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
-      ...oldSnaps.slice(currentSnapshotIndex + 1)]
-    const newConversation = {...conversation, snapshots: newSnaps}
-    updateCurrentConversation(newConversation)
-  }
+  // const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
+  //   const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
+  //   const { conversation } = getCurrentConversationState()
+  //   const oldSnaps = conversation.snapshots
+  //   const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
+  //     ...oldSnaps.slice(currentSnapshotIndex + 1)]
+  //   const newConversation = {...conversation, snapshots: newSnaps}
+  //   updateCurrentConversation(newConversation)
+  // }
 
   return {
     snapshotRenderCount,
@@ -79,9 +79,7 @@ export function useConversationState() {
     copied,
     setCopied,
     inputRef,
-    saveSnapshot,
-    saveSnapshotInPlace,
-    sessionId
+    saveSnapshot
   }
 }
 
@@ -91,7 +89,6 @@ export function useConversationActions(
   targetLoc: string,
   targetIndex: number,
   saveSnapshot: (newSnap: ConversationSnapshot) => void,
-  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
 ) {
   const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex,
     getCurrentConversationId, createConversationFromProposition, lastFailedOperation, 
@@ -253,36 +250,23 @@ export function useConversationActions(
   }
 
   const handleEndorseFormalization = async (
-    loc: string, index: number, endorsed: boolean
+    loc: string, index: number
   ) => {
-    // Update endorsement status locally in the snapshot
-    const newSnapshot = { ...currentSnapshot }
+    setUserMode('waiting')
     
-    if (loc === 'argument' && newSnapshot.argument[index]?.formalization) {
-      // Create new array and formalization object to avoid read-only property error
-      newSnapshot.argument = [...newSnapshot.argument]
-      newSnapshot.argument[index] = {
-        ...newSnapshot.argument[index],
-        formalization: {
-          ascii: newSnapshot.argument[index].formalization!.ascii,
-          json_structure: newSnapshot.argument[index].formalization!.json_structure,
-          endorsed: endorsed
-        }
-      }
-    } else if (loc === 'assumptions' && newSnapshot.assumptions[index]?.formalization) {
-      // Create new array and formalization object to avoid read-only property error
-      newSnapshot.assumptions = [...newSnapshot.assumptions]
-      newSnapshot.assumptions[index] = {
-        ...newSnapshot.assumptions[index],
-        formalization: {
-          ascii: newSnapshot.assumptions[index].formalization!.ascii,
-          json_structure: newSnapshot.assumptions[index].formalization!.json_structure,
-          endorsed: endorsed
-        }
-      }
+    const url = VITE_API_BASE_URL + '/api/argument/endorse-formalization'
+    const apiPrompt = {
+      ...currentSnapshot,
+      loc, index
     }
     
-    saveSnapshotInPlace(newSnapshot)
+    await makeApiCall({ 
+      url, 
+      data: apiPrompt, 
+      onSuccess: applyNewArgument, 
+      onFinally: () => setUserMode('ready'), 
+      operationName: 'Endorse formalization' 
+    })
   }
 
   const handleRejectFormalization = async (

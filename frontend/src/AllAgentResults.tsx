@@ -62,7 +62,7 @@ export default function AllAgentResults() {
     const allSteps = [...currentSnapshot.argument, ...currentSnapshot.assumptions]
     
     // Check that all steps have formalizations and all formalizations are endorsed
-    return allSteps.every((step: any) => step.formalization?.endorsed)
+    return allSteps.length > 0 && allSteps.every((step: any) => step.formalization?.endorsed)
   }
 
   // Apply agent results to argument steps
