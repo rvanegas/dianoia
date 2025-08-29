@@ -711,15 +711,27 @@ class AgentCoordinator:
 
         # logger.debug(f"Form evaluator argument propositions: {form_eval_argument_propositions}")
 
-        # Check if all propositions in the argument have formalizations
+        # Check if all propositions in the argument AND assumptions have endorsed formalizations
         # The formal evaluator now gets formalizations directly from Step objects
         all_propositions_formalized = True
+        
+        # Check argument steps
         for step in argument_steps:
             proposition = step.proposition
             formalization = step.formalization
-            if proposition and not formalization:
+            if proposition and (not formalization or not formalization.endorsed):
                 all_propositions_formalized = False
                 break
+        
+        # Check assumption steps if argument steps are all formalized
+        if all_propositions_formalized:
+            assumption_steps = argument_data.assumptions
+            for step in assumption_steps:
+                proposition = step.proposition
+                formalization = step.formalization
+                if proposition and (not formalization or not formalization.endorsed):
+                    all_propositions_formalized = False
+                    break
         
         # logger.debug(f"All propositions formalized: {all_propositions_formalized}")
         
