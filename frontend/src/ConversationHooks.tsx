@@ -2,7 +2,7 @@ import {useState, useRef} from 'react'
 import axios from 'axios'
 
 import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
-import { useConversationStore } from './conversationStore'
+import { useConversationStore, initialSnapshot } from './conversationStore'
 
 type UserMode = 'waiting' | 'ready' | 'input'
 type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
@@ -26,17 +26,6 @@ function getSessionId(): string {
     sessionId = crypto.randomUUID()
   }
   return sessionId
-}
-
-function initialSnapshot() : ConversationSnapshot {
-  return {
-    assumptions: [],
-    argument: [],
-    // evaluationsPending: false, // DISABLED: Old evaluation system
-    explanation: '',
-    argMode: 'thesis',
-    file_ids: []
-  }
 }
 
 export function useConversationState(
