@@ -49,10 +49,8 @@ function Conversation({
 }: {
   files: FileType[]
 }) {
-  const { conversations, currentConversationIndex, currentSnapshotIndex, 
-    updateCurrentConversation } = useConversationStore()
+  const { conversations, currentConversationIndex, currentSnapshotIndex } = useConversationStore()
   const conversation = conversations[currentConversationIndex]
-  
 
   const {
     snapshotIndex,
@@ -70,7 +68,7 @@ function Conversation({
     inputRef,
     saveSnapshot,
     saveSnapshotInPlace
-  } = useConversationState(conversation, updateCurrentConversation)
+  } = useConversationState()
 
   const {
     handleThesis,

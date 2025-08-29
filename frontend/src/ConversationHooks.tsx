@@ -19,14 +19,12 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 
 
-export function useConversationState(
-  conversation: ConversationType,
-  setConversation: (newConversation: ConversationType) => void
-) {
+export function useConversationState() {
   // Get the session UUID, userMode, currentSnapshotIndex, and snapshotRenderCount from the store
   const { sessionId, userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex, 
-    snapshotRenderCount, setSnapshotRenderCount } = useConversationStore()
+    snapshotRenderCount, setSnapshotRenderCount, getCurrentConversationState } = useConversationStore()
 
+  const { conversation } = getCurrentConversationState()
   const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
@@ -37,8 +35,6 @@ export function useConversationState(
 
   // contents of input element
   const [inputText, setInputText] = useState<string>('')
-
-
 
   // export button
   const [copied, setCopied] = useState<boolean>(false)
