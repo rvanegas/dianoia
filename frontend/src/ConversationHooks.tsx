@@ -95,7 +95,7 @@ export function useConversationActions(
 ) {
   const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex,
     getCurrentConversationId, createConversationFromProposition, lastFailedOperation, 
-    setLastFailedOperation } = useConversationStore()
+    setLastFailedOperation, applyNewArgument } = useConversationStore()
   const conversationId = getCurrentConversationId()
 
   // Reusable error handler
@@ -229,17 +229,7 @@ export function useConversationActions(
     }
     
     await makeApiCall({
-      url, data: apiPrompt, onSuccess: (responseObject) => {
-        const { getCurrentConversationState } = useConversationStore.getState()
-        const { conversation, snapshotIndex } = getCurrentConversationState()
-        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-          // evaluationsPending: true, // DISABLED: Old evaluation system
-        }
-        saveSnapshot(newSnapshot)
-      }, 
+      url, data: apiPrompt, onSuccess: applyNewArgument, 
       onFinally: () => setUserMode('ready'), 
       operationName: 'User Justify' 
     })
