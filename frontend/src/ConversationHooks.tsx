@@ -365,7 +365,8 @@ export function useConversationActions(
 }
 
 export function useConversationNavigation() {
-  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex, setUserMode, conversations, currentConversationIndex } = useConversationStore()
+  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex, 
+    setUserMode, conversations, currentConversationIndex } = useConversationStore()
 
   const conversation = conversations[currentConversationIndex]
 
