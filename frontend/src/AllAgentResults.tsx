@@ -17,17 +17,22 @@ type AgentResult = {
 }
 
 type AgentResultsProps = {
-  snapshotIndex: number  // Required prop for API calls
-  saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
+  // No props needed - everything comes from the store
 }
 
 type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ snapshotIndex, saveSnapshotInPlace }: AgentResultsProps) {
-  const { sessionId, getCurrentConversationState, getCurrentConversationId } = useConversationStore()
+export default function AllAgentResults({}: AgentResultsProps) {
+  const { sessionId, getCurrentConversationState, getCurrentConversationId, currentSnapshotIndex, saveSnapshotInPlace } = useConversationStore()
   const conversationId = getCurrentConversationId()
+  const snapshotIndex = currentSnapshotIndex
+  
+  // Wrapper function to match the expected signature
+  const saveSnapshotInPlaceWrapper = (snapshot: ConversationSnapshot) => {
+    saveSnapshotInPlace(conversationId, snapshotIndex, snapshot)
+  }
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
@@ -214,7 +219,7 @@ export default function AllAgentResults({ snapshotIndex, saveSnapshotInPlace }: 
 
     // Save updated snapshot if there were changes
     if (hasChanges) {
-      saveSnapshotInPlace(updatedSnapshot)
+      saveSnapshotInPlaceWrapper(updatedSnapshot)
     }
   }
 
