@@ -5,7 +5,7 @@ import type { ConversationType, ConversationSnapshot } from './types'
 type ApiOperationInfo = {
   url: string
   data: any
-  onSuccess: (responseObject: any, getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }) => void
+  onSuccess: (responseObject: any) => void
   onFinally?: () => void
   operationName: string
 }
