@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import type { ConversationSnapshot } from './types'
+import { useConversationStore } from './conversationStore'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -17,7 +18,6 @@ type AgentResult = {
 
 type AgentResultsProps = {
   conversationId: number
-  sessionId: string
   snapshotIndex: number  // Required prop for API calls
   getCurrentConversationState: () => { conversation: any, snapshotIndex: number }  // Function to get current conversation state
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
@@ -27,7 +27,8 @@ type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, sessionId, snapshotIndex, getCurrentConversationState, saveSnapshotInPlace }: AgentResultsProps) {
+export default function AllAgentResults({ conversationId, snapshotIndex, getCurrentConversationState, saveSnapshotInPlace }: AgentResultsProps) {
+  const { sessionId } = useConversationStore()
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
