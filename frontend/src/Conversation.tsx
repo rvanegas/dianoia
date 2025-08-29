@@ -67,7 +67,6 @@ function Conversation({
     setCopied,
     inputRef,
     saveSnapshot,
-    saveSnapshotInPlace
   } = useConversationState()
 
   const {
@@ -84,8 +83,7 @@ function Conversation({
     setInputText,
     targetLoc,
     targetIndex,
-    saveSnapshot,
-    saveSnapshotInPlace
+    saveSnapshot
   )
 
   const {
@@ -173,7 +171,7 @@ function Conversation({
           onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
           onDispute={handleDispute}
           onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
-          onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+          onEndorseFormalization={(loc, stepIndex) => handleEndorseFormalization(loc, stepIndex)}
           onRejectFormalization={(loc, stepIndex) => handleRejectFormalization(loc, stepIndex)}
 
           setUserMode={setUserMode}
@@ -318,7 +316,7 @@ function Conversation({
             onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
             onDispute={handleDispute}
             onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
-            onEndorseFormalization={(loc, stepIndex, endorsed) => handleEndorseFormalization(loc, stepIndex, endorsed)}
+            onEndorseFormalization={(loc, stepIndex) => handleEndorseFormalization(loc, stepIndex)}
             onRejectFormalization={(loc, stepIndex) => handleRejectFormalization(loc, stepIndex)}
 
             setUserMode={setUserMode}

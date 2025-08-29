@@ -14,7 +14,7 @@ interface PropositionActionsProps {
   onRemove: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   onDispute: (step: any) => Promise<void>
   onExplain: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
-  onEndorseFormalization: (loc: string, stepIndex: number, endorsed: boolean) => Promise<void>
+  onEndorseFormalization: (loc: string, stepIndex: number) => Promise<void>
   onRejectFormalization: (loc: string, stepIndex: number) => Promise<void>
   setUserMode: (mode: UserMode) => void
   setTargetLoc: (loc: string) => void
@@ -41,14 +41,6 @@ export default function PropositionActions({
   const hasJustifiers = step.justifiers.length > 0
 
   const actionItems = [
-    // DISABLED: AI Justify action - replaced by new agent system
-    // {
-    //   label: 'AI Justify',
-    //   onClick: async () => {
-    //     await onAIJustify(loc, stepIndex)
-    //   },
-    //   show: loc !== 'assumptions'
-    // },
     {
       label: 'User Justify',
       onClick: () => {
@@ -87,12 +79,11 @@ export default function PropositionActions({
       show: loc !== 'assumptions' && hasJustifiers
     },
     {
-      label: step.formalization?.endorsed ? 'Unendorse Formalization' : 'Endorse Formalization',
+      label: 'Endorse Formalization',
       onClick: async () => {
-        const newEndorsed = !step.formalization?.endorsed
-        await onEndorseFormalization(loc, stepIndex, newEndorsed)
+        await onEndorseFormalization(loc, stepIndex)
       },
-      show: step.formalization !== undefined
+      show: step.formalization && !step.formalization.endorsed
     },
     {
       label: 'Reject Formalization',
