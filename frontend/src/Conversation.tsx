@@ -49,14 +49,12 @@ function Conversation({
 }: {
   files: FileType[]
 }) {
-  const { conversations, currentConversationIndex, currentSnapshotIndex } = useConversationStore()
+  const { conversations, currentConversationIndex, currentSnapshotIndex, 
+    userMode, setUserMode } = useConversationStore()
   const conversation = conversations[currentConversationIndex]
+  const currentSnapshot = conversation.snapshots[currentSnapshotIndex]
 
   const {
-    snapshotIndex,
-    currentSnapshot,
-    userMode,
-    setUserMode,
     targetLoc,
     setTargetLoc,
     targetIndex,
@@ -66,7 +64,6 @@ function Conversation({
     copied,
     setCopied,
     inputRef,
-    saveSnapshot,
   } = useConversationState()
 
   const {
@@ -79,11 +76,9 @@ function Conversation({
     retryLastOperation,
     lastFailedOperation
   } = useConversationActions(
-    currentSnapshot,
     setInputText,
     targetLoc,
-    targetIndex,
-    saveSnapshot
+    targetIndex
   )
 
   const {
@@ -392,7 +387,7 @@ function Conversation({
     )
   }
 
-  const snapshotId = snapshotIndex < 1 ? '' : `.${snapshotIndex}`
+  const snapshotId = currentSnapshotIndex < 1 ? '' : `.${currentSnapshotIndex}`
 
   const renderAssociatedFileNames = () => (
     <div>
@@ -495,13 +490,13 @@ function Conversation({
       {conversation.snapshots.length < 2 ? undefined :
         <div className="fixed top-4 right-4 z-10 flex gap-2">
           <button
-            disabled={snapshotIndex <= 0 || userMode == 'waiting'}
+            disabled={currentSnapshotIndex <= 0 || userMode == 'waiting'}
             onClick={handleUndo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Undo
           </button>
           <button
-            disabled={snapshotIndex >= conversation.snapshots.length - 1
+            disabled={currentSnapshotIndex >= conversation.snapshots.length - 1
               || userMode == 'waiting'}
             onClick={handleRedo}
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>

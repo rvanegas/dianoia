@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import axios from 'axios'
 
-import type { StepType, ArgMode, ConversationSnapshot } from './types'
-import { useConversationStore, initialSnapshot } from './conversationStore'
+import type { StepType, ArgMode } from './types'
+import { useConversationStore } from './conversationStore'
 
 type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
 
@@ -18,15 +18,6 @@ type ApiOperationInfo = {
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export function useConversationState() {
-  // Get the session UUID, userMode, currentSnapshotIndex, and snapshotRenderCount from the store
-  const { userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex, 
-    snapshotRenderCount, setSnapshotRenderCount, getCurrentConversationState } = useConversationStore()
-
-  const { conversation } = getCurrentConversationState()
-  const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
-  const currentSnapshot: ConversationSnapshot = lastSnapshot ?
-    lastSnapshot : initialSnapshot()
-
   // used by input to save which user-justify action was selected
   const [targetLoc, setTargetLoc] = useState<string>('')
   const [targetIndex, setTargetIndex] = useState<number>(0)
@@ -40,36 +31,8 @@ export function useConversationState() {
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // this saves new versions of argument
-  const saveSnapshot = (newSnap: ConversationSnapshot) => {
-    const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
-    const { conversation } = getCurrentConversationState()
-    const oldSnaps = conversation.snapshots
-    const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex + 1), newSnap]
-    setSnapshotRenderCount(snapshotRenderCount + 1)
-    const newSnapshotIndex = currentSnapshotIndex + 1
-    setCurrentSnapshotIndex(newSnapshotIndex)
-    const newConversation = {...conversation, snapshots: newSnaps}
-    updateCurrentConversation(newConversation)
-  }
-
-  // const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
-  //   const { getCurrentConversationState, updateCurrentConversation } = useConversationStore.getState()
-  //   const { conversation } = getCurrentConversationState()
-  //   const oldSnaps = conversation.snapshots
-  //   const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
-  //     ...oldSnaps.slice(currentSnapshotIndex + 1)]
-  //   const newConversation = {...conversation, snapshots: newSnaps}
-  //   updateCurrentConversation(newConversation)
-  // }
 
   return {
-    snapshotRenderCount,
-    snapshotIndex: currentSnapshotIndex,
-    setSnapshotIndex: setCurrentSnapshotIndex,
-    currentSnapshot,
-    userMode,
-    setUserMode,
     targetLoc,
     setTargetLoc,
     targetIndex,
@@ -79,21 +42,19 @@ export function useConversationState() {
     copied,
     setCopied,
     inputRef,
-    saveSnapshot
   }
 }
 
 export function useConversationActions(
-  currentSnapshot: ConversationSnapshot,
   setInputText: (text: string) => void,
   targetLoc: string,
-  targetIndex: number,
-  saveSnapshot: (newSnap: ConversationSnapshot) => void,
+  targetIndex: number
 ) {
   const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex,
     getCurrentConversationId, createConversationFromProposition, lastFailedOperation, 
-    setLastFailedOperation, applyNewArgument } = useConversationStore()
+    setLastFailedOperation, applyNewArgument, getCurrentConversationState } = useConversationStore()
   const conversationId = getCurrentConversationId()
+  const currentSnapshot = getCurrentConversationState().conversation.snapshots[currentSnapshotIndex]
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
@@ -176,15 +137,7 @@ export function useConversationActions(
     // First API call to create thesis
     const thesisResponseObject = await makeApiCall({
       url, data: apiPrompt, onSuccess: (responseObject) => {
-        const { getCurrentConversationState } = useConversationStore.getState()
-        const { conversation, snapshotIndex } = getCurrentConversationState()
-        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-          argMode,
-        }
-        saveSnapshot(newSnapshot)
+        applyNewArgument({ ...responseObject, argMode })
       }, 
       onFinally: () => setUserMode('ready'), 
       operationName: 'Create Thesis'
@@ -199,16 +152,7 @@ export function useConversationActions(
 
     await makeApiCall({
       url, data: apiPrompt, onSuccess: (responseObject) => {
-        const { getCurrentConversationState } = useConversationStore.getState()
-        const { conversation, snapshotIndex } = getCurrentConversationState()
-        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-        const finalSnapshot = {
-          ...currentSnapshot,
-          ...thesisResponseObject,
-          argMode,
-        }
-        saveSnapshot(finalSnapshot)
-        saveConversationName(conversation.id, responseObject.name)
+        saveConversationName(getCurrentConversationId(), responseObject.name)
       }, 
       onFinally: () => {}, 
       operationName: 'Generate Name'
@@ -285,16 +229,7 @@ export function useConversationActions(
     await makeApiCall({ 
       url, 
       data: apiPrompt, 
-      onSuccess: (responseObject) => {
-        const { getCurrentConversationState } = useConversationStore.getState()
-        const { conversation, snapshotIndex } = getCurrentConversationState()
-        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-        const newSnapshot = {
-          ...currentSnapshot,
-          ...responseObject,
-        }
-        saveSnapshot(newSnapshot)
-      }, 
+      onSuccess: applyNewArgument, 
       onFinally: () => setUserMode('ready'), 
       operationName: 'Reject formalization' 
     })
