@@ -5,6 +5,7 @@ import {useEffect, useRef} from 'react'
 import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
+import {useConversationStore} from './conversationStore'
 import PropositionActions from './PropositionActions'
 import AllAgentResults from './AllAgentResults'
 
@@ -44,16 +45,14 @@ const Section = ({ children }: { children: React.ReactNode }) => (
 )
 
 function Conversation({
-  conversation,
-  setConversation,
   createConversationFromProposition,
   files
 }: {
-  conversation: ConversationType,
-  setConversation: (newConversation: ConversationType) => void,
   createConversationFromProposition: (proposition: string) => void,
   files: FileType[]
 }) {
+  const { conversations, currentConversationIndex, updateCurrentConversation } = useConversationStore()
+  const conversation = conversations[currentConversationIndex]
   const {
     snapshotIndex,
     currentSnapshot,
@@ -70,7 +69,7 @@ function Conversation({
     inputRef,
     saveSnapshot,
     saveSnapshotInPlace
-  } = useConversationState(conversation, setConversation)
+  } = useConversationState(conversation, updateCurrentConversation)
 
   const {
     handleThesis,
@@ -96,9 +95,7 @@ function Conversation({
   const {
     handleUndo,
     handleRedo
-  } = useConversationNavigation(
-    conversation
-  )
+  } = useConversationNavigation()
 
   const handleCopy = async () => {
     const text = exportMarkdown(currentSnapshot)

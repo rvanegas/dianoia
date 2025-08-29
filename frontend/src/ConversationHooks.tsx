@@ -364,10 +364,10 @@ export function useConversationActions(
   }
 }
 
-export function useConversationNavigation(
-  conversation: ConversationType
-) {
-  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex, setUserMode } = useConversationStore()
+export function useConversationNavigation() {
+  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex, setUserMode, conversations, currentConversationIndex } = useConversationStore()
+
+  const conversation = conversations[currentConversationIndex]
 
   const handleUndo = () => {
     if (currentSnapshotIndex <= 0) return
