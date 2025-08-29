@@ -53,13 +53,7 @@ function Conversation({
     updateCurrentConversation } = useConversationStore()
   const conversation = conversations[currentConversationIndex]
   
-  // console.log('🔄 Conversation component render:', {
-  //   currentConversationIndex,
-  //   conversationId: conversation?.id,
-  //   conversationName: conversation?.name,
-  //   initPrompt: conversation?.initPrompt,
-  //   snapshotsLength: conversation?.snapshots?.length
-  // })
+
   const {
     snapshotIndex,
     currentSnapshot,
@@ -122,16 +116,9 @@ function Conversation({
 
   const hasCalledTheses = useRef(false)
   useEffect(() => {
-    // console.log('🔄 useEffect [currentSnapshotIndex]:', {
-    //   currentSnapshotIndex,
-    //   hasCalledTheses: hasCalledTheses.current,
-    //   initPrompt: conversation.initPrompt
-    // })
-    
     if (currentSnapshotIndex == 0 && !hasCalledTheses.current) {
       hasCalledTheses.current = true
       if (conversation.initPrompt) {
-        // console.log('🎯 Calling handleThesis with initPrompt:', conversation.initPrompt)
         handleThesis(conversation.initPrompt)
       }
     }
@@ -463,9 +450,7 @@ function Conversation({
           </Section>
         )}
       </FlexTable>
-      <AllAgentResults
-        snapshotIndex={snapshotIndex}
-        saveSnapshotInPlace={saveSnapshotInPlace} />
+      <AllAgentResults />
       {loadingIndicator}
       {retryButton}
     </div>
