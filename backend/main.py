@@ -4,8 +4,16 @@ from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import logging
 
 load_dotenv()
+
+logger = logging.getLogger("myapp")
+logger.setLevel(logging.DEBUG)  # or INFO, WARNING, etc.
+handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 app = FastAPI()
 
@@ -20,13 +28,11 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class Prompt(BaseModel):
     prompt: str
-
-@app.get("/api/hello")
-def read_root():
-    return {"message": "Hello World from FastAPI"}
+    history: str = ""
 
 @app.post("/api/chat")
 async def chat(prompt: Prompt):
+    logger.debug(f"prompt {prompt}")
     response = client.chat.completions.create(
         model="gpt-4.1",
         messages=[
