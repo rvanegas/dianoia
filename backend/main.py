@@ -27,10 +27,12 @@ def read_root():
 
 @app.post("/api/chat")
 async def chat(prompt: Prompt):
-    response = client.responses.create(
+    response = client.chat.completions.create(
         model="gpt-4.1",
-        instructions="You are a helpful assistant.",
-        input=prompt.prompt,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt.prompt}
+        ]
     )
-    return {"reply": response.output_text}
+    return {"reply": response.choices[0].message.content}
 
