@@ -28,17 +28,14 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class Prompt(BaseModel):
     prompt: str
-    history: str = ""
+    history: object = {}
 
 @app.post("/api/chat")
 async def chat(prompt: Prompt):
-    logger.debug(f"prompt {prompt}")
+    messages = [{"role": "system", "content": "You are a helpful assistant."}] + prompt.history
+    # logger.debug(f"messages {messages}")
     response = client.chat.completions.create(
         model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt.prompt}
-        ]
+        messages=messages
     )
     return {"reply": response.choices[0].message.content}
-
