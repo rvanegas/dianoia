@@ -22,7 +22,7 @@ logger.addHandler(handler)
 engine = create_engine(os.getenv("DATABASE_URL"), echo=True)
 Base = declarative_base()
 
-class User(Base):
+class Conversation(Base):
     __tablename__ = "conversations"
     id = Column(Integer, primary_key=True)
     # col1 = Column(String, nullable=False)
