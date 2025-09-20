@@ -1,50 +1,50 @@
-import "./App.css";
+import './App.css'
 
-import { useEffect, useRef, useState } from "react";
-import axios from "axios";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useRef, useState } from 'react'
+import axios from 'axios'
+import ReactMarkdown from 'react-markdown'
 
 type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+  role: 'user' | 'assistant'
+  content: string
+}
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 function App() {
-  const [prompt, setPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [prompt, setPrompt] = useState<string>('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleSend = async () => {
-    if (!prompt.trim()) return;
-    const userMessage: Message = { role: "user", content: prompt };
-    const newMessages = [...messages, userMessage];
-    setPrompt("");
-    setMessages((prev) => newMessages);
-    setLoading(true);
+    if (!prompt.trim()) return
+    const userMessage: Message = { role: 'user', content: prompt }
+    const newMessages = [...messages, userMessage]
+    setPrompt('')
+    setMessages((prev) => newMessages)
+    setLoading(true)
     try {
       const response = await axios.post(`${VITE_API_BASE_URL}/api/v1/chat`, {
         prompt,
         history: newMessages,
-      });
+      })
       const botMessage: Message = {
-        role: "assistant",
+        role: 'assistant',
         content: response.data.reply,
-      };
-      setMessages((prev) => [...newMessages, botMessage]);
-      setPrompt("");
+      }
+      setMessages((prev) => [...newMessages, botMessage])
+      setPrompt('')
     } catch (error) {
-      console.log("Error: ", error);
+      console.log('Error: ', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
 
   return (
     <div className="px-4  pt-4 max-w-[720px] size-full max-h-[90vh] flex flex-col">
@@ -118,7 +118,7 @@ function App() {
         </button>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
