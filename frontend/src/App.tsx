@@ -9,6 +9,8 @@ type Message = {
   content: string;
 };
 
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 function App() {
   const [prompt, setPrompt] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,7 +25,7 @@ function App() {
     setMessages((prev) => newMessages);
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/api/chat", {
+      const response = await axios.post(`${VITE_API_BASE_URL}/api/chat`, {
         prompt,
         history: newMessages,
       });
