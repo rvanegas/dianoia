@@ -28,12 +28,58 @@ class Prompt(BaseModel):
     prompt: str
     history: object = {}
 
+class Step(BaseModel):
+    proposition: str
+    justifier: str
+
+class Response(BaseModel):
+    argument: list[Step]
+    explanation: str
+
+response_format = {
+  "type": "json_schema",
+  "json_schema": {
+    "name": "response",
+    "strict": True,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "argument": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "proposition": {
+                "type": "string"
+              },
+              "justifier": {
+                "type": "string"
+              }
+            },
+            "required": ["proposition", "justifier"],
+            "additionalProperties": False
+          }
+        },
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "required": ["argument", "explanation"],
+      "additionalProperties": False
+    }
+  }
+}
+
 @app.post("/api/chat")
 async def chat(prompt: Prompt):
-    messages = [{"role": "system", "content": "You are a helpful assistant."}] + prompt.history
+    messages = [{
+        "role": "system",
+        "content": "You are a helpful assistant. Respond with JSON."
+    }] + prompt.history
     logger.debug(f"messages {len(messages)}")
     response = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=messages
+        model="gpt-4o",
+        messages=messages,
+        response_format=response_format,
     )
     return {"reply": response.choices[0].message.content}
