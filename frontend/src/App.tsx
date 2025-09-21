@@ -11,11 +11,9 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-var md
-
 function responseMarkdown(response) {
   const responseObject = JSON.parse(response)
-  md = '**Argument:**\n\n'
+  let md = '**Argument:**\n\n'
 
   const argumentMarkdown = argument => {
     argument.forEach(item => {
@@ -30,7 +28,7 @@ function responseMarkdown(response) {
     md += '**Counter-Argument:**\n\n'
     argumentMarkdown(responseObject.counter_argument)
   }
-  md += `**Explanation:**  \n${responseObject.explanation}\n`
+  md += `**Explanation:**\n${responseObject.explanation}\n`
   return md
 }
 
@@ -68,8 +66,6 @@ function App() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  window.xmessages = messages
-
   return (
     <div className="px-4  pt-4 max-w-[720px] size-full max-h-[90vh] flex flex-col">
       <div className="rounded px-4 h-screen overflow-y-scroll bg-white dark:bg-zinc-800">
@@ -87,14 +83,6 @@ function App() {
               }`}>
               {m.role === "user" ? "You" : "Dianoia"}
             </p>
-            {/* <p
-              className={`inline-block px-3 py-1 rounded-md ${
-                m.role === "user"
-                  ? "bg-indigo-600"
-                  : "bg-slate-200 text-slate-700 dark:bg-gray-600 dark:text-slate-100"
-              }`}>
-              {m.content}
-            </p> */}
             {m.role === "assistant" ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
