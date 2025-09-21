@@ -5,11 +5,25 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 
 type Message = {
-  role: 'user' | 'assistant'
-  content: string
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+function responseMarkdown(response) {
+  const responseObject = JSON.parse(response)
+  let md = '**Argument:**\n\n'
+
+  responseObject.argument.forEach(item => {
+    md += `${item.index}. `
+    md += `${item.proposition} `
+    md += `_[${item.justifier}]_\n\n`
+  })
+  md += `**Explanation:**  \n${responseObject.explanation}\n`
+  console.log('md', md)
+  return md
+}
 
 function App() {
   const [prompt, setPrompt] = useState<string>('')
@@ -73,7 +87,7 @@ function App() {
             {m.role === "assistant" ? (
               <div className="bg-slate-100 dark:bg-zinc-700 rounded-md text-zinc-700 p-3">
                 <div className="prose dark:prose-invert max-w-none">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                  <ReactMarkdown>{responseMarkdown(m.content)}</ReactMarkdown>
                 </div>
               </div>
             ) : (
