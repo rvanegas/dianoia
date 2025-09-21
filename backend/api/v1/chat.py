@@ -57,11 +57,14 @@ response_format = {
   }
 }
 
+with open('api/v1/system_prompt.txt', 'r') as file:
+    system_prompt = file.read()
+
 @router.post("/chat")
 async def chat(prompt: Prompt):
     messages = [{
         "role": "system",
-        "content": "You are a helpful assistant. Respond with JSON."
+        "content": system_prompt
     }] + prompt.history
     logger.debug(f"messages {len(messages)}")
     response = client.chat.completions.create(
