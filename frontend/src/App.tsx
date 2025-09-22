@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 
+import { responseMarkdown, exportMarkdown } from './markdown.tsx'
+
 type Message = {
   role: 'user' | 'assistant';
   content: string;
@@ -11,25 +13,23 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-function responseMarkdown(response) {
-  const responseObject = JSON.parse(response)
-  let md = '**Argument:**\n\n'
+function ExportButton({textCallback}) {
+  const [copied, setCopied] = useState<boolean>(false)
 
-  const argumentMarkdown = argument => {
-    argument.forEach(item => {
-      md += `${item.index}. `
-      md += `${item.proposition} `
-      md += `_[${item.justifier}]_\n\n`
-    })
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(textCallback())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 5000)
   }
 
-  argumentMarkdown(responseObject.argument)
-  if (responseObject.counter_argument.length != 0) {
-    md += '**Counter-Argument:**\n\n'
-    argumentMarkdown(responseObject.counter_argument)
-  }
-  md += `**Explanation:**\n${responseObject.explanation}\n`
-  return md
+  return (
+    <button
+      onClick={handleCopy}
+      className="bg-indigo-600 text-white font-bold
+        px-4 py-2 rounded-md hover:bg-indigo-500">
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
 }
 
 function App() {
@@ -128,6 +128,7 @@ function App() {
           className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-md hover:bg-indigo-500">
           Send
         </button>
+        <ExportButton textCallback={() => exportMarkdown(messages)}/>
       </div>
     </div>
   )
