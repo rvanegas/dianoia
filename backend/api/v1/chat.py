@@ -5,7 +5,8 @@ from config import OPENAI_API_KEY
 from core.utils import logger
 
 from .system_prompt import system_prompt
-from models.argument import response_format, ArgumentResponse
+from core.utils import logger
+from models.argument import response_format, Response, proofreadResponse
 
 router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -26,4 +27,12 @@ async def chat(prompt: Prompt):
         response_format=response_format,
     )
     content = response.choices[0].message.content
+    response = Response.parse_raw(content)
+    prev_responses = [m for m in messages if m["role"] == "assistant"]
+    prev_response = prev_responses[-1] if prev_responses else None
+    if prev_response:
+        errors = proofreadResponse(prev_response, response)
+        if errors:
+            logger.debug("errors:")
+            logger.debug(errors)
     return {"reply": content}
