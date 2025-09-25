@@ -136,10 +136,10 @@ def proofreadResponse(prevResponse, response, thesis, counter_thesis):
             errors[label].append(conclusion_error)
 
     # Agreement of conclusions with theses
-    if thesis != response.argument[-1].proposition:
+    if response.argument[-1] and thesis != response.argument[-1].proposition:
         errors['argument'].append("Argument conclusion does not match thesis.")
 
-    if counter_thesis != response.counter_argument[-1].proposition:
+    if response.counter_argument[-1] and counter_thesis != response.counter_argument[-1].proposition:
         errors['argument'].append("Counter-argument conclusion does not match counter-thesis.")
 
     return errors
