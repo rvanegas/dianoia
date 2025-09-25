@@ -1,38 +1,39 @@
 from pydantic import BaseModel
+from core.utils import logger
 
 argument_format = {
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "index": {"type": "string"},
-      "proposition": {"type": "string"},
-      "justifiers": {
-        "type": "array",
-        "items": {"type": "string"}
-      },
-    },
-    "required": ["index", "proposition", "justifiers"],
-    "additionalProperties": False
-  }
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "index": {"type": "string"},
+            "proposition": {"type": "string"},
+            "justifiers": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+        },
+        "required": ["index", "proposition", "justifiers"],
+        "additionalProperties": False
+    }
 }
 
-response_format = {
-  "type": "json_schema",
-  "json_schema": {
-    "name": "response",
-    "strict": True,
-    "schema": {
-      "type": "object",
-      "properties": {
-        "argument": argument_format,
-        "counter_argument": argument_format,
-        "explanation": {"type": "string"}
-      },
-      "required": ["argument", "counter_argument", "explanation"],
-      "additionalProperties": False
+argument_response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "response",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "argument": argument_format,
+                "counter_argument": argument_format,
+                "explanation": {"type": "string"}
+            },
+            "required": ["argument", "counter_argument", "explanation"],
+            "additionalProperties": False
+        }
     }
-  }
 }
 
 class Step(BaseModel):
@@ -40,12 +41,12 @@ class Step(BaseModel):
     proposition: str
     justifiers: list[str]
 
-class Response(BaseModel):
+class ArgumentResponse(BaseModel):
     argument: list[Step]
     counter_argument: list[Step]
     explanation: str
 
-def proofreadResponse(prevResponse, response):
+def proofreadResponse(prevResponse, response, thesis, counter_thesis):
     def verify_uniqueness(steps):
         seen = set()
         duplicates = []
@@ -108,30 +109,37 @@ def proofreadResponse(prevResponse, response):
         prev_steps = getattr(prevResponse, label, [])
         curr_steps = getattr(response, label, [])
 
-        # 1. Uniqueness
+        # Uniqueness
         duplicates = verify_uniqueness(curr_steps)
         if duplicates:
             errors[label].append(f"Duplicate propositions found at indices: {duplicates}")
 
-        # 2. Index stability
+        # Index stability
         mismatches = verify_index_stability(prev_steps, curr_steps)
         if mismatches:
             errors[label].append(f"Index changes detected: {mismatches}")
 
-        # 3. Contribution to conclusion
+        # Contribution to conclusion
         unused = verify_conclusion_dependency(curr_steps)
         if unused:
             errors[label].append(f"Propositions not contributing to conclusion: {unused}")
 
-        # 4. Order conformance
+        # Order conformance
         order_violations = verify_dependency_order(curr_steps)
         if order_violations:
             formatted = [(s, j, reason) for s, j, reason in order_violations]
             errors[label].append(f"Dependency order violations: {formatted}")
 
-        # 5. Conclusion position
+        # Conclusion position
         conclusion_error = verify_final_conclusion(curr_steps)
         if conclusion_error:
             errors[label].append(conclusion_error)
+
+    # Agreement of conclusions with theses
+    if thesis != response.argument[-1].proposition:
+        errors['argument'].append("Argument conclusion does not match thesis.")
+
+    if counter_thesis != response.counter_argument[-1].proposition:
+        errors['argument'].append("Counter-argument conclusion does not match counter-thesis.")
 
     return errors
