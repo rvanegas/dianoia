@@ -1,6 +1,24 @@
 from pydantic import BaseModel
 from core.utils import logger
 
+thesis_response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "response",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "thesis": {"type": "string"},
+                "counter_thesis": {"type": "string"},
+                "explanation": {"type": "string"}
+            },
+            "required": ["thesis", "counter_thesis", "explanation"],
+            "additionalProperties": False
+        }
+    }
+}
+
 argument_format = {
     "type": "array",
     "items": {
@@ -35,6 +53,11 @@ argument_response_format = {
         }
     }
 }
+
+class ThesisResponse(BaseModel):
+    thesis: str
+    counter_thesis: str
+    explanation: str
 
 class Step(BaseModel):
     index: str
@@ -141,10 +164,10 @@ def proofreadResponse(messages, prompt, content):
             errors[label].append(conclusion_error)
 
     # Agreement of conclusions with theses
-    if response.argument[-1] and thesis != response.argument[-1].proposition:
+    if len(response.argument) and theses.thesis != response.argument[-1].proposition:
         errors['argument'].append("Argument conclusion does not match thesis.")
 
-    if response.counter_argument[-1] and counter_thesis != response.counter_argument[-1].proposition:
+    if len(response.counter_argument) > 0 and theses.counter_thesis != response.counter_argument[-1].proposition:
         errors['argument'].append("Counter-argument conclusion does not match counter-thesis.")
 
     return errors

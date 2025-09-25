@@ -19,7 +19,7 @@ function ExportButton({textCallback}) {
   const handleCopy = async () => {
     await navigator.clipboard.writeText(textCallback())
     setCopied(true)
-    setTimeout(() => setCopied(false), 5000)
+    setTimeout(() => setCopied(false), 3000)
   }
 
   return (
@@ -63,7 +63,8 @@ function App() {
   }
 
   const handleBack = () => {
-    setMessages(messages.slice(0, -2))
+    const lastUserMessageIndex = messages.findLastIndex(m => m.role == 'user')
+    setMessages(messages.slice(0, lastUserMessageIndex))
   }
 
   useEffect(() => {
