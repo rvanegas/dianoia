@@ -22,7 +22,3 @@ class ThesisResponse(BaseModel):
     thesis: str
     counter_thesis: str
     explanation: str
-
-class ThesisHistory(BaseModel):
-    role: str
-    content: ThesisResponse
