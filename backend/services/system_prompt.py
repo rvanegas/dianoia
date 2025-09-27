@@ -53,6 +53,11 @@ specific previous propositions and how. If premise, set "justifier" an empty
 array. If not a premise, set "justifier" to array of indices for the
 propositions from which it is derived.
 
+For every proposition that is a premise, set the property "truth" to a number
+from 0.0 to 1.0 corresponding to how likely the proposition is to be true. For
+every proposition that is inferred, set the property "truth" to a number
+from 0.0 to 1.0 corresponding to the degree to which the inference is valid.
+
 The "explanation" should offer instructive commentary to the user to
 facilitate further development of the argument. The user will see the argument
 and counter-argument immediately above the explanation, so it should not restate
