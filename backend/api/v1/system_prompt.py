@@ -78,4 +78,8 @@ JSON properties, separately. If there is a counter-argument, its propositions
 should be in the "counter_argument" property. If not, leave it as an empty
 list.
 
+The first response to develop the arguments should introduce only two or three
+propositions per argument. Later responses should introduce only one or two
+propositions at a time.
+
 """
