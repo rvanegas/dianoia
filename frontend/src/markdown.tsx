@@ -4,8 +4,6 @@ export function thesisMarkdown(response) {
   md += responseObject.thesis + '\n\n'
   md += '**Counter-Thesis:**\n\n'
   md += responseObject.counter_thesis + '\n\n'
-  md += '**Explanation:**\n\n'
-  md += responseObject.explanation
   return md
 }
 
@@ -32,7 +30,6 @@ export function developmentMarkdown(response) {
     md += '**Counter-Argument:**\n\n'
     argumentMarkdown(responseObject.counter_argument)
   }
-  md += `**Explanation:**\n\n${responseObject.explanation}\n`
   return md
 }
 
