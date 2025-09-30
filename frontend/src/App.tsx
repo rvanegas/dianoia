@@ -13,12 +13,17 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500 text-white
+  font-bold px-4 py-2 rounded-md`
+const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
+  hover:text-white hover:bg-gray-500`
+const headingClassNames = `text-lg font-bold`
+
 function ExpandPremiseButton({handleExpandPremise}) {
   return (
     <button
       onClick={handleExpandPremise}
-      className="inline text-xs px-1 py-0.5 ml-1
-        hover:text-white hover:bg-gray-500">
+      className={smallButtonClassNames}>
       Expand
     </button>
   )
@@ -28,8 +33,7 @@ function ExpandInferenceButton({handleExpandInference}) {
   return (
     <button
       onClick={handleExpandInference}
-      className="inline text-xs px-1 py-0.5 ml-1
-        hover:text-white hover:bg-gray-500">
+      className={smallButtonClassNames}>
       Explicit
     </button>
   )
@@ -39,9 +43,9 @@ function Theses({content}) {
   const theses = JSON.parse(content)
   return (
     <div>
-      <div className="text-lg font-bold">Thesis:</div>
+      <div className={headingClassNames}>Thesis:</div>
       <div>{theses.thesis}</div>
-      <div className="text-lg font-bold">Counter-Thesis:</div>
+      <div className={headingClassNames}>Counter-Thesis:</div>
       <div>{theses.counter_thesis}</div>
     </div>
   )
@@ -75,13 +79,13 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
   return (
     <div>
       <div>
-        <div className="text-lg font-bold">Argument:</div>
+        <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode(arguments_.argument)}</div>
       </div>
       {
         arguments_.counter_argument.length == 0 ? undefined :
         <div>
-          <div className="text-lg font-bold">Counter-Argument:</div>
+          <div className={headingClassNames}>Counter-Argument:</div>
           <div>{argumentNode(arguments_.counter_argument)}</div>
         </div>
       }
@@ -100,8 +104,7 @@ function ExportButton({textCallback}) {
   return (
     <button
       onClick={handleCopy}
-      className="bg-indigo-600 text-white font-bold
-        px-4 py-2 rounded-md hover:bg-indigo-500">
+      className={bigButtonClassNames}>
       {copied ? 'Copied' : 'Copy'}
     </button>
   )
@@ -232,14 +235,12 @@ function App() {
           />
           <button
             onClick={() => handleSend(prompt)}
-            className="bg-indigo-600 text-white font-bold
-              px-4 py-2 rounded-md hover:bg-indigo-500">
+            className={bigButtonClassNames}>
             Send
           </button>
           <button
             onClick={handleBack}
-            className="bg-indigo-600 text-white font-bold
-              px-4 py-2 rounded-md hover:bg-indigo-500">
+            className={bigButtonClassNames}>
             Back
           </button>
           <ExportButton textCallback={() => exportMarkdown(messages)}/>
