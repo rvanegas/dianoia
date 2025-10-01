@@ -332,9 +332,34 @@ function App() {
   )
 
   const theses = {
-    thesis: "foo", 
-    counter_thesis: "counter-foo", 
-    presuppositions: "bar"
+    thesis: "Foo", 
+    counter_thesis: "Counter-Foo", 
+    presuppositions: "Bar"
+  }
+
+  const arguments_ = {
+    argument: [
+      {
+        index: "A",
+        proposition: "Foo",
+        justifiers: [],
+        truth: 0.9
+      }
+    ],
+    counter_argument: [
+      {
+        index: "B",
+        proposition: "Baz",
+        justifiers: [],
+        truth: 0.7
+      },
+      {
+        index: "C",
+        proposition: "Counter-Foo",
+        justifiers: ["B"],
+        truth: 0.8
+      }
+    ]
   }
 
   const newMessagesDiv = (
@@ -342,6 +367,12 @@ function App() {
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w-[75%] text-left my-2 self-start">
           <Theses content={JSON.stringify(theses)}/>
+          <Arguments
+            content={JSON.stringify(arguments_)}
+            handleExpandPremise={handleExpandPremise}
+            handleExpandInference={handleExpandInference}
+          >
+          </Arguments>
         </div>
       </div>
       <div ref={bottomRef} />
