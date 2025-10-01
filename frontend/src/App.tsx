@@ -178,6 +178,19 @@ function App() {
     bottomRef.current?.scrollIntoView({behavior: 'smooth'})
   }, [messages, loading])
 
+  const loadingIndicator = loading && (
+    <div className="mt-2 flex items-center space-x-4">
+      <span className="text-sm text-zinc-400 italic">
+        Dianoia is thinking
+      </span>
+      <span className="typing-indicator">
+        <span className="typing-dot"></span>
+        <span className="typing-dot"></span>
+        <span className="typing-dot"></span>
+      </span>
+    </div>
+  )
+
   // window.xmessages = messages
 
   const chatDiv = (
@@ -223,18 +236,7 @@ function App() {
               )}
             </div>
           ))}
-          {loading && (
-            <div className="mt-2 flex items-center space-x-4">
-              <span className="text-sm text-zinc-400 italic">
-                Dianoia is thinking
-              </span>
-              <span className="typing-indicator">
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
-              </span>
-            </div>
-          )}
+          {loadingIndicator}
           <div ref={bottomRef} />
         </div>
         <div className="p-4 flex gap-2 w-[100%] flex-wrap">
@@ -334,31 +336,6 @@ function App() {
     </div>
   )
 
-  const arguments_ = {
-    argument: [
-      {
-        index: "A",
-        proposition: "Foo",
-        justifiers: [],
-        truth: 0.9
-      }
-    ],
-    counter_argument: [
-      {
-        index: "B",
-        proposition: "Baz",
-        justifiers: [],
-        truth: 0.7
-      },
-      {
-        index: "C",
-        proposition: "Counter-Foo",
-        justifiers: ["B"],
-        truth: 0.8
-      }
-    ]
-  }
-
   const newMessagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
       <div className="p-3 prose dark:prose-invert max-w-none">
@@ -372,18 +349,7 @@ function App() {
           </Arguments>
         </div>
       </div>
-      {loading && (
-        <div className="mt-2 flex items-center space-x-4">
-          <span className="text-sm text-zinc-400 italic">
-            Dianoia is thinking
-          </span>
-          <span className="typing-indicator">
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
-          </span>
-        </div>
-      )}
+      {loadingIndicator}
       <div ref={bottomRef} />
     </div>
   )
