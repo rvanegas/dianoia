@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 from openai import OpenAI
 from config import OPENAI_API_KEY
 from core.utils import logger
@@ -6,16 +5,7 @@ import json
 
 from core.utils import logger
 from .system_prompt import system_welcome_prompt, system_development_prompt
-from models.argument import argument_response_format, theses_response_format, proofread_response
-
-class Prompt(BaseModel):
-    history: object = {}
-
-class ThesesPrompt(BaseModel):
-    thesis: str
-    counter_thesis: str
-    presuppositions: str
-    prompt: str
+from models.argument import ArgumentPrompt, ThesesPrompt, argument_response_format, theses_response_format, proofread_response
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -36,31 +26,30 @@ def develop_theses(theses_prompt):
     content = response.choices[0].message.content
     return content
 
-def develop_argument(prompt):
-    welcome = True
-    response_format=thesis_response_format
+def develop_argument(argument_prompt):
+    # trials = 1
     messages = [{
         "role": "system",
         "content": system_welcome_prompt
-    }] + prompt.history[:1]
-    if len(prompt.history) > 2:
-        welcome = False
-        messages += [{
-            "role": "system",
-            "content": system_development_prompt
-        }] + prompt.history[1:]
-        response_format=argument_response_format
-
-    trials = 0
+    },
+    {
+        "role": "system",
+        "content": system_development_prompt
+    },
+    {
+        "role": "user",
+        "content": argument_prompt.json()
+    }]
     while True:
-        trials += 1
+        # trials += 1
         logger.debug(f"messages {len(messages)}")
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
-            response_format=response_format,
+            response_format=argument_response_format,
         )
         content = response.choices[0].message.content
+        break
 
         if welcome:
             break
@@ -87,6 +76,5 @@ def develop_argument(prompt):
                 "role": "system",
                 "content": json.dumps(errors)
             }]
-
 
     return content

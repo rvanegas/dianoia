@@ -1,13 +1,14 @@
 from fastapi import APIRouter
 
 from core.utils import logger
-from services.conversation import develop_argument, develop_theses, Prompt, ThesesPrompt
+from services.conversation import develop_argument, develop_theses
+from models.argument import ArgumentPrompt, ThesesPrompt
 
 router = APIRouter()
 
-@router.post("/chat")
-async def chat(prompt: Prompt):
-    content = develop_argument(prompt)
+@router.post("/argument")
+async def chat(argumentPrompt: ArgumentPrompt):
+    content = develop_argument(argumentPrompt)
     return {"reply": content}
 
 @router.post('/theses')
