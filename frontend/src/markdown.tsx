@@ -1,14 +1,14 @@
-export function thesisMarkdown(response) {
-  const responseObject = JSON.parse(response)
+export function thesisMarkdown(theses) {
   let md = '**Thesis:**\n\n'
-  md += responseObject.thesis + '\n\n'
+  md += theses.thesis + '\n\n'
   md += '**Counter-Thesis:**\n\n'
-  md += responseObject.counter_thesis + '\n\n'
+  md += theses.counter_thesis + '\n\n'
+  md += '**Presuppositions:**\n\n'
+  md += theses.presuppositions + '\n\n'
   return md
 }
 
-export function developmentMarkdown(response) {
-  const responseObject = JSON.parse(response)
+export function developmentMarkdown(args) {
   let md = '**Argument:**\n\n'
   let justifier = ''
 
@@ -21,34 +21,23 @@ export function developmentMarkdown(response) {
       } else {
         justifier = `from ${item.justifiers.join(', ')}`
       }
-      md += `_[${justifier}]_\n\n`
+      md += `_[${justifier}; ${item.truth}]_\n\n`
     })
   }
 
-  argumentMarkdown(responseObject.argument)
-  if (responseObject.counter_argument.length != 0) {
+  argumentMarkdown(args.argument)
+  if (args.counter_argument.length != 0) {
     md += '**Counter-Argument:**\n\n'
-    argumentMarkdown(responseObject.counter_argument)
+    argumentMarkdown(args.counter_argument)
   }
   return md
 }
 
-export function exportMarkdown(messages) {
+export function exportMarkdown(theses, args) {
   let md = ''
-  messages.map((message, i) => {
-    if (i == 1) {
-      md += '## Dianoia:\n\n'
-      md += thesisMarkdown(message.content)
-      md += '\n\n'
-    } else if (message.role == 'assistant') {
-      md += '## Dianoia:\n\n'
-      md += developmentMarkdown(message.content)
-      md += '\n\n'
-    } else {
-      md += '## You:\n\n'
-      md += message.content
-      md += '\n\n'
-    }
-  })
+  md += thesisMarkdown(theses)
+  md += '\n\n'
+  md += developmentMarkdown(args)
+  md += '\n\n'
   return md
 }

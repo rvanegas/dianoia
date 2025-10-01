@@ -13,7 +13,7 @@ type Message = {
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500 
+const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
 const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
@@ -262,7 +262,7 @@ function App() {
             className={bigButtonClassNames}>
             Back
           </button>
-          <ExportButton textCallback={() => exportMarkdown(messages)}/>
+          <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
         </div>
       </div>
     </div>
@@ -332,7 +332,7 @@ function App() {
         className={bigButtonClassNames}>
         Back
       </button>
-      <ExportButton textCallback={() => exportMarkdown(messages)}/>
+      <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
     </div>
   )
 
