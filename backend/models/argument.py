@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from core.utils import logger
 
-thesis_response_format = {
+theses_response_format = {
     "type": "json_schema",
     "json_schema": {
         "name": "response",
@@ -11,9 +11,9 @@ thesis_response_format = {
             "properties": {
                 "thesis": {"type": "string"},
                 "counter_thesis": {"type": "string"},
-                "presupposition": {"type": "string"}
+                "presuppositions": {"type": "string"}
             },
-            "required": ["thesis", "counter_thesis", "presupposition"],
+            "required": ["thesis", "counter_thesis", "presuppositions"],
             "additionalProperties": False
         }
     }
