@@ -3,8 +3,8 @@ export function thesisMarkdown(theses) {
   md += theses.thesis + '\n\n'
   md += '**Counter-Thesis:**\n\n'
   md += theses.counter_thesis + '\n\n'
-  md += '**Presuppositions:**\n\n'
-  md += theses.presuppositions + '\n\n'
+  md += '**Presupposition:**\n\n'
+  md += theses.presupposition + '\n\n'
   return md
 }
 

@@ -11,9 +11,9 @@ theses_response_format = {
             "properties": {
                 "thesis": {"type": "string"},
                 "counter_thesis": {"type": "string"},
-                "presuppositions": {"type": "string"}
+                "presupposition": {"type": "string"}
             },
-            "required": ["thesis", "counter_thesis", "presuppositions"],
+            "required": ["thesis", "counter_thesis", "presupposition"],
             "additionalProperties": False
         }
     }
@@ -57,7 +57,7 @@ argument_response_format = {
 class ThesisResponse(BaseModel):
     thesis: str
     counter_thesis: str
-    presuppositions: str
+    presupposition: str
 
 class Step(BaseModel):
     index: str
