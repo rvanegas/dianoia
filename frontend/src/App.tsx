@@ -40,7 +40,9 @@ function ExpandInferenceButton({handleExpandInference}) {
 }
 
 function Theses({content}) {
-  const theses = JSON.parse(content)
+  console.log('c', content)
+  const theses = JSON.parse(content.content)
+  console.log('y', theses)
   return (
     <div>
       <div className={headingClassNames}>Thesis:</div>
@@ -329,6 +331,29 @@ function App() {
     </div>
   )
 
+  const theses = {
+    thesis: "foo", 
+    counter_thesis: "counter-foo", 
+    presuppositions: "bar"
+  }
+
+  const thesesContent = {
+    content: JSON.stringify(theses)
+  }
+
+  console.log('t', thesesContent)
+
+  const newMessagesDiv = (
+    <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5 md:px-20">
+      <div className="bg-slate-100 dark:bg-zinc-700 rounded-2xl rounded-tl-none text-zinc-700 p-3">
+        <div className="prose dark:prose-invert max-w-none">
+          <Theses content={{content: JSON.stringify(theses)}}/>
+        </div>
+      </div>
+      <div ref={bottomRef} />
+    </div>
+  )
+
   const frameDiv = (
     <div className="flex w-[100dvw] h-[100dvh]">
       <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 lg:block hidden">
@@ -337,7 +362,7 @@ function App() {
         </button>
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
-        {messagesDiv}
+        {newMessagesDiv}
         {userDiv}
       </div>
     </div>
