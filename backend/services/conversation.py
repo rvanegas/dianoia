@@ -11,7 +11,31 @@ from models.argument import argument_response_format, thesis_response_format, pr
 class Prompt(BaseModel):
     history: object = {}
 
+class ThesisPrompt(BaseModel):
+    thesis: str
+    counter_thesis: str
+    presupposition: str
+    prompt: str
+
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+def develop_thesis(thesis_prompt):
+    response_format=thesis_response_format
+    messages = [{
+        "role": "system",
+        "content": system_welcome_prompt
+    },
+    {
+        "role": "user",
+        "content": thesis_prompt.json().dumps()
+    }]
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        response_format=thesis_response_format,
+    )
+    content = response.choices[0].message.content
+    return content
 
 def develop_argument(prompt):
     welcome = True
