@@ -47,14 +47,14 @@ function ExpandInferenceButton({handleExpandInference}) {
 
 function Theses({content}) {
   return (
-    <div>
+    <>
       <div className={headingClassNames}>Thesis:</div>
       <div>{content.thesis}</div>
       <div className={headingClassNames}>Counter-Thesis:</div>
       <div>{content.counter_thesis}</div>
       <div className={headingClassNames}>Presupposition:</div>
       <div>{content.presupposition}</div>
-    </div>
+    </>
   )
 }
 
@@ -82,7 +82,7 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
   }
 
   return (
-    <div>
+    <>
       <div>
         <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode(content.argument)}</div>
@@ -94,7 +94,7 @@ function Arguments({content, handleExpandPremise, handleExpandInference}) {
           <div>{argumentNode(content.counter_argument)}</div>
         </div>
       }
-    </div>
+    </>
   )
 }
 
@@ -355,6 +355,12 @@ function App() {
             >
             </Arguments>
           }
+          {!lastPrompt ? undefined : 
+            <>
+              <div className={headingClassNames}>Last:</div>
+              <div>{lastPrompt}</div>
+            </>
+          }
         </div>
       </div>
       {loadingIndicator}
@@ -371,7 +377,6 @@ function App() {
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
         {newMessagesDiv}
-        {!lastPrompt ? undefined : <div>Last: {lastPrompt}</div>}
         {userDiv}
       </div>
     </div>
