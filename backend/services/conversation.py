@@ -30,10 +30,6 @@ def develop_argument(argument_prompt):
     # trials = 1
     messages = [{
         "role": "system",
-        "content": system_welcome_prompt
-    },
-    {
-        "role": "system",
         "content": system_development_prompt
     },
     {
