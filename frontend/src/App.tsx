@@ -17,7 +17,24 @@ type ThesesType = {
   presupposition: string
 }
 
-type UserMode = 'thesis' | 'development' | 'inputProposition'
+type ArgumentType = {
+  index: string
+  proposition: string
+  justifiers: string[]
+  truth: number
+}
+
+type ArgsType = {
+  argument: ArgumentType
+  counter_argument: ArgumentType
+}
+
+type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
+
+// thesis -> waiting -> thesis
+// thesis -> waiting -> development
+// development -> waiting -> development
+// development -> inputProposition -> waiting -> development
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -48,59 +65,59 @@ function App() {
   const [prompt, setPrompt] = useState<string>('')
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [lastPrompt, setLastPrompt] = useState<string>('')
-  const [theses, setTheses] = useState<ThesesType>({thesis:'', counter_thesis: '', presupposition: ''})
-  const [args, setArgs] = useState({argument: [], counter_argument: []})
-  const [messages, setMessages] = useState<Message[]>([])
+  const [theses, setTheses] = useState<ThesesType>({
+    thesis:'', counter_thesis: '', presupposition: ''})
+  const [args, setArgs] = useState<ArgsType>({
+    argument: [], counter_argument: []})
   const [loading, setLoading] = useState<boolean>(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async (content) => {
-    if (theses.thesis != '') {
-      handleArgsSend(content)
-      return
-    }
+  const handleEnter = async (content) => {
     if (!content.trim()) return
     setLastPrompt(content)
     setPrompt('')
     setLoading(true)
-    const thesesPrompt = {prompt: content, ...theses}
-    try {
-      const url = `${VITE_API_BASE_URL}/api/v1/theses`
-      const response = await axios.post(url, thesesPrompt)
-      setTheses(JSON.parse(response.data.reply))
-    } catch (error) {
-      console.error('Error: ', error)
-    } finally {
-      setLoading(false)
+    let apiPrompt = {prompt: content, ...theses}
+    if (theses.thesis) {
+      apiPrompt = {...apiPrompt, ...args}
     }
-  }
-
-  const handleArgsSend = async (content) => {
-    if (!content.trim()) return
-    setLastPrompt(content)
-    setPrompt('')
-    setLoading(true)
-    const argumentPrompt = {prompt: content, ...theses, ...args}
+    const path = theses.thesis ? '/api/v1/argument' : '/api/v1/theses'
+    const url = VITE_API_BASE_URL + path
+    setUserMode('waiting')
     try {
-      const url = `${VITE_API_BASE_URL}/api/v1/argument`
-      const response = await axios.post(url, argumentPrompt)
-      setArgs(JSON.parse(response.data.reply))
-    } catch (error) {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+      if (!responseObject.argument) {
+        setTheses(responseObject)
+        setUserMode('thesis')
+      }
+      else {
+        setArgs(responseObject)
+        setUserMode('development')
+      }
+    } 
+    catch (error) {
       console.error('Error: ', error)
-    } finally {
+      if (theses.argument) {
+        setUserMode('development')
+      }
+      else {
+        setUserMode('thesis')
+      }
+    } 
+    finally {
       setLoading(false)
-      setUserMode('development')
     }
   }
 
   const handleExpandPremise = async (index) => {
-    handleSend(`Introduce one or two premises from
+    handleEnter(`Introduce one or two premises from
       which proposition (${index}) is inferred.`
     )
   }
 
   const handleExpandInference = async (index) => {
-    handleSend(`If the inference from which proposition
+    handleEnter(`If the inference from which proposition
       (${index}) is inferred is not strictly deductive, introduce
       one or two premises to make the inference more explicit.`
     )
@@ -108,7 +125,10 @@ function App() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({behavior: 'smooth'})
-  }, [messages, loading])
+  }, [loading])
+
+  // useEffect(() => {
+  // }, [theses, args])
 
   const loadingIndicator = loading && (
     <div className="mt-2 flex items-center space-x-4">
@@ -123,8 +143,6 @@ function App() {
     </div>
   )
 
-  // window.xmessages = messages
-
   const placeholderText =
     userMode == 'thesis' ? 'Enter thesis' :
     userMode == 'inputProposition' ?
@@ -135,11 +153,11 @@ function App() {
       <input
         className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
         value={prompt}
-        disabled={userMode == 'development'}
+        disabled={userMode == 'development' || userMode == 'waiting'}
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-          if (e.key == "Enter") {
-            handleSend(prompt)
+          if (e.key == 'Enter') {
+            handleEnter(prompt)
             e.preventDefault()
           }
         }}
@@ -149,14 +167,27 @@ function App() {
             'Enter proposition' : ''
         }
       />
-      <button
-        onClick={() => handleSend(prompt)}
-        className={bigButtonClassNames}>
-        Enter
-      </button>
+      {userMode == 'development' || userMode == 'waiting' ? 
+        undefined :
+        <button
+          onClick={() => handleEnter(prompt)}
+          className={bigButtonClassNames}>
+          Enter
+        </button>
+      }
+      {userMode != 'development' ?
+        undefined :
+        <button
+          onClick={() => setUserMode('inputProposition')}>
+          input
+        </button>
+      }
       <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
     </div>
   )
+
+  // console.log('t', theses)
+  // console.log('a', args)
 
   const argumentNode = argument => {
     const argumentSteps = argument.map((step, key) => {
@@ -187,17 +218,7 @@ function App() {
   const argumentsDiv = (
     <>
       <div>
-        <div className={headingClassNames}>
-          Argument: 
-          <button
-            className={smallButtonClassNames + " font-normal"}
-            onClick={() => {
-              setUserMode('inputProposition')
-              // disable send button
-            }}>
-            input
-          </button>
-        </div>
+        <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode(args.argument)}</div>
       </div>
       <div>
@@ -218,18 +239,20 @@ function App() {
     </>
   )
 
+  const lastDiv = (
+    <>
+      <div className={headingClassNames}>Prompt:</div>
+      <div>{lastPrompt}</div>
+    </>
+  )
+
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
           {!theses.thesis ? undefined : thesesDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
-          {!lastPrompt ? undefined : 
-            <>
-              <div className={headingClassNames}>Last:</div>
-              <div>{lastPrompt}</div>
-            </>
-          }
+          {!lastPrompt ? undefined : lastDiv}
         </div>
       </div>
       {loadingIndicator}
