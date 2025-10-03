@@ -65,7 +65,7 @@ with one, two, or three premises each, and the thesis and counter-thesis
 as their respective conclusions. If there is an argument, then an incremental
 change may be made to one of the arguments as instructed by the user prompt.
 
-The argument and the counter-argument should be in their corresponding
+The "argument" and the "counter_argument" should be in their corresponding
 JSON properties, separately.
 
 The JSON response should express the state of the argument so far in the
@@ -93,12 +93,24 @@ specific previous propositions and how. If premise, set "justifier" an empty
 array. If not a premise, set "justifier" to array of indices for the
 propositions from which it is derived.
 
-For every proposition that is a premise, set the property "truth" to a number
-from 0.0 to 1.0 corresponding to how likely the proposition is to be true. For
-every proposition that is inferred, set the property "truth" to a number
-from 0.0 to 1.0 corresponding to the degree to which the inference is valid.
+For every proposition, set the property "truth" to a number from 0.0 to 1.0
+corresponding to how likely the proposition is to be true. 
+
+For every proposition that is inferred, set the property "valid" to a number
+from 0.0 to 1.0 corresponding to the degree to which the inference is valid,
+independently of whether it is true. Deductive inference should be 1.0, even
+if derived from false premises. Inference that is not perfectly truth-
+preserving because it relies on implicit premises, such as induction or
+abduction should have values less than 1.0. For premises alone, set "valid"
+to 1.0. This is not meaningful, but instead required since API does not
+permit optional properties in its JSON Schema.
 
 Do not use the presuppostion as an explicit premise in the propositions. It
 is presupposed, which means that its contribution is implicit.
+
+There is also an "assumptions" property which includeds propositions moved
+there by the user. Propositions moved there from either the "argument" or
+the "counter_argument" should be assumed absolutely true by both the
+argument and counter_argument inferences, and may be referenced as justifiers.
 
 """
