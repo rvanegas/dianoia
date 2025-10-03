@@ -51,7 +51,6 @@ function ExportButton({textCallback}) {
     setCopied(true)
     setTimeout(() => setCopied(false), 3000)
   }
-
   return (
     <button
       onClick={handleCopy}
@@ -62,15 +61,14 @@ function ExportButton({textCallback}) {
 }
 
 function App() {
-  const [prompt, setPrompt] = useState<string>('')
   const [userMode, setUserMode] = useState<UserMode>('thesis')
-  const [lastPrompt, setLastPrompt] = useState<string>('')
   const [theses, setTheses] = useState<ThesesType>({
     thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState<ArgsType>({
     argument: [], counter_argument: []})
+  const [lastPrompt, setLastPrompt] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [prompt, setPrompt] = useState<string>('')
 
   const handleEnter = async (content) => {
     if (!content.trim()) return
@@ -123,13 +121,6 @@ function App() {
     )
   }
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({behavior: 'smooth'})
-  }, [loading])
-
-  // useEffect(() => {
-  // }, [theses, args])
-
   const loadingIndicator = loading && (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -170,14 +161,15 @@ function App() {
       {userMode == 'development' || userMode == 'waiting' ? 
         undefined :
         <button
-          onClick={() => handleEnter(prompt)}
-          className={bigButtonClassNames}>
+          className={bigButtonClassNames}
+          onClick={() => handleEnter(prompt)}>
           Enter
         </button>
       }
       {userMode != 'development' ?
         undefined :
         <button
+          className={bigButtonClassNames}
           onClick={() => setUserMode('inputProposition')}>
           input
         </button>
@@ -256,7 +248,6 @@ function App() {
         </div>
       </div>
       {loadingIndicator}
-      <div ref={bottomRef} />
     </div>
   )
 
