@@ -1,42 +1,11 @@
 import './App.css'
+import type { ThesesType, StepType,
+  ArgsType, UserMode } from './types'
 
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
-import ReactMarkdown from 'react-markdown'
 
 import { exportMarkdown } from './markdown.tsx'
-
-type Message = {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-type ThesesType = {
-  thesis: string
-  counter_thesis: string
-  presupposition: string
-}
-
-type StepType = {
-  index: string
-  proposition: string
-  justifiers: string[]
-  truth: number
-  valid: number
-}
-
-type AssumptionType = {
-  index: string
-  proposition: string
-}
-
-type ArgsType = {
-  argument: StepType[]
-  counter_argument: StepType[]
-  assumptions: AssumptionType[]
-}
-
-type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
 
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development
@@ -51,7 +20,7 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function ExportButton({textCallback}) {
+function ExportButton({textCallback}: {textCallback: () => string}) {
   const [copied, setCopied] = useState<boolean>(false)
   const handleCopy = async () => {
     await navigator.clipboard.writeText(textCallback())
@@ -78,47 +47,43 @@ function App() {
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  const handleEnter = async (content) => {
+  const handleEnter = async (content: string) => {
     if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setPrompt('')
-    const callArgument = userMode == 'development' || content == 'Argue.'
+    const oldUserMode = userMode == 'inputProposition' ? 'development' : userMode
+    const newUserMode = content == 'Argue.' ? 'development' : oldUserMode
     let apiPrompt = {prompt: content, ...theses}
-    if (callArgument) {
+    if (newUserMode == 'development') {
       apiPrompt = {...apiPrompt, ...args}
     }
-    const path = callArgument ? '/api/v1/argument' : '/api/v1/theses'
+    const path = newUserMode == 'development' ? '/api/v1/argument' : '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
     setUserMode('waiting')
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
-      if (!responseObject.argument) {
+      if (newUserMode == 'thesis') {
         setTheses(responseObject)
-        setUserMode('thesis')
       }
       else {
         setArgs(responseObject)
         setArgErrors(response.data.errors)
-        setUserMode('development')
       }
     }
     catch (error) {
       console.error('Error: ', error)
-      if (!theses.argument) {
-        setUserMode('thesis')
-      }
-      else {
-        setUserMode('development')
-      }
-    } 
+    }
+    finally {
+      setUserMode(newUserMode)
+    }
   }
 
   const handleArgue = async () => {
     handleEnter('Argue.')
   }
 
-  const handleSupport = async (index, justifiers) => {
+  const handleSupport = async (index: string, justifiers: string[]) => {
     if (justifiers.length == 0) {
       handleEnter(`Introduce one or two premises from
         which proposition (${index}) is inferred.`
@@ -132,13 +97,13 @@ function App() {
     }
   }
 
-  const handleAssume = async (index) => {
+  const handleAssume = async (index: string) => {
     handleEnter(`Move proposition (${index}) to the assumptions. Adjust
       inference relations to ensure that every proposition still contributes
       to the argument's conclusion.`)
   }
 
-  const handleRemove = async (index) => {
+  const handleRemove = async (index: string) => {
     handleEnter(`Remove proposition (${index}). Adjust
       inference relations to ensure that every proposition still contributes
       to the argument's conclusion.`)
@@ -175,11 +140,7 @@ function App() {
             e.preventDefault()
           }
         }}
-        placeholder={
-          userMode == 'thesis' ? 'Enter thesis' :
-          userMode == 'inputProposition' ?
-            'Enter proposition' : ''
-        }
+        placeholder={placeholderText}
       />
       {!(userMode == 'thesis' && theses.thesis) ? undefined :
         <button
@@ -212,7 +173,7 @@ function App() {
     }
   }, [userMode])
 
-  const argumentNode = argument => {
+  const argumentNode = (argument: StepType[]) => {
     const argumentSteps = argument.map((step, key) => {
       let justifier = ''
       let value = `${step.truth}`
@@ -251,7 +212,7 @@ function App() {
     return <div>{argumentSteps}</div>
   }
 
-  const argErrorsNode = errors => errors.map((error, key) => {
+  const argErrorsNode = (errors: string[]) => errors.map((error, key) => {
     return (
       <div key={key}>{error}</div>
     )

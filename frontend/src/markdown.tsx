@@ -1,4 +1,7 @@
-export function thesisMarkdown(theses) {
+import type { ThesesType, StepType, AssumptionType,
+  ArgsType } from './types'
+
+export function thesisMarkdown(theses: ThesesType) {
   let md = '**Thesis:**\n\n'
   md += theses.thesis + '\n\n'
   md += '**Counter-Thesis:**\n\n'
@@ -8,21 +11,20 @@ export function thesisMarkdown(theses) {
   return md
 }
 
-export function developmentMarkdown(args) {
+export function developmentMarkdown(args: ArgsType) {
   let md = ''
-  let justifier = ''
 
-  const assumptionsMarkdown = assumptions => {
+  const assumptionsMarkdown = (assumptions: AssumptionType[]) => {
     assumptions.forEach(item => {
       md += `(${item.index}) `
       md += `${item.proposition} `
     })
   }
 
-  const argumentMarkdown = argument => {
-    argument.forEach(item => {
-      md += `(${item.index}) `
-      md += `${item.proposition} `
+  const argumentMarkdown = (steps: StepType[]) => {
+    steps.forEach(step => {
+      md += `(${step.index}) `
+      md += `${step.proposition} `
 
       let justifier = ''
       let value = `${step.truth}`
@@ -46,7 +48,7 @@ export function developmentMarkdown(args) {
   return md
 }
 
-export function exportMarkdown(theses, args) {
+export function exportMarkdown(theses: ThesesType, args: ArgsType) {
   let md = ''
   md += thesisMarkdown(theses)
   md += '\n\n'
