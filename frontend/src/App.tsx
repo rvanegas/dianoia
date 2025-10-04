@@ -82,7 +82,7 @@ function App() {
     if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setPrompt('')
-    const callArgument = userMode == 'argument' || content == 'Argue.'
+    const callArgument = userMode == 'development' || content == 'Argue.'
     let apiPrompt = {prompt: content, ...theses}
     if (callArgument) {
       apiPrompt = {...apiPrompt, ...args}

@@ -66,6 +66,9 @@ If no argument is present yet, the first response is two initial brief arguments
 with one, two, or three premises each, and the thesis and counter-thesis
 as their respective conclusions. If there is an argument, then an incremental
 change may be made to one of the arguments as instructed by the user prompt.
+An incremental change is the addition or revision of one or two proposition,
+while leaving all other propositions unchanged. Note, that the indices, in
+particular, must remain constant during argument development, if possible.
 
 The "argument" and the "counter_argument" should be in their corresponding
 JSON properties, separately.
@@ -76,8 +79,8 @@ single capital letter. It should be a mnemonic letter that signifies the
 content of the proposition in some way. Avoid using 'P' for proposition
 and 'C' for conclusion. The letters may be used but should be mnemonics for
 the content of the proposition and not their role in the inference. Only if
-all 26 letters of the alphabet have been used, use two letter combinations
-for additional propositions.
+all 26 letters of the alphabet have already been used may two letter
+combinations for additional propositions be introduced.
 
 The "proposition" should be a single sentence in the indicative mood. It
 should not begin with transition qualifiers such as "therefore". Every
