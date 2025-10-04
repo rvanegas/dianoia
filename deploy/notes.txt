@@ -1,8 +1,19 @@
 
-Ubuntu 2204
+Createt Lightsail instance
+Ubuntu 22.04 LTS
+lightsail-ubuntu ssh key
+Networking / Attach static IP
 
 sudo apt update
 sudo apt upgrade -y
 sudo apt install docker.io docker-compose git emacs -y
 sudo usermod -aG docker $USER
 sudo reboot
+
+scp gh keys and config to server
+
+copy OPENAI_ID to .env
+
+docker system prune --all --force
+docker-compose build --no-cache backend
+docker-compose up -d
