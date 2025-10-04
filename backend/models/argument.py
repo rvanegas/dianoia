@@ -96,7 +96,7 @@ class ThesesPrompt(ThesisResponse):
 class ArgumentPrompt(ArgumentResponse, ThesisResponse):
     prompt: str
 
-def proofread_response(messages, prompt, content):
+def proofread_response(argument_prompt, argument_response):
     def verify_uniqueness(steps):
         seen = set()
         duplicates = []
@@ -145,7 +145,7 @@ def proofread_response(messages, prompt, content):
             if current in reachable:
                 continue
             reachable.add(current)
-            to_visit.extend(index_map.get(current, Step(index=current, proposition="", justifiers=[])).justifiers)
+            to_visit.extend(index_map.get(current, Step(index=current, proposition="", justifiers=[], truth=0.0, valid=0.0)).justifiers)
 
         unused = [step.index for step in steps[:-1] if step.index not in reachable]
         return unused
@@ -155,19 +155,14 @@ def proofread_response(messages, prompt, content):
         if (steps_delta > 3 and prev_steps == 0) or steps_delta > 4:
             return True
 
-    theses = ThesisResponse.parse_raw(prompt.history[1]['content'])
-    response = ArgumentResponse.parse_raw(content)
-    prevResponses = [m for m in messages if m["role"] == "assistant"]
-    prevResponse = prevResponses[-1] if prevResponses else None
-
     errors = {
         "argument": [],
         "counter_argument": []
     }
 
     for label in ["argument", "counter_argument"]:
-        prev_steps = getattr(prevResponse, label, [])
-        curr_steps = getattr(response, label, [])
+        prev_steps = getattr(argument_prompt, label, [])
+        curr_steps = getattr(argument_response, label, [])
 
         # Uniqueness
         duplicates = verify_uniqueness(curr_steps)
@@ -201,10 +196,12 @@ def proofread_response(messages, prompt, content):
         #     errors[label].append(f"Too many new propositions")
 
     # Agreement of conclusions with theses
-    if len(response.argument) and theses.thesis != response.argument[-1].proposition:
+    if (len(argument_response.argument) > 0 and
+        argument_prompt.thesis != argument_response.argument[-1].proposition):
         errors['argument'].append("Argument conclusion does not match thesis.")
 
-    if len(response.counter_argument) > 0 and theses.counter_thesis != response.counter_argument[-1].proposition:
-        errors['argument'].append("Counter-argument conclusion does not match counter-thesis.")
+    if (len(argument_response.counter_argument) > 0 and
+        argument_prompt.counter_thesis != argument_response.counter_argument[-1].proposition):
+        errors['counter_argument'].append("Counter-argument conclusion does not match counter-thesis.")
 
     return errors
