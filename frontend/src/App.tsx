@@ -79,7 +79,7 @@ function App() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const handleEnter = async (content) => {
-    if (!content.trim()) return
+    if (!content.trim() || userMode == 'waiting') return
     setLastPrompt(content)
     setPrompt('')
     let apiPrompt = {prompt: content, ...theses}
