@@ -22,6 +22,3 @@ export type ArgsType = {
   counter_argument: StepType[]
   assumptions: AssumptionType[]
 }
-
-export type UserMode = 'thesis' | 'development' | 'inputProposition' | 'waiting'
-
