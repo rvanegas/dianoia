@@ -1,4 +1,4 @@
-import type { ThesesType, StepType, AssumptionType, ArgsType } from './types'
+import type { ThesesType, StepType, ArgsType } from './types'
 
 export function thesisMarkdown(theses: ThesesType) {
   let md = '**Thesis:**\n\n'
@@ -13,7 +13,7 @@ export function thesisMarkdown(theses: ThesesType) {
 export function developmentMarkdown(args: ArgsType) {
   let md = ''
 
-  const assumptionsMarkdown = (assumptions: AssumptionType[]) => {
+  const assumptionsMarkdown = (assumptions: StepType[]) => {
     assumptions.forEach(item => {
       md += `(${item.index}) `
       md += `${item.proposition} `

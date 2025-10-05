@@ -113,9 +113,10 @@ permit optional properties in its JSON Schema.
 Do not use the presuppostion as an explicit premise in the propositions. It
 is presupposed, which means that its contribution is implicit.
 
-There is also an "assumptions" property which includeds propositions moved
+There is also an "assumptions" property which includes propositions moved
 there by the user. Propositions moved there from either the "argument" or
 the "counter_argument" should be assumed absolutely true by both the
 argument and counter_argument inferences, and may be referenced as justifiers.
+Accordingly, their "truth" and "valid" must both be set to 1.0.
 
 """

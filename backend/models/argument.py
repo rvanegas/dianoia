@@ -19,19 +19,6 @@ theses_response_format = {
     }
 }
 
-assumptions_format = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "index": {"type": "string"},
-            "proposition": {"type": "string"},
-        },
-        "required": ["index", "proposition"],
-        "additionalProperties": False
-    }
-}
-
 argument_format = {
     "type": "array",
     "items": {
@@ -61,7 +48,7 @@ argument_response_format = {
             "properties": {
                 "argument": argument_format,
                 "counter_argument": argument_format,
-                "assumptions": assumptions_format
+                "assumptions": argument_format
             },
             "required": ["argument", "counter_argument", "assumptions"],
             "additionalProperties": False
@@ -74,10 +61,6 @@ class ThesisResponse(BaseModel):
     counter_thesis: str
     presupposition: str
 
-class Assumption(BaseModel):
-    index: str
-    proposition: str
-
 class Step(BaseModel):
     index: str
     proposition: str
@@ -86,7 +69,7 @@ class Step(BaseModel):
     valid: float
 
 class ArgumentResponse(BaseModel):
-    assumptions: list[Assumption]
+    assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
 
@@ -163,6 +146,7 @@ def proofread_response(argument_prompt, argument_response):
     for label in ["argument", "counter_argument"]:
         prev_steps = getattr(argument_prompt, label, [])
         curr_steps = getattr(argument_response, label, [])
+        assumptions = getattr(argument_response, 'assumptions', [])
 
         # Uniqueness
         duplicates = verify_uniqueness(curr_steps)
@@ -175,7 +159,7 @@ def proofread_response(argument_prompt, argument_response):
             errors[label].append(f"Index changes detected: {mismatches}")
 
         # Contribution to conclusion
-        unused = verify_conclusion_dependency(curr_steps)
+        unused = verify_conclusion_dependency(curr_steps + assumptions)
         if unused:
             errors[label].append(f"Propositions not contributing to conclusion: {unused}")
 

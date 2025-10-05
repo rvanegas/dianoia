@@ -4,7 +4,7 @@ import type { ThesesType, StepType, ArgsType } from './types'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
-import { exportMarkdown } from './markdown.tsx'
+import { exportMarkdown } from './markdown'
 
 // thesis -> waiting -> thesis
 // thesis -> waiting -> development
