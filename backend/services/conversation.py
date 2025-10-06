@@ -37,7 +37,7 @@ def develop_argument(argument_prompt):
         "content": argument_prompt.json()
     }]
 
-    logger.debug(f"messages {len(messages)}")
+    # logger.debug(f"messages {len(messages)}")
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
@@ -54,8 +54,8 @@ def develop_argument(argument_prompt):
     argument_response = ArgumentResponse.parse_obj(args)
     errors = proofread_response(argument_prompt, argument_response)
 
-    logger.debug(f"argument_prompt: {argument_prompt}")
-    logger.debug(f"argument_response: {argument_response}")
+    # logger.debug(f"argument_prompt: {argument_prompt}")
+    # logger.debug(f"argument_response: {argument_response}")
     logger.debug(f"errors['argument']: {errors['argument']}")
     logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
 
