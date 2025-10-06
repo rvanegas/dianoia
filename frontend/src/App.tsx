@@ -61,12 +61,7 @@ function App() {
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [history, setHistory] = useState<AppSnapshot[]>([{
-    theses: theses,
-    args: args,
-    argErrors: argErrors,
-    lastPrompt: lastPrompt,
-    userMode: userMode,
-  }])
+    theses, args, argErrors, lastPrompt, userMode}])
   const [histIndex, setHistIndex] = useState<number>(0)
 
   const saveSnapshot = (newSnap: AppSnapshot) => {
@@ -98,6 +93,7 @@ function App() {
         saveSnapshot({
           ...history[histIndex],
           userMode: newUserMode,
+          lastPrompt: content,
           theses: responseObject,
           args, argErrors,
         })
@@ -108,6 +104,7 @@ function App() {
         saveSnapshot({
           ...history[histIndex],
           userMode: newUserMode,
+          lastPrompt: content,
           theses,
           args: responseObject,
           argErrors: response.data.errors,
