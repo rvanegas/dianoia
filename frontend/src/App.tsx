@@ -56,7 +56,8 @@ function App() {
     thesis:'', counter_thesis: '', presupposition: ''})
   const [args, setArgs] = useState<ArgsType>({
     argument: [], counter_argument: [], assumptions: []})
-  const [argErrors, setArgErrors] = useState<ArgErrors>({argument: [], counter_argument: []})
+  const [argErrors, setArgErrors] = useState<ArgErrors>({
+    argument: [], counter_argument: []})
   const [lastPrompt, setLastPrompt] = useState<string>('')
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -88,27 +89,21 @@ function App() {
     try {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
+      const newSnapshot = {
+        ...history[histIndex],
+        userMode: newUserMode,
+        lastPrompt: content,
+        theses, args, argErrors,
+      }
       if (newUserMode == 'thesis') {
         setTheses(responseObject)
-        saveSnapshot({
-          ...history[histIndex],
-          userMode: newUserMode,
-          lastPrompt: content,
-          theses: responseObject,
-          args, argErrors,
-        })
+        saveSnapshot({...newSnapshot, theses: responseObject})
       }
       else {
         setArgs(responseObject)
         setArgErrors(response.data.errors)
-        saveSnapshot({
-          ...history[histIndex],
-          userMode: newUserMode,
-          lastPrompt: content,
-          theses,
-          args: responseObject,
-          argErrors: response.data.errors,
-        })
+        saveSnapshot({...newSnapshot, args: responseObject,
+          argErrors: response.data.errors})
       }
     }
     catch (error) {
@@ -229,18 +224,22 @@ function App() {
           Input
         </button>
       }
-      <button
-        disabled={histIndex <= 0}
-        onClick={handleUndo}
-        className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-          Undo
-      </button>
-      <button
-        disabled={histIndex >= history.length - 1}
-        onClick={handleRedo}
-        className={bigButtonClassNames + ' disabled:bg-slate-200'}>
-          Redo
-      </button>
+      {history.length < 2 ? undefined :
+        <>
+          <button
+            disabled={histIndex <= 0}
+            onClick={handleUndo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+              Undo
+          </button>
+          <button
+            disabled={histIndex >= history.length - 1}
+            onClick={handleRedo}
+            className={bigButtonClassNames + ' disabled:bg-slate-200'}>
+              Redo
+          </button>
+        </>
+      }
       <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
     </div>
   )
