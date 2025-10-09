@@ -1,11 +1,19 @@
 import './App.css'
+// import React, {createContext, useReducer, useContext} from 'react'
+
+import type { ConversationType } from './types'
+
 import Conversation from './Conversation'
 
+const initialState: ConversationType = {
+  index: 1,
+  name: '',
+  snapshots: []
+}
+
 function App() {
-
-
-  const newConversation = (index, proposition) => {
-    console.log(`newConversation ${index} ${proposition}`)
+  const newConversation = (index: string, proposition: string) => {
+    console.log(`newConversation ${index} ${proposition} ${initialState}`)
   }
 
   return (
