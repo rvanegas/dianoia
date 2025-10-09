@@ -2,6 +2,10 @@ import './App.css'
 import Conversation from './Conversation'
 
 function App() {
+  const newConversation = (index, proposition) => {
+    console.log(`newConversation ${index} ${proposition}`)
+  }
+
   return (
     <div className="flex w-[100dvw] h-[100dvh]">
       <div className="flex flex-col items-center w-[250px] bg-slate-200 dark:bg-zinc-800 lg:block hidden">
@@ -10,7 +14,7 @@ function App() {
         </button>
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
-        <Conversation/>
+        <Conversation newConversation={newConversation}/>
       </div>
     </div>
   )
