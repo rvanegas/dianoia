@@ -34,22 +34,6 @@ const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
   hover:text-white hover:bg-gray-500`
 const headingClassNames = `text-lg font-bold`
 
-function ExportButton({textCallback}: {textCallback: () => string}) {
-  const [copied, setCopied] = useState<boolean>(false)
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(textCallback())
-    setCopied(true)
-    setTimeout(() => setCopied(false), 3000)
-  }
-  return (
-    <button
-      onClick={handleCopy}
-      className={bigButtonClassNames}>
-      {copied ? 'Copied' : 'Copy'}
-    </button>
-  )
-}
-
 function Conversation() {
   const [userMode, setUserMode] = useState<UserMode>('thesis')
   const [theses, setTheses] = useState<ThesesType>({
@@ -64,6 +48,7 @@ function Conversation() {
   const [history, setHistory] = useState<AppSnapshot[]>([{
     theses, args, argErrors, lastPrompt, userMode}])
   const [histIndex, setHistIndex] = useState<number>(0)
+  const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: AppSnapshot) => {
     setHistory([...history, newSnap])
@@ -170,6 +155,13 @@ function Conversation() {
     setUserMode(next.userMode)
   }
 
+  const handleCopy = async () => {
+    const text = exportMarkdown(theses, args)
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 3000)
+  }
+
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
@@ -240,7 +232,11 @@ function Conversation() {
           </button>
         </>
       }
-      <ExportButton textCallback={() => exportMarkdown(theses, args)}/>
+      <button
+        onClick={handleCopy}
+        className={bigButtonClassNames}>
+        {copied ? 'Copied' : 'Copy'}
+      </button>
     </div>
   )
 
