@@ -23,20 +23,19 @@ function Conversation({conversationIndex, conversation,
   setConversation: any,
   createConversation: (proposition: string) => void
 }) {
-  const [userMode, setUserMode] = useState<UserMode>('thesis')
-  const [theses, setTheses] = useState<ThesesType>({
-    thesis:'', counter_thesis: '', presupposition: ''})
-  const [args, setArgs] = useState<ArgsType>({
-    argument: [], counter_argument: [], assumptions: []})
-  const [argErrors, setArgErrors] = useState<ArgErrors>({
-    argument: [], counter_argument: []})
-  const [lastPrompt, setLastPrompt] = useState<string>('')
+  const currentSnapshot = conversation.snapshots.at(-1)
+  // console.log('c1', currentSnapshot)
+  const [userMode, setUserMode] = useState<UserMode>(currentSnapshot?.userMode)
+  const [theses, setTheses] = useState<ThesesType>(currentSnapshot?.theses)
+  const [args, setArgs] = useState<ArgsType>(currentSnapshot?.args)
+  const [argErrors, setArgErrors] = useState<ArgErrors>(currentSnapshot?.argErrors)
+  const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot?.lastPrompt)
   const [prompt, setPrompt] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [histIndex, setHistIndex] = useState<number>(0)
+  const [histIndex, setHistIndex] = useState<number>(conversation.snapshots.length)
   const [copied, setCopied] = useState<boolean>(false)
 
-  console.log('ci', conversationIndex, conversation)
+  // console.log('ci', conversationIndex, conversation)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
     setConversation({...conversation, snapshots: [...conversation.snapshots, newSnap]})
