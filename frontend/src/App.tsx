@@ -5,55 +5,15 @@ import type {ConversationType} from './types'
 
 import Conversation from './Conversation'
 
-const initialState0: ConversationType = {
+const initialState: ConversationType = {
   id: 0,
   name: '',
-  snapshots: [{
-    theses: {
-      thesis: '',
-      counter_thesis: '',
-      presupposition: '',
-    },
-    args: {
-      assumptions: [],
-      argument: [],
-      counter_argument: [],
-    },
-    argErrors: {
-      argument: [],
-      counter_argument: [],
-    },
-    lastPrompt: '',
-    userMode: 'thesis',
-  }]
-}
-
-const initialState1: ConversationType = {
-  id: 1,
-  name: '',
-  snapshots: [{
-    theses: {
-      thesis: '',
-      counter_thesis: '',
-      presupposition: '',
-    },
-    args: {
-      assumptions: [],
-      argument: [],
-      counter_argument: [],
-    },
-    argErrors: {
-      argument: [],
-      counter_argument: [],
-    },
-    lastPrompt: '',
-    userMode: 'thesis',
-  }]
+  snapshots: []
 }
 
 function App() {
   const [conversations, setConversations] = useImmer<ConversationType[]>(
-    [initialState0, initialState1])
+    [{...initialState, id: 0}, {...initialState, id: 1}])
   const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
 
   const setConversation = (newConversation: ConversationType) => {
@@ -89,7 +49,7 @@ function App() {
           Select1
         </button>
       </div>
-      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center" >
+      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center">
         <Conversation
           key={currConvIndex}
           conversationIndex={currConvIndex}
