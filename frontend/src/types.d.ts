@@ -23,19 +23,14 @@ type ArgErrors = {
   counter_argument: string[]
 }
 
-type UserMode = 'thesis' | 'development'
-
-// thesis -> waiting -> thesis
-// thesis -> waiting -> development
-// development -> waiting -> development
-// development -> inputProposition -> waiting -> development
+type ArgMode = 'thesis' | 'development'
 
 type ConversationSnapshot = {
   theses: ThesesType
   args: ArgsType
   argErrors: ArgErrors
   lastPrompt: string
-  userMode: UserMode
+  argMode: ArgMode
 }
 
 type ConversationType = {

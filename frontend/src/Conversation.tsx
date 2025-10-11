@@ -3,8 +3,10 @@ import './App.css'
 import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type {StepType, UserMode, ConversationSnapshot, ConversationType} from './types'
+import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
 import {exportMarkdown} from './markdown'
+
+type UserMode = 'waiting' | 'ready' | 'input'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -31,7 +33,7 @@ function initialSnapshot() : ConversationSnapshot {
       counter_argument: [],
     },
     lastPrompt: '',
-    userMode: 'thesis',
+    argMode: 'thesis',
   }
 }
 
@@ -49,7 +51,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   const args = currentSnapshot.args
   const argErrors = currentSnapshot.argErrors
   const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot.lastPrompt)
-  const [userMode, setUserMode] = useState<string>('ready')
+  const [userMode, setUserMode] = useState<UserMode>('ready')
 
   const [prompt, setPrompt] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
@@ -64,7 +66,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     setLastPrompt(content)
     setUserMode('waiting')
     setPrompt('')
-    const newUserMode : UserMode = content == 'Argue.' ? 'development' : currentSnapshot.userMode
+    const newUserMode : ArgMode = content == 'Argue.' ? 'development' : currentSnapshot.argMode
     const apiPrompt = newUserMode == 'thesis' ?
       {prompt: content, ...theses} : {prompt: content, ...theses, ...args}
     const path = newUserMode == 'thesis' ? '/api/v1/theses' : '/api/v1/argument'
@@ -74,7 +76,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       const responseObject = JSON.parse(response.data.reply)
       const newSnapshot = {
         ...conversation.snapshots[histIndex],
-        userMode: newUserMode,
+        argMode: newUserMode,
         lastPrompt: content,
         theses, args, argErrors,
       }
@@ -317,7 +319,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   )
 
   const placeholderText =
-    currentSnapshot.userMode == 'thesis' ? 'Enter thesis' :
+    currentSnapshot.argMode == 'thesis' ? 'Enter thesis' :
     userMode == 'input' ? 'Enter proposition' : ''
 
   const userDiv = (
@@ -325,7 +327,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       <input
         className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
         value={prompt}
-        disabled={!(currentSnapshot.userMode == 'thesis' || userMode == 'input')}
+        disabled={!(currentSnapshot.argMode == 'thesis' || userMode == 'input')}
         onChange={e => setPrompt(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == 'Enter') {
@@ -335,21 +337,21 @@ function Conversation({conversation, setConversation, createConversation}: {
         }}
         placeholder={placeholderText}
       />
-      {!(currentSnapshot.userMode == 'thesis' || userMode == 'input') ? undefined :
+      {!(currentSnapshot.argMode == 'thesis' || userMode == 'input') ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleEnter(prompt)}>
           Enter
         </button>
       }
-      {!(currentSnapshot.userMode == 'thesis' && theses.thesis) ? undefined :
+      {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => handleArgue()}>
           Argue
         </button>
       }
-      {!(currentSnapshot.userMode == 'development' && userMode == 'ready') ? undefined :
+      {!(currentSnapshot.argMode == 'development' && userMode == 'ready') ? undefined :
         <button
           className={bigButtonClassNames}
           onClick={() => setUserMode('input')}>
