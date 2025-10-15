@@ -45,7 +45,7 @@ function App() {
       className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-md'
       onClick={() => setPaneOpened(!paneOpened)}
     >
-      ☰
+      {'\u2630'}
     </button>
   )
 
