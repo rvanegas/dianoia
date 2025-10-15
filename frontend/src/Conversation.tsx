@@ -109,22 +109,44 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  const handleArgue = async () => {
-    handleEnter('Argue.')
+  const handleSupport = async (step_id: string) => {
+    const lastPrompt = `Justify proposition (${step_id})`
+    setLastPrompt(lastPrompt)
+    setUserMode('waiting')
+    const apiPrompt = {...args, step_id}
+    const url = VITE_API_BASE_URL + '/api/v1/justify'
+    try {
+      const response = await axios.post(url, apiPrompt)
+      const responseObject = JSON.parse(response.data.reply)
+
+      console.log(responseObject)
+      return
+
+      const newSnapshot = {
+        ...conversation.snapshots[histIndex],
+        argMode, lastPrompt,
+        theses, args, argErrors,
+      }
+
+      if (response.data.errors) {
+        throw(response.data.errors)
+        return
+      }
+      if (!responseObject) {
+        throw("empty responseObject")
+        return
+      }
+    }
+    catch (error) {
+      console.error('Error: ', error)
+    }
+    finally {
+      setUserMode('ready')
+    }
   }
 
-  const handleSupport = async (index: string, justifiers: string[]) => {
-    if (justifiers.length == 0) {
-      handleEnter(`Introduce one or two premises from
-        which proposition (${index}) is inferred.`
-      )
-    }
-    else {
-      handleEnter(`If the inference from which proposition
-        (${index}) is inferred is not strictly deductive, introduce
-        one or two premises to make the inference more explicit.`
-      )
-    }
+  const handleArgue = async () => {
+    handleEnter('Argue.')
   }
 
   const handleAssume = async (index: string) => {
@@ -208,7 +230,7 @@ function Conversation({conversation, setConversation, createConversation}: {
           ({step.index}) {step.proposition} [{justifier}; {value}]
           <button
             className={smallButtonClassNames}
-            onClick={() => handleSupport(step.index, step.justifiers)}>
+            onClick={() => handleSupport(step.index)}>
             support
           </button>
           {key == argument.length -1 ? undefined :

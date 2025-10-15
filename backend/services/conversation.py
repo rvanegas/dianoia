@@ -4,16 +4,18 @@ from core.utils import logger
 import json
 
 from core.utils import logger
-from .system_prompt import system_welcome_prompt, system_development_prompt
-from models.argument import ( ArgumentPrompt, ArgumentResponse, ThesesPrompt,
-    argument_response_format, theses_response_format, proofread_response )
+from .system_prompt import (welcome_system_prompt, development_system_prompt,
+    justify_system_prompt)
+from models.argument import (ArgumentPrompt, ArgumentResponse, ThesesPrompt,
+    JustifyPrompt, argument_response_format, theses_response_format,
+    justify_response_format, proofread_response, Step)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def develop_theses(theses_prompt):
     messages = [{
         "role": "system",
-        "content": system_welcome_prompt
+        "content": welcome_system_prompt
     },
     {
         "role": "user",
@@ -30,7 +32,7 @@ def develop_theses(theses_prompt):
 def develop_argument(argument_prompt):
     messages = [{
         "role": "system",
-        "content": system_development_prompt
+        "content": development_system_prompt
     },
     {
         "role": "user",
@@ -60,3 +62,34 @@ def develop_argument(argument_prompt):
     # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
 
     return content, errors
+
+def justify_proposition(prompt: JustifyPrompt):
+
+    logger.debug('prompt', prompt)
+    prompt.validate_step_id()
+
+    messages = [{
+        "role": "system",
+        "content": justify_system_prompt
+    },
+    {
+        "role": "user",
+        "content": prompt.json()
+    }]
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        response_format=justify_response_format,
+    )
+    content = response.choices[0].message.content
+    jcontent = json.loads(content)
+    logger.debug(f"({jcontent})")
+
+    new_propositions = json.loads(content)["propositions"]
+    for p in new_propositions:
+        prompt.insert_proposition(p)
+
+    new_args = prompt.json()
+
+    return new_args, None
