@@ -119,15 +119,6 @@ function Conversation({conversation, setConversation, createConversation}: {
       const response = await axios.post(url, apiPrompt)
       const responseObject = JSON.parse(response.data.reply)
 
-      console.log(responseObject)
-      return
-
-      const newSnapshot = {
-        ...conversation.snapshots[histIndex],
-        argMode, lastPrompt,
-        theses, args, argErrors,
-      }
-
       if (response.data.errors) {
         throw(response.data.errors)
         return
@@ -136,6 +127,13 @@ function Conversation({conversation, setConversation, createConversation}: {
         throw("empty responseObject")
         return
       }
+
+      const newSnapshot = {
+        ...conversation.snapshots[histIndex],
+        lastPrompt, args: responseObject, argErrors: {},
+      }
+      saveSnapshot(newSnapshot)
+      setLastPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -269,7 +267,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       <div>
         <div className={headingClassNames}>Argument:</div>
         <div>{argumentNode(args.argument)}</div>
-        {argErrors.argument.length == 0 ? undefined :
+        {!argErrors.argument || argErrors.argument.length == 0 ? undefined :
           <>
             <div className={headingClassNames}>Errors:</div>
             <div>{argErrorsNode(argErrors.argument)}</div>
@@ -279,7 +277,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       <div>
         <div className={headingClassNames}>Counter-Argument:</div>
         <div>{argumentNode(args.counter_argument)}</div>
-        {argErrors.counter_argument.length == 0 ? undefined :
+        {!argErrors.counter_argument || argErrors.counter_argument.length == 0 ? undefined :
           <>
             <div className={headingClassNames}>Errors:</div>
             <div>{argErrorsNode(argErrors.counter_argument)}</div>

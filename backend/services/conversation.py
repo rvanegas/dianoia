@@ -158,7 +158,7 @@ def develop_argument(argument_prompt):
 
 def justify_proposition(prompt: JustifyPrompt):
 
-    logger.debug('prompt', prompt)
+    # logger.debug('prompt', prompt)
     prompt.validate_step_id()
 
     messages = [{
@@ -176,20 +176,20 @@ def justify_proposition(prompt: JustifyPrompt):
         response_format=justify_response_format,
     )
     content = response.choices[0].message.content
-    jcontent = json.loads(content)
-    logger.debug(f"({jcontent})")
+    # jcontent = json.loads(content)
+    # logger.debug(f"({jcontent})")
 
     new_propositions = json.loads(content)["propositions"]
     for p in new_propositions:
-        new_arg = prompt.insert_proposition(p)
+        new_arg, loc = prompt.insert_proposition(p)
 
     evaluations = re_evaluate(new_arg)
-
-    logger.debug(f"evaluations{evaluations}")
+    prompt.add_evaluations(new_arg, loc, evaluations)
+    # logger.debug(f"evaluations{evaluations}")
 
     new_args = prompt.json()
-    logger.debug(f"new_arg{new_arg}")
-    logger.debug(f"new_args{new_args}")
+    # logger.debug(f"new_arg{new_arg}")
+    # logger.debug(f"new_args{new_args}")
 
     return new_args, None
 
