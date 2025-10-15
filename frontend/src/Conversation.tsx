@@ -360,19 +360,13 @@ function Conversation({conversation, setConversation, createConversation}: {
           Input
         </button>
       }
-      <button
-        onClick={handleCopy}
-        className={bigButtonClassNames}>
-        {copied ? 'Copied' : 'Copy'}
-      </button>
     </div>
   )
 
   return (
     <>
-      {messagesDiv}
       {conversation.snapshots.length < 2 ? undefined :
-        <div className="flex w-full gap-x-5  lg:justify-start pt-4 px-5">
+        <div className="fixed top-4 right-4 z-10 flex gap-2">
           <button
             disabled={histIndex <= 0}
             onClick={handleUndo}
@@ -385,8 +379,14 @@ function Conversation({conversation, setConversation, createConversation}: {
             className={bigButtonClassNames + ' disabled:bg-slate-200 dark:disabled:bg-zinc-800'}>
               Redo
           </button>
+          <button
+            onClick={handleCopy}
+            className={bigButtonClassNames}>
+            {copied ? 'Copied' : 'Copy'}
+          </button>
         </div>
       }
+      {messagesDiv}
       {userDiv}
     </>
   )
