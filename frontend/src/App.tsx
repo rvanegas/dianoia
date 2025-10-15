@@ -65,7 +65,7 @@ function App() {
           <button
             key={conv.id}
             className={`
-              w-[100%] text-left rounded-md p-2 text-white border-none
+              w-[100%] text-left rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none
               hover:bg-slate-300 dark:hover:bg-zinc-700
               ${
                 conv.id == currConvIndex + 1 ?
