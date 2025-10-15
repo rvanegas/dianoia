@@ -1,4 +1,6 @@
 
+Deployment Recipe:
+
 Create Lightsail instance
 Ubuntu 22.04 LTS
 lightsail-ubuntu ssh key
@@ -24,7 +26,11 @@ docker-compose down --volumes --remove-orphans
 docker-compose build --no-cache
 docker-compose up -d
 
---
+For simple deployment, see 'bin/deploy'.
+
+--------
+
+SSL Recipe:
 
 Add ipv4 ryle for tcp/https/443
 
