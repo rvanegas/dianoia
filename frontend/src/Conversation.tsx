@@ -3,7 +3,7 @@ import './App.css'
 import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
+import type {StepType, ArgsType, ArgMode, ConversationSnapshot, ConversationType} from './types'
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
@@ -115,10 +115,10 @@ function Conversation({conversation, setConversation, createConversation}: {
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/justify'
-    let apiPrompt = {...args, ...new_args}
+    let apiPrompt = {...args, ...new_args, step_id: ''}
     let newSnapshot = {
       ...conversation.snapshots[snapshotIndex],
-      lastPrompt, argErrors: {},
+      lastPrompt, argErrors: initialSnapshot().argErrors,
     }
     let responseObject
 
@@ -152,7 +152,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleArgue = async () => {
-    const new_args = {
+    const new_args: ArgsType = {
+      assumptions: [],
       argument: [{
         index: 'A',
         proposition: theses.thesis,
