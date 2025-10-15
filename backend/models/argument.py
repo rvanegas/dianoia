@@ -1,80 +1,6 @@
 from pydantic import BaseModel
 from core.utils import logger, find_index
 
-theses_response_format = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "response",
-        "strict": True,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "thesis": {"type": "string"},
-                "counter_thesis": {"type": "string"},
-                "presupposition": {"type": "string"}
-            },
-            "required": ["thesis", "counter_thesis", "presupposition"],
-            "additionalProperties": False
-        }
-    }
-}
-
-argument_format = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "index": {"type": "string"},
-            "proposition": {"type": "string"},
-            "justifiers": {
-                "type": "array",
-                "items": {"type": "string"}
-            },
-            "truth": {"type": "number"},
-            "valid": {"type": "number"}
-        },
-        "required": ["index", "proposition", "justifiers", "truth", "valid"],
-        "additionalProperties": False
-    }
-}
-
-argument_response_format = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "response",
-        "strict": True,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "assumptions": argument_format,
-                "argument": argument_format,
-                "counter_argument": argument_format
-            },
-            "required": ["argument", "counter_argument", "assumptions"],
-            "additionalProperties": False
-        }
-    }
-}
-
-justify_response_format = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "response",
-        "strict": True,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "propositions": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["propositions"],
-            "additionalProperties": False
-        }
-    }
-}
-
 class ThesisResponse(BaseModel):
     thesis: str
     counter_thesis: str
@@ -132,16 +58,24 @@ class JustifyPrompt(ArgumentResponse):
             raise ValueError('step_id does not refer')
 
     def insert_proposition(self, new_proposition):
-        new_step = Step(index=self.next_id(), proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
+        next_id = self.next_id()
+        new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
         index_in_argument = find_index(self.argument, lambda x: x.index == self.step_id)
         index_in_counter_argument = find_index(self.counter_argument, lambda x: x.index == self.step_id)
         if index_in_argument != -1:
-            self.argument.insert(index_in_argument, new_step)
+            arg = self.argument
+            index = index_in_argument
         elif index_in_counter_argument != -1:
-            self.counter_argument.insert(index_in_counter_argument, next_step)
+            arg = self.counter_argument
+            index = index_in_counter_argument
         else:
             raise ValueError("Invalid step_id")
-
+        conclusion = arg[index]
+        conclusion.justifiers.append(next_id)
+        arg.insert(index, new_step)
+        new_arg = [s for s in arg if s.index in conclusion.justifiers]
+        new_arg.append(conclusion)
+        return new_arg
 
 def proofread_response(argument_prompt, argument_response):
     def verify_uniqueness(steps):
