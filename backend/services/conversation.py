@@ -83,7 +83,7 @@ justify_response_format = {
     }
 }
 
-re_evaluate_response_format = {
+evaluate_response_format = {
     "type": "json_schema",
     "json_schema": {
         "name": "response",
@@ -103,7 +103,7 @@ re_evaluate_response_format = {
     }
 }
 
-def gpt_welcome(prompt):
+def gpt_welcome(prompt: str):
     messages = [{
         "role": "system",
         "content": welcome_system_prompt
@@ -128,33 +128,14 @@ def gpt_develop(prompt: str):
         "role": "user",
         "content": prompt
     }]
-
-    # logger.debug(f"messages {len(messages)}")
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
         response_format=argument_response_format,
     )
-    content = response.choices[0].message.content
+    return response.choices[0].message.content
 
-    # logger.debug("argument_prompt")
-    # logger.debug(argument_prompt.argument)
-    # logger.debug("argument_response")
-    # logger.debug(argument_response.argument)
-
-    # args = json.loads(content)
-    # argument_response = ArgumentResponse.parse_obj(args)
-    # errors = proofread_response(argument_prompt, argument_response)
-
-    # logger.debug(f"argument_prompt: {argument_prompt}")
-    # logger.debug(f"argument_response: {argument_response}")
-    # logger.debug(f"errors['argument']: {errors['argument']}")
-    # logger.debug(f"errors['counter_argument']: {errors['counter_argument']}")
-
-    return content
-
-def gpt_justify(prompt):
-    # logger.debug('prompt', prompt)
+def gpt_justify(prompt: str):
     messages = [{
         "role": "system",
         "content": justify_system_prompt
@@ -163,17 +144,12 @@ def gpt_justify(prompt):
         "role": "user",
         "content": prompt
     }]
-
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
         response_format=justify_response_format,
     )
-    content = response.choices[0].message.content
-    # jcontent = json.loads(content)
-    # logger.debug(f"({jcontent})")
-    return content
-
+    return response.choices[0].message.content
 
 def gpt_evaluate(props: str):
     messages = [{
@@ -184,12 +160,9 @@ def gpt_evaluate(props: str):
         "role": "user",
         "content": props
     }]
-
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        response_format=re_evaluate_response_format,
+        response_format=evaluate_response_format,
     )
-    content = response.choices[0].message.content
-
-    return content
+    return response.choices[0].message.content
