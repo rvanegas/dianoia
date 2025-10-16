@@ -3,7 +3,7 @@ from core.utils import logger, find_index
 from services.conversation import gpt_welcome, gpt_justify, gpt_evaluate, gpt_develop
 import json
 
-class ThesisResponse(BaseModel):
+class Theses(BaseModel):
     thesis: str
     counter_thesis: str
     presupposition: str
@@ -15,7 +15,7 @@ class Step(BaseModel):
     truth: float
     valid: float
 
-class ArgumentResponse(BaseModel):
+class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
@@ -23,23 +23,23 @@ class ArgumentResponse(BaseModel):
     def all_steps(self):
         return self.assumptions + self.argument + self.counter_argument
 
-class ThesesPrompt(ThesisResponse):
+class ThesesPrompt(Theses):
     prompt: str
 
     def develop(self):
         return gpt_welcome(self.json())
 
-class ArgumentPrompt(ThesisResponse, ArgumentResponse):
+class ArgumentsPrompt(Theses, Arguments):
     prompt: str
 
     def develop(self):
         content = gpt_develop(self.json())
         args = json.loads(content)
-        argument_response = ArgumentResponse.parse_obj(args)
+        argument_response = Arguments.parse_obj(args)
         errors = proofread_response(self, argument_response)
         return content, errors
 
-class JustifyPrompt(ArgumentResponse):
+class JustifyPrompt(Arguments):
     step_id: str
 
     def justify(self):
