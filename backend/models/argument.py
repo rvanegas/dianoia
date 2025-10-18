@@ -20,6 +20,25 @@ class Arguments(BaseModel):
     argument: list[Step]
     counter_argument: list[Step]
 
+    def next_id(self):
+        steps = (self.assumptions +
+            self.argument +
+            self.counter_argument)
+        letters = [step.index for step in steps]
+        if not all(isinstance(c, str) and len(c) == 1 and
+            'A' <= c <= 'Z' for c in letters):
+            raise ValueError("All elements must be single lowercase letters A-Z")
+        seen = set(letters)
+        if len(seen) == 26:
+            raise ValueError("All 26 letters are already present")
+        if 'Z' not in seen:
+            last = sorted(seen)[-1]
+            return chr(ord(last)+1)
+        for i in range(ord('A'), ord('Z') + 1):
+            c = chr(i)
+            if c not in seen:
+                return c
+
     def all_arg_steps(self):
         return self.argument + self.counter_argument
 
@@ -56,6 +75,27 @@ class ThesesPrompt(Theses):
     def develop(self):
         return gpt_theses.call(self.json())
 
+class ArgumentsWithPrompt(Arguments):
+    loc: str
+    index: int
+    proposition: str
+
+    def user_justify(self):
+        logger.debug(f"loc {self.loc} index {self.index} proposition {self.proposition}")
+        if self.loc == 'argument':
+            arg = self.argument
+        elif self.loc == 'counter_argument':
+            arg = self.counter_argument
+        else:
+            raise ValueError('invalid loc')
+        next_id = self.next_id()
+        new_step = Step(index=next_id, proposition=self.proposition, justifiers=[], truth=0.0, valid=0.0)
+        conclusion = arg[self.index]
+        arg.insert(self.index, new_step)
+        conclusion.justifiers.append(next_id)
+        self.add_evaluations(arg, conclusion)
+        return self.json()
+
 class ArgumentsWithStepPrompt(Arguments):
     step_id: str
 
@@ -63,25 +103,6 @@ class ArgumentsWithStepPrompt(Arguments):
         step = next((x for x in self.all_arg_steps() if x.index == self.step_id), None)
         if step == None:
             raise ValueError('step_id does not refer')
-
-    def next_id(self):
-        steps = (self.assumptions +
-            self.argument +
-            self.counter_argument)
-        letters = [step.index for step in steps]
-        if not all(isinstance(c, str) and len(c) == 1 and
-            'A' <= c <= 'Z' for c in letters):
-            raise ValueError("All elements must be single lowercase letters A-Z")
-        seen = set(letters)
-        if len(seen) == 26:
-            raise ValueError("All 26 letters are already present")
-        if 'Z' not in seen:
-            last = sorted(seen)[-1]
-            return chr(ord(last)+1)
-        for i in range(ord('A'), ord('Z') + 1):
-            c = chr(i)
-            if c not in seen:
-                return c
 
     def find_in_arguments(self):
         index = find_index(self.argument, lambda x: x.index == self.step_id)
