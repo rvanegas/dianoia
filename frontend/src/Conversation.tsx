@@ -490,9 +490,10 @@ function Conversation({conversation, setConversation, createConversation}: {
           Argue
         </button>
       }
-      {!(currentSnapshot.argMode == 'development' && userMode == 'ready') ? undefined :
+      {!(currentSnapshot.argMode == 'development' && userMode != 'input') ? undefined :
         <button
           className={bigButtonClassNames}
+          disabled={userMode == 'waiting'}
           onClick={() => setUserMode('input')}>
           Input
         </button>
