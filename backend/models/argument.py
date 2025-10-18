@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from core.utils import logger, find_index
-from services.conversation import gpt_theses, gpt_develop, gpt_justify, gpt_evaluate
+from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
 import json
 
 class Theses(BaseModel):
@@ -55,16 +55,6 @@ class ThesesPrompt(Theses):
 
     def develop(self):
         return gpt_theses.call(self.json())
-
-class ArgumentsPrompt(Theses, Arguments):
-    prompt: str
-
-    def develop(self):
-        content = gpt_develop.call(self.json())
-        args = json.loads(content)
-        argument_response = Arguments.parse_obj(args)
-        errors = proofread_response(self, argument_response)
-        return content, errors
 
 class ArgumentsWithStepPrompt(Arguments):
     step_id: str

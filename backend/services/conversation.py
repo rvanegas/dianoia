@@ -6,7 +6,6 @@ from core.utils import logger
 
 from .system_prompt import (
     theses_system_prompt,
-    develop_system_prompt,
     justify_system_prompt,
     evaluate_system_prompt)
 
@@ -48,46 +47,6 @@ gpt_theses = Gpt(
                     "presupposition": {"type": "string"}
                 },
                 "required": ["thesis", "counter_thesis", "presupposition"],
-                "additionalProperties": False
-            }
-        }
-    }
-)
-
-argument_format = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "index": {"type": "string"},
-            "proposition": {"type": "string"},
-            "justifiers": {
-                "type": "array",
-                "items": {"type": "string"}
-            },
-            "truth": {"type": "number"},
-            "valid": {"type": "number"}
-        },
-        "required": ["index", "proposition", "justifiers", "truth", "valid"],
-        "additionalProperties": False
-    }
-}
-
-gpt_develop = Gpt(
-    system_prompt=develop_system_prompt,
-    response_format={
-        "type": "json_schema",
-        "json_schema": {
-            "name": "response",
-            "strict": True,
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "assumptions": argument_format,
-                    "argument": argument_format,
-                    "counter_argument": argument_format
-                },
-                "required": ["argument", "counter_argument", "assumptions"],
                 "additionalProperties": False
             }
         }
