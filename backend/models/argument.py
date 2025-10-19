@@ -15,6 +15,12 @@ class Step(BaseModel):
     truth: float
     valid: float
 
+class ThesesPrompt(Theses):
+    prompt: str
+
+    def develop(self):
+        return gpt_theses.call(self.json())
+
 class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
@@ -49,8 +55,8 @@ class Arguments(BaseModel):
             "assumptions": [s.proposition for s in self.assumptions],
             "argument": [s.proposition for s in new_arg]
         }
+        # logger.debug(f"{props}")
         content = gpt_evaluate.call(json.dumps(props))
-        logger.debug(f"c({content})")
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
             arg_index = find_index(arg, lambda x: x.index == step.index)
@@ -69,19 +75,12 @@ class Arguments(BaseModel):
                 self.add_evaluations(self.counter_argument, step)
         return self.json()
 
-class ThesesPrompt(Theses):
-    prompt: str
-
-    def develop(self):
-        return gpt_theses.call(self.json())
-
 class ArgumentsWithPrompt(Arguments):
     loc: str
     index: int
     proposition: str
 
     def user_justify(self):
-        logger.debug(f"loc {self.loc} index {self.index} proposition {self.proposition}")
         if self.loc == 'argument':
             arg = self.argument
         elif self.loc == 'counter_argument':
@@ -97,53 +96,59 @@ class ArgumentsWithPrompt(Arguments):
         return self.json()
 
 class ArgumentsWithStepPrompt(Arguments):
-    step_id: str
+    loc: str
+    index: int
+    arg: list[Step] | None = None
 
-    def validate_step_id(self):
-        step = next((x for x in self.all_arg_steps() if x.index == self.step_id), None)
-        if step == None:
-            raise ValueError('step_id does not refer')
-
-    def find_in_arguments(self):
-        index = find_index(self.argument, lambda x: x.index == self.step_id)
-        if index != -1:
-            return self.argument, index
-        index = find_index(self.counter_argument, lambda x: x.index == self.step_id)
-        if index != -1:
-            return self.counter_argument, index
-        raise ValueError("Invalid step_id")
+    # is there a pydantic way?
+    # @model_validator(mode='before')
+    # @classmethod
+    def validate_init(self):
+        if self.loc == 'argument':
+            self.arg = self.argument
+        elif self.loc == 'counter_argument':
+            self.arg = self.counter_argument
+        elif self.loc == 'assumptions':
+            self.arg = self.assumptions
+        else:
+            raise ValueError('invalid loc')
+        if len(self.arg) <= self.index:
+            raise ValueError('invalid index')
 
     def insert_proposition(self, new_proposition: str):
         next_id = self.next_id()
-        new_step = Step(index=next_id, proposition=new_proposition, justifiers=[], truth=0.0, valid=0.0)
-        arg, index = self.find_in_arguments()
-        conclusion = arg[index]
+        new_step = Step(index=next_id, proposition=new_proposition,
+            justifiers=[], truth=0.0, valid=0.0)
+        conclusion = self.arg[self.index]
         conclusion.justifiers.append(next_id)
-        arg.insert(index, new_step)
-        return arg, conclusion
+        self.arg.insert(self.index, new_step)
+        return conclusion
 
     def justify(self):
-        self.validate_step_id()
+        self.validate_init()
         response = gpt_justify.call(self.json())
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
-            arg, conclusion = self.insert_proposition(p)
-        self.add_evaluations(arg, conclusion)
-        return self.json()
+            conclusion = self.insert_proposition(p)
+            self.index += 1
+        self.add_evaluations(self.arg, conclusion)
+        return self.json(exclude={"arg"})
 
     def remove(self):
-        self.validate_step_id()
-        arg, index = self.find_in_arguments()
-        inferences_from = [s for s in arg if s.index in arg[index].justifiers]
-        inferences_to = [s for s in arg if self.step_id in s.justifiers]
-        premises = []
-        for step in inferences_from:
-            if step.index in arg[index].justifiers:
-                premises.append(step.index)
-        for step in inferences_to:
-            step.justifiers.remove(self.step_id)
-            for premise in premises:
-                step.justifiers.append(premise)
-            self.add_evaluations(arg, step)
-        del arg[index]
-        return self.json()
+        # logger.debug(f"r {self.loc} {self.index}")
+        self.validate_init()
+        if self.loc != "assumptions":
+            inferences_from = [s for s in self.arg if s.index in self.arg[self.index].justifiers]
+            inferences_to = [s for s in self.arg if self.arg[self.index].index in s.justifiers]
+            premises = []
+            for step in inferences_from:
+                if step.index in self.arg[self.index].justifiers:
+                    premises.append(step.index)
+            for step in inferences_to:
+                step.justifiers.remove(self.arg[self.index].index)
+                for premise in premises:
+                    step.justifiers.append(premise)
+        del self.arg[self.index]
+        self.evaluate()
+        # return using superclass
+        return self.json(exclude={"arg"})
