@@ -52,8 +52,8 @@ function Conversation({conversation, setConversation, createConversation}: {
   const argErrors = currentSnapshot.argErrors
   const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot.lastPrompt)
   const [userMode, setUserMode] = useState<UserMode>('ready')
-  const [targetLoc, setTargetLoc] = useState<string>()
-  const [targetIndex, setTargetIndex] = useState<number>()
+  const [targetLoc, setTargetLoc] = useState<string>('')
+  const [targetIndex, setTargetIndex] = useState<number>(0)
 
   const [prompt, setPrompt] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
@@ -62,6 +62,10 @@ function Conversation({conversation, setConversation, createConversation}: {
     const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1)
     setConversation({...conversation, snapshots: [...truncatedSnapshots, newSnap]})
     setSnapshotIndex(prev => prev + 1)
+  }
+
+  const argLoc = (loc: string) => {
+    return args[loc as keyof typeof args] as any[]
   }
 
   const handleThesis = async (content: string) => {
@@ -174,7 +178,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleUserJustify = async (proposition: string) => {
-    const lastPrompt = `User Justify proposition ${targetLoc} ${targetIndex}`
+    const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].index}`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
@@ -205,16 +209,21 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleAssume = async (loc: string, index: number) => {
-    const propKey = args[loc][index].index
-    const lastPrompt = `Assume proposition (${propKey})`
+    const lastPrompt = `Assume proposition (${argLoc(loc)[index].index})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     // console.log(`args ${JSON.stringify(args)}`)
     const new_args = {
       ...args,
-      assumptions: [...args.assumptions, args[loc][index]],
+      assumptions: [...args.assumptions, argLoc(loc)[index]],
     }
-    new_args[loc] = [...args[loc].slice(0, index), ...args[loc].slice(index+1)]
+    const newArg = [...argLoc(loc).slice(0, index), ...argLoc(loc).slice(index+1)]
+    if (loc == 'argument')
+      new_args.argument = newArg
+    else if (loc == 'counter_argument')
+      new_args.counter_argument = newArg
+    else
+      throw 'bad loc value'
     // console.log(`new_args ${JSON.stringify(new_args)}`)
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     let apiPrompt = new_args
@@ -244,8 +253,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleRemove = async (loc: string, index: number) => {
-    const propKey = args[loc][index].index
-    const lastPrompt = `Remove proposition (${propKey})`
+    const lastPrompt = `Remove proposition (${argLoc(loc)[index].index})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/remove'
