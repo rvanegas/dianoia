@@ -442,9 +442,16 @@ function Conversation({conversation, setConversation, createConversation}: {
         <div key={step_index}>
           ({assumption.index}) {assumption.proposition}
           <button
+            disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
             onClick={() => handleRemove('assumptions', step_index)}>
             remove
+          </button>
+          <button
+            disabled={userMode == 'waiting'}
+            className={smallButtonClassNames}
+            onClick={() => handleDispute(assumption)}>
+            dispute
           </button>
         </div>
       ))}
@@ -499,6 +506,7 @@ function Conversation({conversation, setConversation, createConversation}: {
     else if (userMode == 'input') {
       handleUserJustify(prompt)
     }
+    setPrompt('')
   }
 
   const userDiv = (
