@@ -6,3 +6,4 @@ sqlalchemy==2.0.41
 psycopg2_binary==2.9.10
 asyncpg==0.30.0
 alembic==1.16.1
+python-multipart==0.0.20

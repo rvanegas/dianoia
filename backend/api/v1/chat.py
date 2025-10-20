@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 
 from core.utils import logger
 from models.argument import (Theses,
@@ -30,3 +30,9 @@ async def justify(args: ArgumentsWithStep):
 async def user_justify(args: ArgumentsWithProposition):
     new_args = args.user_justify()
     return {"reply": new_args}
+
+@router.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    contents = await file.read()
+    logger.debug(contents)
+    return {"filename": file.filename}
