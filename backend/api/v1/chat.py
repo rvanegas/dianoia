@@ -34,5 +34,5 @@ async def user_justify(args: ArgumentsWithProposition):
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
     contents = await file.read()
-    logger.debug(contents)
+    # logger.debug(contents)
     return {"filename": file.filename}
