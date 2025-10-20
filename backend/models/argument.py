@@ -57,7 +57,6 @@ class Arguments(BaseModel):
             "assumptions": [s.proposition for s in self.assumptions],
             "argument": [s.proposition for s in new_arg]
         }
-        # logger.debug(f"{props}")
         content = gpt_evaluate.call(json.dumps(props))
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
@@ -116,7 +115,6 @@ class ArgumentsWithStep(Arguments):
         return self.argsjson()
 
     def remove(self):
-        # logger.debug(f"r {self.loc} {self.index}")
         self.validate_init()
         if self.loc != "assumptions":
             inferences_from = [s for s in self.arg if s.symbol in self.arg[self.index].justifiers]
@@ -131,7 +129,6 @@ class ArgumentsWithStep(Arguments):
                     step.justifiers.append(premise)
         del self.arg[self.index]
         self.evaluate()
-        # return using superclass
         return self.argsjson()
 
     def assume(self):

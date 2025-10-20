@@ -1,4 +1,3 @@
-from enum import Enum
 from dataclasses import dataclass
 from openai import OpenAI
 from config import OPENAI_API_KEY
@@ -25,18 +24,19 @@ class Gpt:
             "role": "user",
             "content": prompt
         }]
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model="gpt-4o",
-            messages=messages,
-            response_format=self.response_format,
+            input=messages,
+            text=self.response_format
+            # tools=[]
         )
-        return response.choices[0].message.content
+        return response.output_text
 
 gpt_theses = Gpt(
     system_prompt=theses_system_prompt,
     response_format={
-        "type": "json_schema",
-        "json_schema": {
+        "format": {
+            "type": "json_schema",
             "name": "response",
             "strict": True,
             "schema": {
@@ -56,8 +56,8 @@ gpt_theses = Gpt(
 gpt_justify = Gpt(
     system_prompt=justify_system_prompt,
     response_format={
-        "type": "json_schema",
-        "json_schema": {
+        "format": {
+            "type": "json_schema",
             "name": "response",
             "strict": True,
             "schema": {
@@ -78,8 +78,8 @@ gpt_justify = Gpt(
 gpt_evaluate = Gpt(
     system_prompt=evaluate_system_prompt,
     response_format={
-        "type": "json_schema",
-        "json_schema": {
+        "format": {
+            "type": "json_schema",
             "name": "response",
             "strict": True,
             "schema": {
