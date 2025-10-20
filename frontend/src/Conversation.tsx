@@ -7,6 +7,7 @@ import type {StepType, ArgsType, ArgMode, ConversationSnapshot, ConversationType
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
+type ActionType = 'remove' | 'assume'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -197,42 +198,12 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  const handleAssume = async (loc: string, index: number) => {
-    const lastPrompt = `Assume proposition (${argLoc(loc)[index].symbol})`
+  const handleAction = async (
+    action: ActionType, lastPrompt: string, loc: string, index: number
+  ) => {
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
-    const url = VITE_API_BASE_URL + '/api/v1/assume'
-    let apiPrompt = {...args, loc, index}
-    try {
-      const response = await axios.post(url, apiPrompt)
-      const responseObject = JSON.parse(response.data.reply)
-      if (response.data.errors) {
-        throw(response.data.errors)
-      }
-      if (!responseObject) {
-        throw('empty responseObject')
-      }
-      const newSnapshot = {
-        ...conversation.snapshots[snapshotIndex],
-        lastPrompt, argErrors: initialSnapshot().argErrors,
-        args: responseObject
-      }
-      saveSnapshot(newSnapshot)
-      setLastPrompt('')
-    }
-    catch (error) {
-      console.error('Error: ', error)
-    }
-    finally {
-      setUserMode('ready')
-    }
-  }
-
-  const handleRemove = async (loc: string, index: number) => {
-    const lastPrompt = `Remove proposition (${argLoc(loc)[index].symbol})`
-    setLastPrompt(lastPrompt)
-    setUserMode('waiting')
-    const url = VITE_API_BASE_URL + '/api/v1/remove'
+    const url = VITE_API_BASE_URL + '/api/v1/' + action
     let apiPrompt = {...args, loc, index}
 
     try {
@@ -351,7 +322,10 @@ function Conversation({conversation, setConversation, createConversation}: {
                 key="0"
                 disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
-                onClick={() => handleAssume(loc, step_index)}>
+                onClick={() => {
+                  const prompt = `Assume proposition (${step.symbol})`
+                  handleAction('assume', prompt, loc, step_index)
+                }}>
                 assume
               </button>
             </>
@@ -362,7 +336,10 @@ function Conversation({conversation, setConversation, createConversation}: {
                 key="1"
                 disabled={userMode == 'waiting'}
                 className={smallButtonClassNames}
-                onClick={() => handleRemove(loc, step_index)}>
+                onClick={() => {
+                  const prompt = `Remove proposition (${step.symbol})`
+                  handleAction('remove', prompt, loc, step_index)
+                }}>
                 remove
               </button>
               <button
@@ -414,19 +391,22 @@ function Conversation({conversation, setConversation, createConversation}: {
   const assumptionsDiv = (
     <>
       <div className={headingClassNames}>Assumptions:</div>
-      {args.assumptions.map((assumption, step_index) => (
+      {args.assumptions.map((step, step_index) => (
         <div key={step_index}>
-          ({assumption.symbol}) {assumption.proposition}
+          ({step.symbol}) {step.proposition}
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
-            onClick={() => handleRemove('assumptions', step_index)}>
+            onClick={() => {
+              const prompt = `Remove proposition (${step.symbol})`
+              handleAction('remove', prompt, 'assumptions', step_index)
+            }}>
             remove
           </button>
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
-            onClick={() => handleDispute(assumption)}>
+            onClick={() => handleDispute(step)}>
             dispute
           </button>
         </div>
