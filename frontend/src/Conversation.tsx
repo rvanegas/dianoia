@@ -100,17 +100,6 @@ function Conversation({conversation, setConversation, createConversation}: {
     }
   }
 
-  // function foo() {
-  //   let steps: [string, number][] = [['argument', 0], ['counter_argument', 0]]
-  //   for (let [loc, step_index] of steps) {
-  //     let api: string = ''
-  //     api = loc
-  //     console.log(loc, step_index, api)
-  //   }
-  // }
-
-  // foo()
-
   const handleAIJustifySimple = async (loc: string, index: number) => {
     await handleAIJustify([[loc, index]])
   }
@@ -160,14 +149,14 @@ function Conversation({conversation, setConversation, createConversation}: {
     const new_args: ArgsType = {
       assumptions: [],
       argument: [{
-        index: 'A',
+        symbol: 'A',
         proposition: theses.thesis,
         justifiers: [],
         truth: 0.5,
         valid: 0.5,
       }],
       counter_argument: [{
-        index: 'B',
+        symbol: 'B',
         proposition: theses.counter_thesis,
         justifiers: [],
         truth: 0.5,
@@ -178,7 +167,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleUserJustify = async (proposition: string) => {
-    const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].index}`
+    const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
@@ -209,7 +198,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleAssume = async (loc: string, index: number) => {
-    const lastPrompt = `Assume proposition (${argLoc(loc)[index].index})`
+    const lastPrompt = `Assume proposition (${argLoc(loc)[index].symbol})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     // console.log(`args ${JSON.stringify(args)}`)
@@ -253,7 +242,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleRemove = async (loc: string, index: number) => {
-    const lastPrompt = `Remove proposition (${argLoc(loc)[index].index})`
+    const lastPrompt = `Remove proposition (${argLoc(loc)[index].symbol})`
     setLastPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/remove'
@@ -352,7 +341,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       }
       return (
         <div key={step_index}>
-          ({step.index}) {step.proposition} [{justifier}; {value}]
+          ({step.symbol}) {step.proposition} [{justifier}; {value}]
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
@@ -440,7 +429,7 @@ function Conversation({conversation, setConversation, createConversation}: {
       <div className={headingClassNames}>Assumptions:</div>
       {args.assumptions.map((assumption, step_index) => (
         <div key={step_index}>
-          ({assumption.index}) {assumption.proposition}
+          ({assumption.symbol}) {assumption.proposition}
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
