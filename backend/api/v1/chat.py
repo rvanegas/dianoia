@@ -3,6 +3,7 @@ from fastapi import APIRouter, File, UploadFile
 from core.utils import logger
 from models.argument import (Theses,
     ArgumentsWithStep, ArgumentsWithProposition)
+from models.file import FileData, create_file, expire_old_files
 
 router = APIRouter()
 
@@ -33,6 +34,10 @@ async def user_justify(args: ArgumentsWithProposition):
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    contents = await file.read()
-    # logger.debug(contents)
-    return {"filename": file.filename}
+    content = await file.read()
+    file_data = FileData(
+        content=content,
+        filename=file.filename)
+    create_file(file_data)
+    expire_old_files()
+    return {"reply": file.filename}
