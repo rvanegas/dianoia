@@ -39,3 +39,8 @@ type ConversationType = {
   initPrompt: string
   snapshots: ConversationSnapshot[]
 }
+
+export type FileType = {
+  filename: string
+  file_id: string
+}

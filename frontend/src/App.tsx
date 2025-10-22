@@ -2,7 +2,7 @@ import './App.css'
 import {useImmer} from 'use-immer'
 import {useState, useEffect} from 'react'
 
-import type {ConversationType} from './types'
+import type {ConversationType, FileType} from './types'
 
 import Conversation from './Conversation'
 import FileDropUpload from './FileDropUpload'
@@ -19,6 +19,7 @@ function App() {
     [{...initialState, id: 1}])
   const [nextConvId, setNextConvId] = useImmer<number>(2)
   const [currConvIndex, setCurrConvIndex] = useImmer<number>(0)
+  const [files, setFiles] = useImmer<FileType[]>([])
   const [paneOpened, setPaneOpened] = useState<boolean>(false)
 
   const setConversation = (newConversation: ConversationType) => {
@@ -31,8 +32,16 @@ function App() {
     setCurrConvIndex(conversations.length)
   }
 
+  const createConversationFromFile = (index: number) => {
+    console.log(index)
+  }
+
   const selectConversation = (index: number) => {
     setCurrConvIndex(index)
+  }
+
+  const newFileUploaded = (newFile: FileType) => {
+    setFiles(f => {f.push(newFile)})
   }
 
   useEffect(() => {
@@ -64,7 +73,7 @@ function App() {
         </button>
         {conversations.map((conv, index) => (
           <button
-            key={conv.id}
+            key={index}
             className={`
               w-[100%] text-left rounded-md p-2 text-zinc-700 dark:text-zinc-300 border-none
               hover:bg-slate-300 dark:hover:bg-zinc-700
@@ -77,7 +86,16 @@ function App() {
             Select {conv.id}
           </button>
         ))}
-        <FileDropUpload/>
+        {files.map((file, index) => (
+          <button
+            key={index}
+            className="w-[100%] text-left rounded-md p-2 text-zinc-700 dark:text-zinc-300
+              border-none hover:bg-slate-300 dark:hover:bg-zinc-700"
+            onClick={() => createConversationFromFile(index)}>
+            Create from {file.filename}
+          </button>
+        ))}
+        <FileDropUpload newFileUploaded={newFileUploaded}/>
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900">
         {paneButton}
