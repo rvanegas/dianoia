@@ -23,7 +23,7 @@ async def remove(args: ArgumentsWithStep):
     return {"reply": new_args}
 
 @router.post("/ai-justify")
-async def justify(args: ArgumentsWithStep):
+async def ai_justify(args: ArgumentsWithStep):
     new_args = args.justify()
     return {"reply": new_args}
 
