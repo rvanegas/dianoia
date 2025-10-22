@@ -1,6 +1,8 @@
 import io
+import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+
 from config import VECTOR_STORE_ID
 from core.utils import logger
 from services.openaiclient import client
@@ -25,7 +27,8 @@ def create_file(file_data: FileData):
         vector_store_id=VECTOR_STORE_ID,
         file_id=response.id)
     expire_old_files()
-    return FileRef(file_id=response.id, filename=response.filename)
+    file_ref = FileRef(file_id=response.id, filename=response.filename)
+    return json.dumps(asdict(file_ref))
 
 one_day_in_seconds = 24 * 60 * 60
 

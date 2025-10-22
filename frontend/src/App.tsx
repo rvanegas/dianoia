@@ -5,6 +5,7 @@ import {useState, useEffect} from 'react'
 import type {ConversationType} from './types'
 
 import Conversation from './Conversation'
+import FileDropUpload from './FileDropUpload'
 
 const initialState: ConversationType = {
   id: 1,
@@ -76,6 +77,7 @@ function App() {
             Select {conv.id}
           </button>
         ))}
+        <FileDropUpload/>
       </div>
       <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900">
         {paneButton}

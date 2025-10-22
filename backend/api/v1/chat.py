@@ -38,5 +38,5 @@ async def upload(file: UploadFile = File(...)):
     file_data = FileData(
         content=content,
         filename=file.filename)
-    create_file(file_data)
-    return {"reply": file.filename}
+    file_ref = create_file(file_data)
+    return {"reply": file_ref}
