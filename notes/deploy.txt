@@ -45,4 +45,6 @@ docker run --rm -p 80:80 \
 
 --------
 
-Create vector store with cli/create_vector_store and put id in 'backend/.env'.
+Agent Recipe:
+
+Create assistant with cli/create_assistant and put id in 'backend/.env'.
