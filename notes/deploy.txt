@@ -42,3 +42,7 @@ docker run --rm -p 80:80 \
   certbot/certbot certonly --standalone \
   --non-interactive --agree-tos \
   -m rvanegas@gmail.com -d dianoia.rvanegas.com
+
+--------
+
+Create vector store with cli/create_vector_store and put id in 'backend/.env'.
