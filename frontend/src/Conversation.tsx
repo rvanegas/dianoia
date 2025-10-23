@@ -51,12 +51,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const theses = currentSnapshot.theses
   const args = currentSnapshot.args
   const argErrors = currentSnapshot.argErrors
-  const [lastPrompt, setLastPrompt] = useState<string>(currentSnapshot.lastPrompt)
+  const [prompt, setPrompt] = useState<string>('')
+
   const [userMode, setUserMode] = useState<UserMode>('ready')
   const [targetLoc, setTargetLoc] = useState<string>('')
   const [targetIndex, setTargetIndex] = useState<number>(0)
 
-  const [prompt, setPrompt] = useState<string>('')
+  const [inputText, setInputText] = useState<string>('')
   const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
@@ -74,9 +75,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     if (userMode == 'waiting') return
     if (!(content && content.trim()) && !conversation.vector_store_id) return
     content ||= ''
-    setLastPrompt(content)
+    setPrompt(content)
     setUserMode('waiting')
-    setPrompt('')
+    setInputText('')
     const apiPrompt = {
       prompt: content, 
       ...theses, 
@@ -98,7 +99,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         theses: responseObject,
       }
       saveSnapshot(newSnapshot)
-      setLastPrompt('')
+      setPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -115,7 +116,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const handleAIJustify = async (steps: [string, number][], new_args: object = {}) =>
   {
     const lastPrompt = 'Justify propositions'
-    setLastPrompt(lastPrompt)
+    setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
     let apiPrompt = {...args, ...new_args, loc: '', index: 0,
@@ -145,7 +146,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       newSnapshot.args = responseObject
       saveSnapshot(newSnapshot)
-      setLastPrompt('')
+      setPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -178,7 +179,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   const handleUserJustify = async (proposition: string) => {
     const lastPrompt = `User Justify proposition ${argLoc(targetLoc)[targetIndex].symbol}`
-    setLastPrompt(lastPrompt)
+    setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
     let apiPrompt = {...args, loc: targetLoc, index: targetIndex, proposition,
@@ -199,7 +200,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         args: responseObject
       }
       saveSnapshot(newSnapshot)
-      setLastPrompt('')
+      setPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -212,7 +213,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const handleAction = async (
     action: ActionType, lastPrompt: string, loc: string, index: number
   ) => {
-    setLastPrompt(lastPrompt)
+    setPrompt(lastPrompt)
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
     let apiPrompt = {...args, loc, index,
@@ -233,7 +234,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         args: responseObject
       }
       saveSnapshot(newSnapshot)
-      setLastPrompt('')
+      setPrompt('')
     }
     catch (error) {
       console.error('Error: ', error)
@@ -437,11 +438,17 @@ function Conversation({conversation, setConversation, createConversationFromProp
     </>
   )
 
-  const displayPrompt = lastPrompt || currentSnapshot.lastPrompt
-  const lastDiv = (
+  const lastPromptDiv = (
+    <>
+      <div className={headingClassNames}>LastPrompt:</div>
+      <div>{currentSnapshot.lastPrompt}</div>
+    </>
+  )
+
+  const promptDiv = (
     <>
       <div className={headingClassNames}>Prompt:</div>
-      <div>{displayPrompt}</div>
+      <div>{prompt}</div>
     </>
   )
 
@@ -456,7 +463,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
-          {!displayPrompt ? undefined : lastDiv}
+          {!currentSnapshot.lastPrompt ? undefined : lastPromptDiv}
+          {!prompt ? undefined : promptDiv}
         </div>
       </div>
       {loadingIndicator}
@@ -474,19 +482,19 @@ function Conversation({conversation, setConversation, createConversationFromProp
     else if (userMode == 'input') {
       handleUserJustify(prompt)
     }
-    setPrompt('')
+    setInputText('')
   }
 
   const userDiv = (
     <div className="p-4 flex gap-2 w-[100%] flex-wrap">
       <input
         className="flex-1 px-4 bg-slate-200 rounded-full focus:outline-none dark:bg-zinc-800"
-        value={prompt}
+        value={inputText}
         disabled={!(currentSnapshot.argMode == 'thesis' || userMode == 'input')}
-        onChange={e => setPrompt(e.target.value)}
+        onChange={e => setInputText(e.target.value)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key == 'Enter') {
-            handleEnter(prompt)
+            handleEnter(inputText)
             e.preventDefault()
           }
         }}
@@ -495,7 +503,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       <button
         className={bigButtonClassNames}
         disabled={userMode == 'waiting' || userMode == 'ready'}
-        onClick={() => handleEnter(prompt)}>
+        onClick={() => handleEnter(inputText)}>
         Enter
       </button>
       {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
