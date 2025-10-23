@@ -38,10 +38,10 @@ function initialSnapshot() : ConversationSnapshot {
   }
 }
 
-function Conversation({conversation, setConversation, createConversation}: {
+function Conversation({conversation, setConversation, createConversationFromProposition}: {
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void,
-  createConversation: (proposition: string) => void
+  createConversationFromProposition: (proposition: string) => void
 }) {
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
   const lastSnapshot = conversation.snapshots[snapshotIndex]
@@ -65,16 +65,23 @@ function Conversation({conversation, setConversation, createConversation}: {
     setSnapshotIndex(prev => prev + 1)
   }
 
+  // this is just an abbreviation to keep typescript happy
   const argLoc = (loc: string) => {
     return args[loc as keyof typeof args] as any[]
   }
 
-  const handleThesis = async (content: string) => {
-    if (!content.trim() || userMode == 'waiting') return
+  const handleThesis = async (content?: string) => {
+    if (userMode == 'waiting') return
+    if (!(content && !content.trim()) && !conversation.vector_store_id) return
+    content ||= ''
     setLastPrompt(content)
     setUserMode('waiting')
     setPrompt('')
-    const apiPrompt = {prompt: content, ...theses}
+    const apiPrompt = {
+      prompt: content, 
+      ...theses, 
+      vector_store_id: conversation.vector_store_id,
+    }
     const path = '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
     try {
@@ -234,7 +241,7 @@ function Conversation({conversation, setConversation, createConversation}: {
   }
 
   const handleDispute = async (step: StepType) => {
-    createConversation(step.proposition)
+    createConversationFromProposition(step.proposition)
   }
 
   const handleUndo = () => {
@@ -267,9 +274,15 @@ function Conversation({conversation, setConversation, createConversation}: {
 
   const hasLoadedInitPrompt = useRef(false)
   useEffect(() => {
+    console.log('ue', hasLoadedInitPrompt.current, 
+      conversation.initPrompt, conversation.vector_store_id)
     if (conversation.initPrompt && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
       hasLoadedInitPrompt.current = true
       handleThesis(conversation.initPrompt)
+    }
+    else if (conversation.vector_store_id && snapshotIndex == -1 && !hasLoadedInitPrompt.current) {
+      hasLoadedInitPrompt.current = true
+      handleThesis()
     }
   }, [])
 

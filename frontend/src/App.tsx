@@ -10,7 +10,8 @@ import FileDropUpload from './FileDropUpload'
 const initialState: ConversationType = {
   id: 1,
   name: '',
-  initPrompt: '',
+  initPrompt: undefined,
+  vector_store_id: undefined,
   snapshots: []
 }
 
@@ -26,14 +27,26 @@ function App() {
     setConversations(c => {c[currConvIndex] = newConversation})
   }
 
-  const createConversation = (proposition: string) => {
-    setConversations(c => {c.push({...initialState, id: nextConvId, initPrompt: proposition})})
+  const createConversation = ({initPrompt, vector_store_id}: {
+    initPrompt?: string,
+    vector_store_id?: string,
+  }) => {
+    setConversations(c => {c.push({
+      ...initialState, 
+      id: nextConvId, 
+      initPrompt,
+      vector_store_id
+    })})
     setNextConvId(i => i = i+1)
     setCurrConvIndex(conversations.length)
   }
 
+  const createConversationFromProposition = (proposition: string) => {
+    createConversation({initPrompt: proposition})
+  }
+
   const createConversationFromFile = (index: number) => {
-    console.log(index)
+    createConversation({vector_store_id: files[index].vector_store_id})
   }
 
   const selectConversation = (index: number) => {
@@ -68,7 +81,7 @@ function App() {
       `}>
         <button
           className='w-[90%] px-2 py-2 m-4 text-white bg-indigo-500 border-none rounded-xl'
-          onClick={() => createConversation('')}>
+          onClick={() => createConversation({initPrompt: ''})}>
           New
         </button>
         {conversations.map((conv, index) => (
@@ -103,7 +116,7 @@ function App() {
           key={currConvIndex}
           conversation={conversations[currConvIndex]}
           setConversation={setConversation}
-          createConversation={createConversation}/>
+          createConversationFromProposition={createConversationFromProposition}/>
       </div>
     </div>
   )
