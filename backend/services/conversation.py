@@ -32,26 +32,6 @@ class Gpt:
             response_format=response_format)
         self.assistant_id = response.id
 
-    # def call(self, prompt: str):
-    #     messages = [{
-    #         "role": "user",
-    #         "content": "Help me with the argument."
-    #     }]
-    #     response_format = {
-    #         "format": {
-    #             "type": "json_schema",
-    #             "name": "response",
-    #             "strict": True,
-    #             "schema": self.response_format_base
-    #         }        
-    #     }
-    #     response = client.responses.create(
-    #         model=OPENAI_MODEL,
-    #         input=messages,
-    #         text=response_format
-    #     )
-    #     return response.output_text
-
     def call(self, prompt: str, vector_store_id: str):
         # logger.debug(f"vs {vector_store_id}")
         thread={
