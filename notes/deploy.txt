@@ -42,9 +42,3 @@ docker run --rm -p 80:80 \
   certbot/certbot certonly --standalone \
   --non-interactive --agree-tos \
   -m rvanegas@gmail.com -d dianoia.rvanegas.com
-
---------
-
-Agent Recipe:
-
-Create assistant with cli/create_assistant and put id in 'backend/.env'.
