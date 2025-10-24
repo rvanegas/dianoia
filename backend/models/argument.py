@@ -91,11 +91,9 @@ class ArgumentsWithStep(Arguments):
     loc: str
     index: int
 
-    # is there a pydantic way?
-    # @model_validator(mode='before')
-    # @classmethod
-    def validate_init(self):
-        """validate that indicated position exists"""
+    # this is a special pydantic method
+    def model_post_init(self, __context):
+        """validate that indicated position exists, and set self.arg"""
         if self.loc == 'argument':
             self.arg = self.argument
         elif self.loc == 'counter_argument':
@@ -109,8 +107,8 @@ class ArgumentsWithStep(Arguments):
 
     def insert_proposition(self, new_proposition: str):
         """add step and reference to it in indicated justifiers"""
-        if self.arg == None: # unnecessary if validate_init is in a hook
-            raise RuntimeError("invalid arg")
+        # if self.arg == None: # unnecessary if validate_init is in a hook
+        #     raise RuntimeError("invalid arg")
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=new_proposition,
             justifiers=[], truth=0.0, valid=0.0)
@@ -121,7 +119,6 @@ class ArgumentsWithStep(Arguments):
 
     def ai_justify(self):
         """use gpt to add steps to justify indicated conclusion"""
-        self.validate_init()
         response = gpt_justify.call(self.json(), self.vector_store_id)
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
@@ -132,7 +129,6 @@ class ArgumentsWithStep(Arguments):
 
     def remove(self):
         """remove step and adjust justifiers and evaluations accordingly"""
-        self.validate_init()
         if self.loc != "assumptions":
             inferences_from = [s for s in self.arg if s.symbol in self.arg[self.index].justifiers]
             inferences_to = [s for s in self.arg if self.arg[self.index].symbol in s.justifiers]
@@ -150,7 +146,6 @@ class ArgumentsWithStep(Arguments):
 
     def assume(self):
         """move step into assumptions and adjust evaluations accordingly"""
-        self.validate_init()
         if self.loc == "assumptions":
             raise ValueError("already assumed")
         if len(self.arg[self.index].justifiers) != 0:
