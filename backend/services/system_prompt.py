@@ -14,7 +14,7 @@ alone.
 theses_system_prompt = instructions + """
 
 You will begin by extracting a thesis, a counter-thesis, and a presupposition
-from the given context. This may be a brief statement in the "prompt"
+from the given context. This may be a brief statement in the "proposition"
 property, or it may be a document in the context.
 
 The prompt may already have previously chosen theses and a presupposition, in
