@@ -2,8 +2,8 @@
 import json
 
 from pydantic import BaseModel
-from core.utils import find_index # , logger
-from services.conversation import gpt_theses, gpt_justify, gpt_evaluate
+from core.utils import find_index #, logger
+from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
@@ -21,15 +21,25 @@ class Arguments(BaseModel):
     assumptions: list[Step]
     argument: list[Step]
     counter_argument: list[Step]
+    explanation: str | None = None
+    formalization: list[str] | None = None
     vector_store_id: str | None = None
     arg: list[Step] | None = None
 
+    def model_post_init(self, __context):
+        self.formalization = []
+        self.explanation = None
+
     def gptjsont(self):
-        return self.json(include={"thesis", "counter_thesis", "presupposition", "proposition"})
+        return self.json(include={
+            "thesis", "counter_thesis",
+            "presupposition", "proposition"})
 
     def gptjson(self):
         """arguments json to return to frontend"""
-        return self.json(include={"assumptions", "argument", "counter_argument"})
+        return self.json(include={
+            "assumptions", "argument", "counter_argument",
+            "explanation", "formalization"})
 
     def next_symbol(self):
         """picks next available A-Z in a natural order"""
@@ -51,9 +61,6 @@ class Arguments(BaseModel):
             if c not in seen:
                 return c
         raise RuntimeError("something went wrong")
-
-    # def all_arg_steps(self):
-    #     return self.argument + self.counter_argument
 
     def add_evaluations(self, arg: list[Step], conclusion: Step):
         """
@@ -94,21 +101,13 @@ class ArgumentsWithStep(Arguments):
     # this is a special pydantic method
     def model_post_init(self, __context):
         """validate that indicated position exists, and set self.arg"""
-        if self.loc == 'argument':
-            self.arg = self.argument
-        elif self.loc == 'counter_argument':
-            self.arg = self.counter_argument
-        elif self.loc == 'assumptions':
-            self.arg = self.assumptions
-        else:
-            raise ValueError('invalid loc')
-        if len(self.arg) <= self.index:
-            raise ValueError('invalid index')
+        super().model_post_init(__context)
+        assert self.loc in ['assumptions', 'argument', 'counter_argument']
+        self.arg = getattr(self, self.loc)
+        assert len(self.arg) > self.index
 
     def insert_proposition(self, new_proposition: str):
         """add step and reference to it in indicated justifiers"""
-        # if self.arg == None: # unnecessary if validate_init is in a hook
-        #     raise RuntimeError("invalid arg")
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=new_proposition,
             justifiers=[], truth=0.0, valid=0.0)
@@ -156,13 +155,17 @@ class ArgumentsWithStep(Arguments):
         return self.gptjson()
 
     def explain(self):
-        self.validate_init()
+        """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
-        return self.gptjson(), "I hereby explain."
+        content = gpt_explain.call(self.json(), self.vector_store_id)
+        response = json.loads(content)
+        # logger.debug(response)
+        self.formalization = response["formalization"]
+        self.explanation = response["explanation"]
+        return self.gptjson()
 
 class ArgumentsWithProposition(Arguments):
     """arguments with a proposition"""
-
     proposition: str
 
     def theses(self):
@@ -175,12 +178,7 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
     # should use insert_proposition()
     def user_justify(self):
         """add step using proposition attr and adjust justifiers and evaluations accordingly"""
-        if self.loc == 'argument':
-            arg = self.argument
-        elif self.loc == 'counter_argument':
-            arg = self.counter_argument
-        else:
-            raise ValueError('invalid loc')
+        assert self.loc in ["argument", "counter_argument"]
         next_symbol = self.next_symbol()
         new_step = Step(symbol=next_symbol, proposition=self.proposition,
             justifiers=[], truth=0.0, valid=0.0)

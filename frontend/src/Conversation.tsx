@@ -7,7 +7,7 @@ import type {StepType, ArgsType, ArgMode, ConversationSnapshot, ConversationType
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
-type ActionType = 'remove' | 'assume'
+type ActionType = 'remove' | 'assume' | 'explain'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -34,6 +34,8 @@ function initialSnapshot() : ConversationSnapshot {
       counter_argument: [],
     },
     lastPrompt: '',
+    explanation: '',
+    formalization: [],
     argMode: 'thesis',
   }
 }
@@ -230,11 +232,12 @@ function Conversation({conversation, setConversation, createConversationFromProp
       if (!responseObject) {
         throw('empty responseObject')
       }
-      console.log(response.data.explanation)
       const newSnapshot = {
         ...conversation.snapshots[snapshotIndex],
         lastPrompt, argErrors: initialSnapshot().argErrors,
-        args: responseObject
+        explanation: responseObject.explanation,
+        formalization: responseObject.formalization,
+        args: responseObject,
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -467,6 +470,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
     </>
   )
 
+  const explanationDiv = () => {
+    if (!currentSnapshot.formalization || currentSnapshot.formalization.length == 0) return
+    return (
+      <>
+        <div className={headingClassNames}>Formalization:</div>
+        <div>{currentSnapshot.formalization.map((prop, key) => (<div key={key}>{prop}</div>))}</div>
+        <div className={headingClassNames}>Explanation:</div>
+        <div>{currentSnapshot.explanation}</div>
+      </>
+    )
+  }
+
   const snapshotId = snapshotIndex == -1 ? '' : `.${snapshotIndex + 1}`
 
   const messagesDiv = (
@@ -478,6 +493,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
           {!theses.thesis ? undefined : thesesDiv}
           {args.assumptions.length == 0 ? undefined : assumptionsDiv}
           {args.argument.length == 0 ? undefined : argumentsDiv}
+          {!currentSnapshot.explanation ? undefined : explanationDiv()}
           {!currentSnapshot.lastPrompt ? undefined : lastPromptDiv}
           {!prompt ? undefined : promptDiv}
         </div>
