@@ -1,8 +1,5 @@
-export type ThesesType = {
-  thesis: string
-  counter_thesis: string
-  presupposition: string
-}
+
+type ArgMode = 'thesis' | 'development'
 
 export type StepType = {
   symbol: string
@@ -12,28 +9,25 @@ export type StepType = {
   valid: number
 }
 
-export type ArgsType = {
+type ConversationSnapshot = {
+  thesis: string
+  counter_thesis: string
+  presupposition: string
   argument: StepType[]
   counter_argument: StepType[]
   assumptions: StepType[]
-}
-
-type ArgMode = 'thesis' | 'development'
-
-type ConversationSnapshot = {
-  theses: ThesesType
-  args: ArgsType
   lastPrompt: string
   argMode: ArgMode
   explanation: string | undefined
   formalization: string[] | undefined
+  vector_store_id: string | undefined // ongoing context
 }
 
 type ConversationType = {
   id: number
   name: string
   initPrompt: string | undefined
-  vector_store_id: string | undefined
+  vector_store_id: string | undefined // initial context
   snapshots: ConversationSnapshot[]
 }
 

@@ -3,7 +3,7 @@ import './App.css'
 import {useEffect, useRef, useState} from 'react'
 import axios from 'axios'
 
-import type {StepType, ArgsType, ArgMode, ConversationSnapshot, ConversationType} from './types'
+import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
 import {exportMarkdown} from './markdown'
 
 type UserMode = 'waiting' | 'ready' | 'input'
@@ -19,20 +19,17 @@ const headingClassNames = `text-lg font-bold`
 
 function initialSnapshot() : ConversationSnapshot {
   return {
-    theses: {
-      thesis: '',
-      counter_thesis: '',
-      presupposition: '',
-    },
-    args: {
-      assumptions: [],
-      argument: [],
-      counter_argument: [],
-    },
+    thesis: '',
+    counter_thesis: '',
+    presupposition: '',
+    assumptions: [],
+    argument: [],
+    counter_argument: [],
     lastPrompt: '',
     explanation: '',
     formalization: [],
     argMode: 'thesis',
+    vector_store_id: '',
   }
 }
 
@@ -46,15 +43,20 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
 
-  const theses = currentSnapshot.theses
-  const args = currentSnapshot.args
-  const [prompt, setPrompt] = useState<string>('')
-
+  // ready/waiting/input
   const [userMode, setUserMode] = useState<UserMode>('ready')
+
+  // used by input to save which user-justify action was selected
   const [targetLoc, setTargetLoc] = useState<string>('')
   const [targetIndex, setTargetIndex] = useState<number>(0)
 
+  // contents of input element
   const [inputText, setInputText] = useState<string>('')
+
+  // should rename to currentPrompt. this is prompt backend is currently working on.
+  const [prompt, setPrompt] = useState<string>('')
+
+  // export button
   const [copied, setCopied] = useState<boolean>(false)
 
   const saveSnapshot = (newSnap: ConversationSnapshot) => {
@@ -65,7 +67,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
 
   // this is just an abbreviation to keep typescript happy
   const argLoc = (loc: string) => {
-    return args[loc as keyof typeof args] as any[]
+    return currentSnapshot[loc as keyof typeof currentSnapshot] as any[]
   }
 
   const handleThesis = async (content?: string) => {
@@ -76,8 +78,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     setInputText('')
     const apiPrompt = {
-      ...theses, ...args, proposition: content,
-      vector_store_id: conversation.vector_store_id,
+      ...currentSnapshot, 
+      proposition: content,
+      vector_store_id: conversation.vector_store_id
     }
     const path = '/api/v1/theses'
     const url = VITE_API_BASE_URL + path
@@ -89,12 +92,10 @@ function Conversation({conversation, setConversation, createConversationFromProp
       }
       const argMode : ArgMode = 'thesis'
       const newSnapshot = {
-        ...conversation.snapshots[snapshotIndex],
+        ...currentSnapshot,
+        ...responseObject,
         lastPrompt: content,
-        args, argMode,
-        theses: responseObject,
-        formalization: responseObject.formalization,
-        explanation: responseObject.explanation,
+        argMode,
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -118,12 +119,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/ai-justify'
     let apiPrompt = {
-      ...theses, ...args, ...new_args, loc: '', index: 0,
-      vector_store_id: conversation.vector_store_id,
+      ...currentSnapshot, ...new_args,
+      loc: '', index: 0
     }
     const argMode: ArgMode = 'development'
     let newSnapshot = {
-      ...conversation.snapshots[snapshotIndex], argMode,
+      ...currentSnapshot,
+      argMode,
       lastPrompt,
     }
     let responseObject
@@ -143,12 +145,10 @@ function Conversation({conversation, setConversation, createConversationFromProp
         }
         apiPrompt = {
           ...apiPrompt, 
-          ...responseObject,
-          formalization: responseObject.formalization,
-          explanation: responseObject.explanation,
+          ...responseObject
         }
       }
-      newSnapshot.args = responseObject
+      newSnapshot = {...newSnapshot, ...responseObject}
       saveSnapshot(newSnapshot)
       setPrompt('')
     }
@@ -161,18 +161,18 @@ function Conversation({conversation, setConversation, createConversationFromProp
   }
 
   const handleArgue = async () => {
-    const new_args: ArgsType = {
+    const new_args = {
       assumptions: [],
       argument: [{
         symbol: 'A',
-        proposition: theses.thesis,
+        proposition: currentSnapshot.thesis,
         justifiers: [],
         truth: 0.5,
         valid: 0.5,
       }],
       counter_argument: [{
         symbol: 'B',
-        proposition: theses.counter_thesis,
+        proposition: currentSnapshot.counter_thesis,
         justifiers: [],
         truth: 0.5,
         valid: 0.5,
@@ -187,8 +187,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/user-justify'
     let apiPrompt = {
-      ...theses, ...args, loc: targetLoc, index: targetIndex, proposition,
-      vector_store_id: conversation.vector_store_id,
+      ...currentSnapshot, 
+      loc: targetLoc, index: targetIndex,
+      proposition
     }
     try {
       const response = await axios.post(url, apiPrompt)
@@ -200,11 +201,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
         throw('empty responseObject')
       }
       const newSnapshot = {
-        ...conversation.snapshots[snapshotIndex],
-        lastPrompt,
-        args: responseObject,
-        formalization: responseObject.formalization,
-        explanation: responseObject.explanation,
+        ...currentSnapshot,
+        ...responseObject,
+        lastPrompt
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -224,8 +223,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     const url = VITE_API_BASE_URL + '/api/v1/' + action
     let apiPrompt = {
-      ...theses, ...args, loc, index,
-      vector_store_id: conversation.vector_store_id,
+      ...currentSnapshot,
+      loc, index
     }
     try {
       const response = await axios.post(url, apiPrompt)
@@ -237,11 +236,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
         throw('empty responseObject')
       }
       const newSnapshot = {
-        ...conversation.snapshots[snapshotIndex],
-        lastPrompt,
-        explanation: responseObject.explanation,
-        formalization: responseObject.formalization,
-        args: responseObject,
+        ...currentSnapshot,
+        ...responseObject,
+        lastPrompt
       }
       saveSnapshot(newSnapshot)
       setPrompt('')
@@ -273,7 +270,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   }
 
   const handleCopy = async () => {
-    const text = exportMarkdown(theses, args)
+    const text = exportMarkdown(currentSnapshot)
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 3000)
@@ -396,9 +393,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
     <>
       <div>
         <div className={headingClassNames}>Argument:</div>
-        <div>{argumentNode('argument', args.argument)}</div>
+        <div>{argumentNode('argument', currentSnapshot.argument)}</div>
         <div className={headingClassNames}>Counter-Argument:</div>
-        <div>{argumentNode('counter_argument', args.counter_argument)}</div>
+        <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
       </div>
     </>
   )
@@ -406,7 +403,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const assumptionsDiv = (
     <>
       <div className={headingClassNames}>Assumptions:</div>
-      {args.assumptions.map((step, step_index) => (
+      {currentSnapshot.assumptions.map((step, step_index) => (
         <div key={step_index}>
           ({step.symbol}) {step.proposition}
           <button
@@ -432,11 +429,11 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const thesesDiv = (
     <>
       <div className={headingClassNames}>Thesis:</div>
-      <div>{theses.thesis}</div>
+      <div>{currentSnapshot.thesis}</div>
       <div className={headingClassNames}>Counter-Thesis:</div>
-      <div>{theses.counter_thesis}</div>
+      <div>{currentSnapshot.counter_thesis}</div>
       <div className={headingClassNames}>Presupposition:</div>
-      <div>{theses.presupposition}</div>
+      <div>{currentSnapshot.presupposition}</div>
     </>
   )
 
@@ -474,9 +471,9 @@ function Conversation({conversation, setConversation, createConversationFromProp
         <div className="max-w text-left my-2 self-start">
           <div className={headingClassNames}>Id:</div>
           <div>{conversation.id}{snapshotId}</div>
-          {!theses.thesis ? undefined : thesesDiv}
-          {args.assumptions.length == 0 ? undefined : assumptionsDiv}
-          {args.argument.length == 0 ? undefined : argumentsDiv}
+          {!currentSnapshot.thesis ? undefined : thesesDiv}
+          {currentSnapshot.assumptions.length == 0 ? undefined : assumptionsDiv}
+          {currentSnapshot.argument.length == 0 ? undefined : argumentsDiv}
           {!currentSnapshot.explanation ? undefined : explanationDiv()}
           {!currentSnapshot.lastPrompt ? undefined : lastPromptDiv}
           {!prompt ? undefined : promptDiv}
@@ -521,7 +518,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         onClick={() => handleEnter(inputText)}>
         Enter
       </button>
-      {!(currentSnapshot.argMode == 'thesis' && theses.thesis) ? undefined :
+      {!(currentSnapshot.argMode == 'thesis' && currentSnapshot.thesis) ? undefined :
         <button
           className={bigButtonClassNames}
           disabled={userMode == 'waiting'}
