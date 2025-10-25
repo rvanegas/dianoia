@@ -29,7 +29,7 @@ function initialSnapshot() : ConversationSnapshot {
     explanation: '',
     formalization: [],
     argMode: 'thesis',
-    vector_store_id: '',
+    vector_store_id: undefined,
   }
 }
 
