@@ -66,7 +66,10 @@ function App() {
   const paneButton = (
     <button
       className='lg:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-md'
-      onClick={() => setPaneOpened(!paneOpened)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setPaneOpened(!paneOpened)
+      }}
     >
       {'\u2630'}
     </button>
@@ -110,7 +113,10 @@ function App() {
         ))}
         <FileDropUpload newFileUploaded={newFileUploaded}/>
       </div>
-      <div className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900">
+      <div
+        className="flex flex-1 flex-col h-[100%] w-[100%] bg-white items-center max-lg:pt-15 dark:bg-zinc-900"
+        onClick={() => window.innerWidth < 1024 && setPaneOpened(false)}
+      >
         {paneButton}
         <Conversation
           key={currConvIndex}
