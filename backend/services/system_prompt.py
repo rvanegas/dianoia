@@ -88,6 +88,9 @@ separate strings.
 
 Do not prefix the new propositions with indices, such as a letter or number.
 
+Do not include citation to the sources, or alternatively, cite the 
+sources in plain ascii, indicating title and page numbers.
+
 """
 
 evaluate_system_prompt = instructions + """
