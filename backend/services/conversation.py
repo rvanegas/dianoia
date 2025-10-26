@@ -94,9 +94,9 @@ gpt_evaluate = Gpt(
         "properties": {
             "truth": {
                 "type": "array",
-                "items": {"type": "number"}
+                "items": {"type": "string"}
             },
-            "valid": {"type": "number"}
+            "valid": {"type": "string"}
         },
         "required": ["truth", "valid"],
         "additionalProperties": False

@@ -5,8 +5,8 @@ export type StepType = {
   symbol: string
   proposition: string
   justifiers: string[]
-  truth: number
-  valid: number
+  truth: string
+  valid: string
 }
 
 type ConversationSnapshot = {

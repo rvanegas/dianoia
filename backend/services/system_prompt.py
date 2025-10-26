@@ -126,9 +126,11 @@ explain_system_prompt = instructions + """
 
 ### Task
 
-You will receive a list of "propositions", each with a property "truth" and a
-property "valid". The last proposition is the conclusion to an argument and
-the previous propositions are its premises. 
+You will receive a list of propositions, some in the "assumptions" property
+and others in the "propositions" property, each with a "truth" property and
+a "valid" property. The last proposition in "propositions" is the conclusion
+to an argument and the previous propositions and the assumptions are its
+premises.
 
 The "truth" property of each proposition represents its degree of certainty.
 The "valid" property of the last proposition represents its degree of
@@ -138,11 +140,13 @@ effect, the degree of inferential validity.
 Your response will return a formalization of the argument and an explanation
 of its inferential validity.
 
-The "formalization" will express each proposition of the argument in
-symbolic logic, using concise mathematical logic notation. Also include
-predicate and constant definitions, where appropriate. The formalization
-should be self-explanatory, and intelligible independently of the explanatory
-text.
+The "formalization" will express each proposition of the argument in symbolic
+logic, using concise mathematical logic notation. Also include predicate and
+constant definitions, where appropriate. The formalization should be
+self-explanatory, and intelligible independently of the explanatory text.
+Each formal proposition should be prefixed with the "symbol" property of the
+proposition being formalized. The formalization should include exactly one
+line for every proposition. None should be omitted, none added.
 
 The "explanation" will provide a detailed explanation for the validity of the
 argument's conclusion inferred from its premises. Consider implications of
@@ -151,12 +155,10 @@ support the conclusion. If the argument is already fully deductive, say so.
 If it is not, then recommend what additional premise would make the inference
 fully deductive.
 
-Limit concern to the inferential validity, and not
-to the truth of the premises or the conclusion.
+Limit concern to the inferential validity, and not to the truth of the
+premises or the conclusion.
 
-### Examples
-
-An example formalization.
+# Example
 
 Def: s = Socrates
 Def: M(x) = x is a man

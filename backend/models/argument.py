@@ -10,8 +10,8 @@ class Step(BaseModel):
     symbol: str
     proposition: str
     justifiers: list[str]
-    truth: float
-    valid: float
+    truth: str
+    valid: str
 
 class Arguments(BaseModel):
     """theses and arguments as received from and returned to frontend"""
@@ -65,12 +65,17 @@ class Arguments(BaseModel):
                 return c
         raise RuntimeError("something went wrong")
 
+    def new_step(self, proposition: str):
+        """make new step"""
+        return Step(symbol=self.next_symbol(), proposition=proposition,
+            justifiers=[], truth="0.0", valid="0.0")
+
     def subargument(self, arg: list[Step], conclusion: Step):
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
-            "assumptions": [s.proposition for s in self.assumptions],
-            "argument": [s.proposition for s in new_arg]
+            "assumptions": [s.json() for s in self.assumptions],
+            "argument": [s.json() for s in new_arg]
         }
         return new_arg, props
 
@@ -88,7 +93,7 @@ class Arguments(BaseModel):
             if new_arg_index == len(new_arg) - 1:
                 arg[arg_index].valid = evaluations["valid"]
             else:
-                arg[arg_index].valid = 1.0
+                arg[arg_index].valid = "1.0"
 
     def evaluate(self):
         """Find all the subarguments and evaluate their numbers using add_evaluations()"""
@@ -118,9 +123,7 @@ class ArgumentsWithLoc(Arguments):
         elif self.loc == "counter_argument":
             thesisAttr = "counter_thesis"
         new_proposition = getattr(self, thesisAttr)
-        next_symbol = self.next_symbol()
-        new_step = Step(symbol=next_symbol, proposition=new_proposition,
-            justifiers=[], truth=0.0, valid=0.0)
+        new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
         return self.gptjson()
 
@@ -141,11 +144,9 @@ class ArgumentsWithStep(Arguments):
 
     def insert_proposition(self, new_proposition: str):
         """add step and reference to it in indicated justifiers"""
-        next_symbol = self.next_symbol()
-        new_step = Step(symbol=next_symbol, proposition=new_proposition,
-            justifiers=[], truth=0.0, valid=0.0)
+        new_step = self.new_step(new_proposition)
         conclusion = self.arg[self.index]
-        conclusion.justifiers.append(next_symbol)
+        conclusion.justifiers.append(new_step.symbol)
         self.arg.insert(self.index, new_step)
         return conclusion
 
@@ -187,20 +188,11 @@ class ArgumentsWithStep(Arguments):
         self.evaluate()
         return self.gptjson()
 
-    # def explain(self):
-    #     """explain the 'valid' property and formalize the propositions."""
-    #     assert len(self.arg[self.index].justifiers) != 0
-    #     content = gpt_explain.call(self.json(), self.vector_store_id)
-    #     response = json.loads(content)
-    #     # logger.debug(response)
-    #     self.formalization = response["formalization"]
-    #     self.explanation = response["explanation"]
-    #     return self.gptjson()
-
     def explain(self):
         """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
         new_arg, props = self.subargument(self.arg, self.arg[self.index])
+        logger.debug(f"props {props}")
         response = gpt_explain.call(json.dumps(props), self.vector_store_id)
         content = json.loads(response)
         self.formalization = content["formalization"]
@@ -222,11 +214,9 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
     def user_justify(self):
         """add step using proposition attr and adjust justifiers and evaluations accordingly"""
         assert self.loc in ["argument", "counter_argument"]
-        next_symbol = self.next_symbol()
-        new_step = Step(symbol=next_symbol, proposition=self.proposition,
-            justifiers=[], truth=0.0, valid=0.0)
+        new_step = self.new_step(self.proposition)
         conclusion = self.arg[self.index]
         self.arg.insert(self.index, new_step)
-        conclusion.justifiers.append(next_symbol)
+        conclusion.justifiers.append(new_step.symbol)
         self.add_evaluations(self.arg, conclusion)
         return self.gptjson()
