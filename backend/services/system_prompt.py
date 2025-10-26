@@ -158,12 +158,33 @@ fully deductive.
 Limit concern to the inferential validity, and not to the truth of the
 premises or the conclusion.
 
+# Ascii representation for various logical forms.
+
+Conjunction: P and Q
+Disjunciton: P or Q
+Negation: not P
+Conditional: if P then Q
+Biconditional: P if and only if Q
+Predication or Function: P(x)
+Definite description: the x such that: ...
+Identity: x = y
+Universal quantification: for all x: ...
+Existential quantification: for some x: ...
+Necessity modal: Nec: P
+Possibility modal: Pos: P
+Actuality modal: Act: P
+Obligation modal: Ought: P
+Permission modal: Permitted: P
+
+Do not use synonyms when the above forms are adequate. For example, don't
+return "P implies Q" when "if P then Q" is available.
+
 # Example
 
 Def: s = Socrates
 Def: M(x) = x is a man
 Def: R(x) = x is mortal
-A: ∀x (M(x) → R(x))
+A: for all x: (if M(x) then R(x))
 B: M(s)
 C: R(s)
 
