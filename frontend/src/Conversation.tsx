@@ -78,7 +78,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
     setUserMode('waiting')
     setInputText('')
     const apiPrompt = {
-      ...currentSnapshot, 
+      ...currentSnapshot,
       proposition: content,
       vector_store_id: conversation.vector_store_id
     }
@@ -277,10 +277,15 @@ function Conversation({conversation, setConversation, createConversationFromProp
     }
   }, [userMode])
 
-  const hasLoaded = useRef(false)
+  const hasFirstSnapshot = useRef(false)
+  const hasCalledTheses = useRef(false)
   useEffect(() => {
-    if (snapshotIndex == -1 && !hasLoaded.current) {
-      hasLoaded.current = true
+    if (snapshotIndex == -1 && !hasFirstSnapshot.current) {
+      hasFirstSnapshot.current = true
+      saveSnapshot(currentSnapshot)
+    }
+    if (snapshotIndex == 0 && !hasCalledTheses.current) {
+      hasCalledTheses.current = true
       if (conversation.initPrompt || conversation.vector_store_id) {
         handleThesis(conversation.initPrompt)
       }
@@ -477,7 +482,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
     )
   }
 
-  const snapshotId = snapshotIndex == -1 ? '' : `.${snapshotIndex + 1}`
+  const snapshotId = snapshotIndex < 1 ? '' : `.${snapshotIndex}`
 
   const messagesDiv = (
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
