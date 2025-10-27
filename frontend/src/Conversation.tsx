@@ -290,7 +290,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         handleThesis(conversation.initPrompt)
       }
     }
-  }, [])
+  }, [snapshotIndex])
 
   const loadingIndicator = userMode != 'waiting' ? undefined : (
     <div className="mt-2 flex items-center space-x-4">
