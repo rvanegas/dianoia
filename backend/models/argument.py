@@ -27,11 +27,13 @@ class Arguments(BaseModel):
     vector_store_id: str | None = None
     arg: list[Step] | None = None
 
+    # pylint: disable=arguments-differ
     def model_post_init(self, __context):
         self.formalization = []
         self.explanation = None
 
     def gptjsont(self):
+        """arguments json to return to frontend used by theses()"""
         return self.json(include={
             "thesis", "counter_thesis",
             "presupposition", "proposition"})
@@ -71,20 +73,21 @@ class Arguments(BaseModel):
             justifiers=[], truth="0.0", valid="0.0")
 
     def subargument(self, arg: list[Step], conclusion: Step):
+        """extract a few steps by way of a justifiers property"""
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
             "assumptions": [s.json() for s in self.assumptions],
             "argument": [s.json() for s in new_arg]
         }
-        return new_arg, props
+        return props, new_arg
 
     def add_evaluations(self, arg: list[Step], conclusion: Step):
         """
         For a given list of steps as premises, and a step as conclusion,
         use gpt to set "truth" and "valid" values according to evaluate_system_prompt
         """
-        new_arg, props = self.subargument(arg, conclusion)
+        props, new_arg = self.subargument(arg, conclusion)
         content = gpt_evaluate.call(json.dumps(props), self.vector_store_id)
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
@@ -119,10 +122,12 @@ class ArgumentsWithLoc(Arguments):
         """just copy thesis into argument"""
         assert len(self.arg) == 0
         if self.loc == "argument":
-            thesisAttr = "thesis"
+            thesis_attr = "thesis"
         elif self.loc == "counter_argument":
-            thesisAttr = "counter_thesis"
-        new_proposition = getattr(self, thesisAttr)
+            thesis_attr = "counter_thesis"
+        else:
+            raise ValueError("invalid loc")
+        new_proposition = getattr(self, thesis_attr)
         new_step = self.new_step(new_proposition)
         self.arg.append(new_step)
         return self.gptjson()
@@ -191,7 +196,7 @@ class ArgumentsWithStep(Arguments):
     def explain(self):
         """explain the 'valid' property and formalize the propositions."""
         assert len(self.arg[self.index].justifiers) != 0
-        new_arg, props = self.subargument(self.arg, self.arg[self.index])
+        props = self.subargument(self.arg, self.arg[self.index])
         logger.debug(f"props {props}")
         response = gpt_explain.call(json.dumps(props), self.vector_store_id)
         content = json.loads(response)
