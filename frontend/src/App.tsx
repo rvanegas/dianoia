@@ -83,6 +83,7 @@ function App() {
         ${paneOpened ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <button
+        tabIndex={3}
           className='w-[90%] px-2 py-2 m-4 text-white bg-indigo-500 border-none rounded-xl'
           onClick={() => createConversation({initPrompt: ''})}>
           New
