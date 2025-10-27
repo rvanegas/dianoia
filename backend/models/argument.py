@@ -179,7 +179,7 @@ class ArgumentsWithStep(Arguments):
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
-        self.evaluate()
+        # self.evaluate()
         return self.gptjson()
 
     def assume(self):
@@ -191,7 +191,7 @@ class ArgumentsWithStep(Arguments):
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
-        self.evaluate()
+        # self.evaluate()
         return self.gptjson()
 
     def explain(self):

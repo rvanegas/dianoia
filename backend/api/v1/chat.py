@@ -2,6 +2,7 @@ from fastapi import APIRouter, File, UploadFile
 
 from core.utils import logger
 from models.argument import (
+    Arguments,
     ArgumentsWithLoc,
     ArgumentsWithStep,
     ArgumentsWithProposition,
@@ -46,8 +47,8 @@ async def explain(args: ArgumentsWithStep):
     return {"reply": new_args}
 
 @router.post("/evaluate")
-async def evalutate(args: ArgumentsWithStep):
-    new_args = args.evalutate()
+async def evaluate(args: Arguments):
+    new_args = args.evaluate()
     return {"reply": new_args}
 
 @router.post("/upload")
