@@ -306,7 +306,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       bottomRef.current?.scrollIntoView({behavior: 'smooth'})
     }
     
-    if (inputRef.current && userMode == 'ready' || userMode == 'input') {
+    if (inputRef.current && (userMode == 'ready' || userMode == 'input')) {
       inputRef.current.focus()
     }
   }, [userMode])
@@ -356,12 +356,13 @@ function Conversation({conversation, setConversation, createConversationFromProp
         justifier = 'from ' + step.justifiers.join(', ')
         value += `, ${step.valid}`
       }
-      if (currentSnapshot.evaluationsPending) {
-        value = <span className="line-through">{value}</span>
-      }
+      const valueSpan = 
+        <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
+          {value}
+        </span>
       return (
         <div key={step_index}>
-          ({step.symbol}) {step.proposition} [{justifier}; {value}]
+          ({step.symbol}) {step.proposition} [{justifier}; {valueSpan}]
           <button
             disabled={userMode == 'waiting'}
             className={smallButtonClassNames}
