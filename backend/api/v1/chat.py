@@ -7,7 +7,7 @@ from models.argument import (
     ArgumentsWithStep,
     ArgumentsWithProposition,
     ArgumentsWithStepAndProposition)
-from services.assistant import FileData, create_file
+from services.file import FileData, create_file
 
 router = APIRouter()
 
