@@ -25,7 +25,8 @@ class Gpt:
 
     def get_assistant(self):
         with self.lock:
-            if self.assistant_id is None or (time.time() - self.created_at) > ASSISTANT_TTL:
+            if (self.assistant_id is None or
+                (time.time() - self.created_at) > ASSISTANT_TTL):
                 response_format = {
                     "type": "json_schema",
                     "json_schema": {
