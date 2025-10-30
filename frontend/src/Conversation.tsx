@@ -39,6 +39,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   setConversation: (newConversation: ConversationType) => void,
   createConversationFromProposition: (proposition: string) => void
 }) {
+  const snapshotRenderCount = useRef(0)
   const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
   const lastSnapshot = conversation.snapshots[snapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
@@ -63,11 +64,16 @@ function Conversation({conversation, setConversation, createConversationFromProp
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const saveSnapshot = (newSnap: ConversationSnapshot, newIndex: boolean = true) => {
-    const endShift = newIndex ? 1 : 0
-    const truncatedSnapshots = conversation.snapshots.slice(0, snapshotIndex + endShift)
-    const newSnapshots = [...truncatedSnapshots, newSnap]
-    setSnapshotIndex(prev => prev + endShift)
+  const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false) => {
+    let newSnapshots
+    if (inPlace) {
+      newSnapshots = conversation.snapshots.toSpliced(snapshotIndex, 1, newSnap)
+    }
+    else {
+      newSnapshots = conversation.snapshots.slice(0, snapshotIndex + 1).concat(newSnap)
+      snapshotRenderCount.current += 1
+      setSnapshotIndex(prev => prev + 1)
+    }
     setConversation({...conversation, snapshots: newSnapshots})
   }
 
@@ -133,6 +139,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const newSnapshot = {
         ...currentSnapshot,
         ...responseObject,
+        evaluationsPending: true,
         lastPrompt,
       }
       saveSnapshot(newSnapshot)
@@ -206,6 +213,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
       const newSnapshot = {
         ...currentSnapshot,
         ...responseObject,
+        evaluationsPending: true,
         lastPrompt
       }
       saveSnapshot(newSnapshot)
@@ -222,7 +230,10 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const evaluateSteps = async () => {
     const url = VITE_API_BASE_URL + '/api/v1/evaluate'
     try {
+      const currentSnapshotRenderCount = snapshotRenderCount.current
       const response = await axios.post(url, currentSnapshot)
+      // verify that user hasn't moved away and potentially replaced contents of this snapshot
+      if (currentSnapshotRenderCount != snapshotRenderCount.current) return
       const responseObject = JSON.parse(response.data.reply)
       if (!responseObject) {
         throw new Error('empty responseObject')
@@ -232,7 +243,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
         ...responseObject,
         evaluationsPending: false,
       }
-      saveSnapshot(newSnapshot, false)
+      saveSnapshot(newSnapshot, true)
     }
     catch (error) {
       console.error('Error: ', error)
@@ -283,6 +294,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const handleUndo = () => {
     if (snapshotIndex <= 0) return
     const newIndex = snapshotIndex - 1
+    snapshotRenderCount.current += 1
     setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
@@ -290,6 +302,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
   const handleRedo = () => {
     if (snapshotIndex >= conversation.snapshots.length - 1) return
     const newIndex = snapshotIndex + 1
+    snapshotRenderCount.current += 1
     setSnapshotIndex(newIndex)
     setUserMode('ready')
   }
