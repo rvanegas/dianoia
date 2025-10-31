@@ -64,6 +64,8 @@ function Conversation({conversation, setConversation, createConversationFromProp
   // input reference 
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // this saves new versions of argument. if inplace is true, then only annotations
+  // should change
   const saveSnapshot = (newSnap: ConversationSnapshot, inPlace: boolean = false) => {
     const oldSnaps = conversation.snapshots
     let newSnaps
