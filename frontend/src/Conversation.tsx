@@ -71,7 +71,7 @@ function Conversation({conversation, setConversation, createConversationFromProp
     let newSnaps
     if (inPlace) {
       newSnaps = [...oldSnaps.slice(0, snapshotIndex), newSnap,
-        oldSnaps.slice(snapshotIndex + 1)]
+        ...oldSnaps.slice(snapshotIndex + 1)]
     }
     else {
       newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
