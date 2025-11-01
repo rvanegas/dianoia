@@ -78,9 +78,10 @@ gpt_theses = Gpt(
         "properties": {
             "thesis": {"type": "string"},
             "counter_thesis": {"type": "string"},
-            "presupposition": {"type": "string"}
+            "presupposition": {"type": "string"},
+            "name": {"type": "string"}
         },
-        "required": ["thesis", "counter_thesis", "presupposition"],
+        "required": ["thesis", "counter_thesis", "presupposition", "name"],
         "additionalProperties": False
     }
 )
