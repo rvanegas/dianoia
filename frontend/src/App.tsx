@@ -135,7 +135,9 @@ function App() {
           key={currConvIndex}
           conversation={conversations[currConvIndex]}
           setConversation={setConversation}
-          createConversationFromProposition={createConversationFromProposition}/>
+          createConversationFromProposition={createConversationFromProposition}
+          files={files}
+        />
       </div>
     </div>
   )
