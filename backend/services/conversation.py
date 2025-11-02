@@ -13,9 +13,21 @@ from services.system_prompt import (
     evaluate_system_prompt,
     explain_system_prompt)
 
-ASSISTANT_TTL = 24 * 60 * 60  # 24 hours
+TTL = 24 * 60 * 60  # 24 hours
+
+class VectorStoreInfo:
+    def __init__(self, vector_store_id: str):
+        self.vector_store_id = vector_store_id
+        self.created_at = time.time()
+
+    def is_expired(self) -> bool:
+        return time.time() - self.created_at > TTL
 
 class Gpt:
+    # Class-level registry for vector stores
+    _vector_store_registry = {}
+    _vector_store_lock = threading.Lock()
+
     def __init__(self, instructions: str, response_format_base: str):
         self.instructions = instructions
         self.response_format_base = response_format_base
@@ -26,7 +38,7 @@ class Gpt:
     def get_assistant(self):
         with self.lock:
             if (self.assistant_id is None or
-                (time.time() - self.created_at) > ASSISTANT_TTL):
+                (time.time() - self.created_at) > TTL):
                 response_format = {
                     "type": "json_schema",
                     "json_schema": {
@@ -44,6 +56,38 @@ class Gpt:
                 self.created_at = time.time()
             return self.assistant_id
 
+    def get_vector_store(self, file_ids: list[str]) -> str:
+        """Get or create a vector store for the given file IDs."""
+        if not file_ids:
+            return None
+
+        # Create a frozen set of file IDs as the key
+        file_ids_key = frozenset(file_ids)
+
+        with self._vector_store_lock:
+            current_time = time.time()
+
+            # Check if we have a valid vector store for these file IDs
+            if file_ids_key in self._vector_store_registry:
+                vs_info = self._vector_store_registry[file_ids_key]
+                if not vs_info.is_expired():
+                    return vs_info.vector_store_id
+                else:
+                    # Remove expired entry
+                    del self._vector_store_registry[file_ids_key]
+
+            # Create new vector store
+            vs_response = client.vector_stores.create()
+            for file_id in file_ids:
+                client.vector_stores.files.create_and_poll(
+                    vector_store_id=vs_response.id,
+                    file_id=file_id)
+
+            # Store in registry
+            self._vector_store_registry[file_ids_key] = VectorStoreInfo(vs_response.id)
+
+            return vs_response.id
+
     def call(self, prompt: str, file_ids: list[str] | None):
         assistant_id = self.get_assistant()
         thread={
@@ -53,18 +97,16 @@ class Gpt:
             }]
         }
         logger.debug(f"fids {file_ids}")
+
         if file_ids and len(file_ids) > 0:
-            # Create a vector store from the file IDs
-            vs_response = client.vector_stores.create()
-            for file_id in file_ids:
-                client.vector_stores.files.create_and_poll(
-                    vector_store_id=vs_response.id,
-                    file_id=file_id)
-            thread["tool_resources"] = {
-                "file_search": {
-                    "vector_store_ids": [vs_response.id]
+            vector_store_id = self.get_vector_store(file_ids)
+            if vector_store_id:
+                thread["tool_resources"] = {
+                    "file_search": {
+                        "vector_store_ids": [vector_store_id]
+                    }
                 }
-            }
+
         run = client.beta.threads.create_and_run_poll(
             thread=thread,
             assistant_id=assistant_id,
