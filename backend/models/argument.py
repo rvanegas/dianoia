@@ -23,9 +23,9 @@ class Arguments(BaseModel):
     counter_argument: list[Step]
     lastPrompt: str | None = None
     explanation: str | None = None
-    formalization: list[str] | None = None
-    vector_store_id: str | None = None
-    arg: list[Step] | None = None
+    file_ids: list[str] = []
+    formalization: list[str] = []
+    arg: list[Step] = []
 
     # pylint: disable=arguments-differ
     def model_post_init(self, __context):
@@ -88,7 +88,7 @@ class Arguments(BaseModel):
         use gpt to set "truth" and "valid" values according to evaluate_system_prompt
         """
         props, new_arg = self.subargument(arg, conclusion)
-        content = gpt_evaluate.call(json.dumps(props), self.vector_store_id)
+        content = gpt_evaluate.call(json.dumps(props), self.file_ids)
         evaluations = json.loads(content)
         for new_arg_index, step in enumerate(new_arg):
             arg_index = find_index(arg, lambda x, step=step: x.symbol == step.symbol)
@@ -160,7 +160,7 @@ class ArgumentsWithStep(Arguments):
 
     def ai_justify(self):
         """use gpt to add steps to justify indicated conclusion"""
-        response = gpt_justify.call(self.json(), self.vector_store_id)
+        response = gpt_justify.call(self.json(), self.file_ids)
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
             conclusion = self.insert_proposition(p)
@@ -204,7 +204,7 @@ class ArgumentsWithStep(Arguments):
         assert len(self.arg[self.index].justifiers) != 0
         props, new_arg = self.subargument(self.arg, self.arg[self.index])
         logger.debug(f"props {props}")
-        response = gpt_explain.call(json.dumps(props), self.vector_store_id)
+        response = gpt_explain.call(json.dumps(props), self.file_ids)
         content = json.loads(response)
         self.formalization = content["formalization"]
         self.explanation = content["explanation"]
@@ -216,7 +216,7 @@ class ArgumentsWithProposition(Arguments):
 
     def theses(self):
         """convert user input into theses using gpt"""
-        return gpt_theses.call(self.gptjsont(), self.vector_store_id)
+        return gpt_theses.call(self.gptjsont(), self.file_ids)
 
 class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithProposition):
     """arguments with a proposition and location to make a new step"""

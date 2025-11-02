@@ -21,18 +21,17 @@ type ConversationSnapshot = {
   evaluationsPending: boolean
   explanation: string | undefined
   formalization: string[] | undefined
-  vector_store_id: string | undefined // ongoing context
+  file_ids: string[]
 }
 
 type ConversationType = {
   id: number
   name: string
   initPrompt: string | undefined
-  vector_store_id: string | undefined // initial context
   snapshots: ConversationSnapshot[]
 }
 
 export type FileType = {
-  vector_store_id: string
+  file_id: string
   filename: string
 }

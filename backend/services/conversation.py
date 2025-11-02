@@ -5,7 +5,7 @@ import threading
 import time
 
 from config import OPENAI_MODEL
-# from core.utils import logger
+from core.utils import logger
 from services.openaiclient import client
 from services.system_prompt import (
     theses_system_prompt,
@@ -44,19 +44,25 @@ class Gpt:
                 self.created_at = time.time()
             return self.assistant_id
 
-    def call(self, prompt: str, vector_store_id: str):
+    def call(self, prompt: str, file_ids: list[str] | None):
         assistant_id = self.get_assistant()
-        # logger.debug(f"vs {vector_store_id}")
         thread={
             "messages": [{
                 "role": "user",
                 "content": prompt
             }]
         }
-        if vector_store_id != None:
+        logger.debug(f"fids {file_ids}")
+        if file_ids and len(file_ids) > 0:
+            # Create a vector store from the file IDs
+            vs_response = client.vector_stores.create()
+            for file_id in file_ids:
+                client.vector_stores.files.create_and_poll(
+                    vector_store_id=vs_response.id,
+                    file_id=file_id)
             thread["tool_resources"] = {
                 "file_search": {
-                    "vector_store_ids": [vector_store_id]
+                    "vector_store_ids": [vs_response.id]
                 }
             }
         run = client.beta.threads.create_and_run_poll(

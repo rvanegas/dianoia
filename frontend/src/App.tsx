@@ -12,7 +12,6 @@ const initialState: ConversationType = {
   id: 1,
   name: '',
   initPrompt: undefined,
-  vector_store_id: undefined,
   snapshots: []
 }
 
@@ -28,22 +27,18 @@ function App() {
     setConversations(c => {c[currConvIndex] = newConversation})
   }
 
-  const createConversation = ({initPrompt, vector_store_id}: {
-    initPrompt?: string,
-    vector_store_id?: string,
-  }) => {
+  const createConversation = (initPrompt?: string) => {
     setConversations(c => {c.push({
       ...initialState, 
       id: nextConvId, 
-      initPrompt,
-      vector_store_id
+      initPrompt
     })})
     setNextConvId(i => i = i+1)
     setCurrConvIndex(conversations.length)
   }
 
   const createConversationFromProposition = (proposition: string) => {
-    createConversation({initPrompt: proposition})
+    createConversation(proposition)
   }
 
   // const createConversationFromFile = (index: number) => {
@@ -58,11 +53,13 @@ function App() {
     setFiles(f => {f.push(newFile)})
   }
 
-  // Add file to current conversation's file_ids
-  const associateFileToConversation = (file: FileType) => {
+  const associateFileToConversation = (file_id: string) => {
     setConversations(c => {
       const conv = c[currConvIndex]
-      console.log('a', conv.name, file.filename)
+      const currentSnapshot = conv.snapshots[conv.snapshots.length - 1]
+      if (currentSnapshot && !currentSnapshot.file_ids.includes(file_id)) {
+        currentSnapshot.file_ids.push(file_id)
+      }
     })
   }
 
@@ -94,7 +91,7 @@ function App() {
         <button
         tabIndex={3}
           className='w-[90%] px-2 py-2 m-4 text-white bg-indigo-500 border-none rounded-xl'
-          onClick={() => createConversation({initPrompt: ''})}>
+          onClick={() => createConversation()}>
           New
         </button>
         {conversations.map((conv, index) => (
@@ -122,7 +119,7 @@ function App() {
             <button
               className="ml-2 p-1 hover:bg-indigo-100 rounded"
               title="Associate file to conversation"
-              onClick={() => associateFileToConversation(file)}
+              onClick={() => associateFileToConversation(file.file_id)}
             >
               <ChevronsRight size={18} />
             </button>
