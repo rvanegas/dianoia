@@ -6,7 +6,6 @@ from pydantic import BaseModel
 from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
 
-
 def clean_citations(proposition: str) -> str:
     """
     Clean citations from propositions by replacing non-ASCII brackets with ASCII brackets
@@ -15,8 +14,8 @@ def clean_citations(proposition: str) -> str:
     Example: "Mice are small【4:0†small.txt】." -> "Mice are small [small.txt]."
     """
     # Pattern to match citations like 【4:0†small.txt】 or similar
-    # This matches the non-ASCII brackets 【】 and captures the filename
-    pattern = r'【[^】]*?([^†]+\.txt)】'
+    # This matches the non-ASCII brackets 【】 and the dagger †, and captures the filename
+    pattern = r'\u3010[^\u3011]*?([^\u2020]+\.txt)\u3011'
     
     def replace_citation(match):
         filename = match.group(1)
@@ -26,7 +25,6 @@ def clean_citations(proposition: str) -> str:
     logger.debug(f"proposition: {proposition}")
     logger.debug(f"replaced...: {replaced}")
     return replaced
-
 
 class Step(BaseModel):
     """steps in arguments or assumptions"""
