@@ -15,7 +15,7 @@ def clean_citations(proposition: str) -> str:
     """
     # Pattern to match citations like 【4:0†small.txt】 or similar
     # This matches the non-ASCII brackets 【】 and the dagger †, and captures the filename
-    pattern = r'\u3010[^\u3011]*?([^\u2020]+\.txt)\u3011'
+    pattern = r'\u3010[^\u3011]*?([^\u2020]+)\u3011'
     
     def replace_citation(match):
         filename = match.group(1)
