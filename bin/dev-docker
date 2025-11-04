@@ -1,0 +1,3 @@
+#!/bin/bash
+cd $HOME/src/dianoia
+docker-compose up --build
