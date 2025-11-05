@@ -313,7 +313,7 @@ function Conversation({
   const explanationDiv = () => {
     return (
       <>
-        <FlexRow>{currentSnapshot.formalization.map((prop, key) => (<div key={key}>{prop}</div>))}</FlexRow>
+        <FlexRow>{currentSnapshot.formalization?.map((prop, key) => (<div key={key}>{prop}</div>))}</FlexRow>
         <FlexRow>{currentSnapshot.explanation}</FlexRow>
       </>
     )
