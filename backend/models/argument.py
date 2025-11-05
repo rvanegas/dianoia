@@ -19,7 +19,9 @@ def clean_citations(proposition: str) -> str:
     
     def replace_citation(match):
         filename = match.group(1)
-        return f' [{filename}]'
+        if filename == "source":
+            return ""
+        return f" [{filename}]"
 
     replaced = re.sub(pattern, replace_citation, proposition)
     logger.debug(f"proposition: {proposition}")
