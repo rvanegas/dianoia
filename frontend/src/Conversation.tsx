@@ -199,12 +199,13 @@ function Conversation({
         return <span>[{justifier}; {valueSpan}]</span>
       }
 
+      const isEvaluated = argument.length > 1 || step.justifiers.length > 0
       return (
         <FlexRow 
           key={step_index}
           chevron={actions}
         >
-          ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
+          ({step.symbol}) {step.proposition} {isEvaluated && scoreSpan()}
         </FlexRow>
       )
     })

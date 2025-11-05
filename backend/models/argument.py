@@ -125,10 +125,10 @@ class Arguments(BaseModel):
         """Find all the subarguments and evaluate their numbers using add_evaluations()"""
         for step in self.argument:
             if len(step.justifiers) != 0:
-                self.add_evaluations(self.argument, step)
+                self.add_evaluations(self.argument + self.assumptions, step)
         for step in self.counter_argument:
             if len(step.justifiers) != 0:
-                self.add_evaluations(self.counter_argument, step)
+                self.add_evaluations(self.counter_argument + self.assumptions, step)
         return self.gptjson()
 
 class ArgumentsWithLoc(Arguments):

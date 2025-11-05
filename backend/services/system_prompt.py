@@ -128,9 +128,13 @@ it is likely to be true, assuming all the "assumptions" are true.
 
 Set these numbers as an array to the property "truth".
 
-Consider that if the argument is valid, then its truth depends only on the truth
+If the argument is deductive, that is, formally valid, then the "valid" property of the last proposition
+should be 1.0, even if the premises are false or the conclusion is false..
+
+Consider that if the argument is deductive, that is, formally valid, then its truth depends only on the truth
 of its premises, and if these premises are assumptions, then the conclusion must
-be evaluated as true.
+be evaluated as true. Thus, if the premises have a high "truth" value and the argument's validity
+has a high value, then the conclusion should be evaluated as having a high "truth" value.
 
 """
 
