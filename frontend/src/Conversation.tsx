@@ -5,11 +5,11 @@ import {useEffect, useRef} from 'react'
 import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
+import PropositionActions from './PropositionActions'
+import ThesisActions from './ThesisActions'
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
   text-white font-bold px-4 py-2 rounded-md`
-const smallButtonClassNames = `inline text-xs px-1 py-0.5 ml-1
-  hover:text-white hover:bg-gray-500 disabled:opacity-[25%]`
 const headingClassNames = `text-lg font-bold`
 
 function Conversation({
@@ -150,71 +150,30 @@ function Conversation({
       }
 
       return (
-        <div key={step_index}>
-          ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => handleAIJustify(loc, step_index)}>
-            ai-justify
-          </button>
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => {
+        <div key={step_index} className="flex items-start gap-2">
+          <PropositionActions
+            step={step}
+            stepIndex={step_index}
+            loc={loc}
+            argumentLength={argument.length}
+            userMode={userMode}
+            onAIJustify={handleAIJustify}
+            onUserJustify={(loc, stepIndex) => {
               setUserMode('input')
               setTargetLoc(loc)
-              setTargetIndex(step_index)
-            }}>
-            user-justify
-          </button>
-          {step_index == argument.length - 1 || step.justifiers.length != 0 ? undefined :
-            <>
-              <button
-                key="0"
-                disabled={userMode == 'waiting'}
-                className={smallButtonClassNames}
-                onClick={() => {
-                  const prompt = `Assume proposition (${step.symbol})`
-                  handleAction('assume', prompt, loc, step_index)
-                }}>
-                assume
-              </button>
-            </>
-          }
-          {step_index == argument.length - 1 ? undefined :
-            <>
-              <button
-                key="1"
-                disabled={userMode == 'waiting'}
-                className={smallButtonClassNames}
-                onClick={() => {
-                  const prompt = `Remove proposition (${step.symbol})`
-                  handleAction('remove', prompt, loc, step_index)
-                }}>
-                remove
-              </button>
-              <button
-                key="2"
-                disabled={userMode == 'waiting'}
-                className={smallButtonClassNames}
-                onClick={() => handleDispute(step)}>
-                dispute
-              </button>
-            </>
-          }
-          {step.justifiers.length == 0 ? undefined :
-            <button
-              key="3"
-              disabled={userMode == 'waiting'}
-              className={smallButtonClassNames}
-              onClick={() => {
-                const prompt = `Explain inference to propositon (${step.symbol})`
-                handleAction('explain', prompt, loc, step_index)
-              }}>
-              explain
-            </button>
-          }
+              setTargetIndex(stepIndex)
+            }}
+            onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onDispute={handleDispute}
+            onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            setUserMode={setUserMode}
+            setTargetLoc={setTargetLoc}
+            setTargetIndex={setTargetIndex}
+          />
+          <div className="flex-1">
+            ({step.symbol}) {step.proposition} {argument.length == 1 ? undefined : scoreSpan()}
+          </div>
         </div>
       )
     })
@@ -222,88 +181,107 @@ function Conversation({
   }
 
   const argumentDiv = () => (
-    <div>
+    <div className="pl-6">
       <div className={headingClassNames}>Argument:</div>
       <div>{argumentNode('argument', currentSnapshot.argument)}</div>
     </div>
   )
 
   const counterArgumentDiv = () => (
-    <div>
+    <div className="pl-6">
       <div className={headingClassNames}>Counter-Argument:</div>
       <div>{argumentNode('counter_argument', currentSnapshot.counter_argument)}</div>
     </div>
   )
 
   const assumptionsDiv = (
-    <>
+    <div className="pl-6">
       <div className={headingClassNames}>Assumptions:</div>
       {currentSnapshot.assumptions.map((step, step_index) => (
-        <div key={step_index}>
-          ({step.symbol}) {step.proposition}
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => {
-              const prompt = `Remove proposition (${step.symbol})`
-              handleAction('remove', prompt, 'assumptions', step_index)
-            }}>
-            remove
-          </button>
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => handleDispute(step)}>
-            dispute
-          </button>
+        <div key={step_index} className="flex items-start gap-2">
+          <PropositionActions
+            step={step}
+            stepIndex={step_index}
+            loc="assumptions"
+            argumentLength={currentSnapshot.assumptions.length}
+            userMode={userMode}
+            onAIJustify={handleAIJustify}
+            onUserJustify={(loc, stepIndex) => {
+              setUserMode('input')
+              setTargetLoc(loc)
+              setTargetIndex(stepIndex)
+            }}
+            onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onDispute={handleDispute}
+            onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            setUserMode={setUserMode}
+            setTargetLoc={setTargetLoc}
+            setTargetIndex={setTargetIndex}
+          />
+          <div className="flex-1">
+            ({step.symbol}) {step.proposition}
+          </div>
         </div>
       ))}
-    </>
+    </div>
   )
 
   const thesesDiv = (
-    <>
+    <div className="pl-6">
       <div className={headingClassNames}>Thesis:</div>
       <div>
-        {currentSnapshot.thesis}
-        {currentSnapshot.argument.length != 0 ? undefined :
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => handleArgue('thesis')}>
-            argue
-          </button>
-        }
-        </div>
+        {currentSnapshot.argument.length == 0 ? (
+          <div className="flex items-start gap-2">
+            <ThesisActions
+              thesisType="thesis"
+              userMode={userMode}
+              onArgue={handleArgue}
+            />
+            <div className="flex-1">
+              {currentSnapshot.thesis}
+            </div>
+          </div>
+        ) : (
+          <div>{currentSnapshot.thesis}</div>
+        )}
+      </div>
       <div className={headingClassNames}>Counter-Thesis:</div>
       <div>
-        {currentSnapshot.counter_thesis}
-        {currentSnapshot.counter_argument.length != 0 ? undefined :
-          <button
-            disabled={userMode == 'waiting'}
-            className={smallButtonClassNames}
-            onClick={() => handleArgue('counter_thesis')}>
-            argue
-          </button>
-        }
+        {currentSnapshot.counter_argument.length == 0 ? (
+          <div className="flex items-start gap-2">
+            <ThesisActions
+              thesisType="counter_thesis"
+              userMode={userMode}
+              onArgue={handleArgue}
+            />
+            <div className="flex-1">
+              {currentSnapshot.counter_thesis}
+            </div>
+          </div>
+        ) : (
+          <div>{currentSnapshot.counter_thesis}</div>
+        )}
       </div>
       <div className={headingClassNames}>Presupposition:</div>
       <div>{currentSnapshot.presupposition}</div>
-    </>
+    </div>
   )
 
+
+
   const lastPromptDiv = (
-    <>
+    <div className="pl-6">
       <div className={headingClassNames}>LastPrompt:</div>
       <div>{currentSnapshot.lastPrompt}</div>
-    </>
+    </div>
   )
 
   const promptDiv = (
-    <>
+    <div className="pl-6">
       <div className={headingClassNames}>Prompt:</div>
       <div>{prompt}</div>
-    </>
+    </div>
   )
 
   const explanationDiv = () => {
@@ -343,8 +321,10 @@ function Conversation({
     <div className="flex flex-1 overflow-y-auto p-5 flex-col w-[100%] scroll-hide px-5">
       <div className="p-3 prose dark:prose-invert max-w-none">
         <div className="max-w text-left my-2 self-start">
-          <div className={headingClassNames}>Id:</div>
-          <div>{conversation.id}{snapshotId}</div>
+          <div className="pl-6">
+            <div className={headingClassNames}>Id:</div>
+            <div>{conversation.id}{snapshotId}</div>
+          </div>
           {currentSnapshot.file_ids && currentSnapshot.file_ids.length > 0 && renderAssociatedFileNames()}
           {currentSnapshot.thesis && thesesDiv}
           {currentSnapshot.assumptions.length > 0 && assumptionsDiv}
