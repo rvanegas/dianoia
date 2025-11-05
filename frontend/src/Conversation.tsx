@@ -311,11 +311,10 @@ function Conversation({
   // )
 
   const explanationDiv = () => {
-    if (!currentSnapshot.formalization || currentSnapshot.formalization.length == 0) return
     return (
       <>
-        <div>{currentSnapshot.formalization.map((prop, key) => (<div key={key}>{prop}</div>))}</div>
-        <div>{currentSnapshot.explanation}</div>
+        <FlexRow>{currentSnapshot.formalization.map((prop, key) => (<div key={key}>{prop}</div>))}</FlexRow>
+        <FlexRow>{currentSnapshot.explanation}</FlexRow>
       </>
     )
   }
@@ -405,10 +404,10 @@ function Conversation({
             {counterArgumentDiv()}
           </Section>
         )}
-        {currentSnapshot.explanation && (
+        {currentSnapshot.formalization && currentSnapshot.formalization.length != 0 && currentSnapshot.explanation && (
           <Section>
             <FlexRow label="Explanation:" />
-            <FlexRow>{explanationDiv()}</FlexRow>
+            {explanationDiv()}
           </Section>
         )}
         {currentSnapshot.lastPrompt && (
