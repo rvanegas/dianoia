@@ -82,7 +82,9 @@ function Conversation({
     handleUserJustify,
     evaluateSteps,
     handleAction,
-    handleDispute
+    handleDispute,
+    retryLastOperation,
+    lastFailedOperation
   } = useConversationActions(
     currentSnapshot,
     userMode,
@@ -160,6 +162,28 @@ function Conversation({
     </div>
   )
 
+  const retryButton = lastFailedOperation ? (
+    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-sm text-red-800 font-medium">
+            Operation failed: {lastFailedOperation.operationName}
+          </p>
+          <p className="text-xs text-red-600 mt-1">
+            The AI service encountered an error. You can retry this operation.
+          </p>
+        </div>
+        <button
+          onClick={retryLastOperation}
+          disabled={userMode === 'waiting'}
+          className={`ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400
+            text-white text-sm font-medium rounded-md transition-colors`}>
+          {userMode === 'waiting' ? 'Retrying...' : 'Retry'}
+        </button>
+      </div>
+    </div>
+  ) : undefined
+
   const argumentNode = (loc: string, argument: StepType[]) => {
     const argumentSteps = argument.map((step, step_index) => {
       const actions = (
@@ -175,10 +199,10 @@ function Conversation({
             setTargetLoc(loc)
             setTargetIndex(stepIndex)
           }}
-          onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
-          onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+          onAssume={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+          onRemove={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
           onDispute={handleDispute}
-          onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+          onExplain={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
           setUserMode={setUserMode}
           setTargetLoc={setTargetLoc}
           setTargetIndex={setTargetIndex}
@@ -239,10 +263,10 @@ function Conversation({
               setTargetLoc(loc)
               setTargetIndex(stepIndex)
             }}
-            onAssume={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
-            onRemove={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onAssume={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+            onRemove={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
             onDispute={handleDispute}
-            onExplain={(action, prompt, loc, stepIndex) => handleAction(action, prompt, loc, stepIndex)}
+            onExplain={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
             setUserMode={setUserMode}
             setTargetLoc={setTargetLoc}
             setTargetIndex={setTargetIndex}
@@ -427,6 +451,7 @@ function Conversation({
         )}
       </FlexTable>
       {loadingIndicator}
+      {retryButton}
     </div>
   )
 
