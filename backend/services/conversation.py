@@ -15,6 +15,10 @@ from services.system_prompt import (
 
 TTL = 24 * 60 * 60  # 24 hours
 
+class AssistantResponseError(Exception):
+    """Raised when the OpenAI assistant doesn't return a valid response."""
+    pass
+
 class VectorStoreInfo:
     def __init__(self, vector_store_id: str):
         self.vector_store_id = vector_store_id
@@ -120,7 +124,7 @@ class Gpt:
             if message.role == "assistant":
                 return message.content[0].text.value
         logger.error(f"No assistant value found. Messages returned: {messages.data}")
-        raise RuntimeError("no assistant value found")
+        raise AssistantResponseError("no assistant value found")
 
 gpt_theses = Gpt(
     instructions=theses_system_prompt,
