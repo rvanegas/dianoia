@@ -173,9 +173,9 @@ class ArgumentsWithLoc(Arguments):
         # Queue builder task to find additional justifications
         self.queue_builder_task({
             'proposition': new_proposition,
-            'step_symbol': new_step.symbol,
             'location': self.loc,
-            'step_index': 0
+            'step_index': 0,
+            'file_ids': self.file_ids
         })
         return self.gptjson()
 
@@ -203,9 +203,9 @@ class ArgumentsWithStep(Arguments):
         # Queue builder task to find additional justifications
         self.queue_builder_task({
             'proposition': new_proposition,
-            'step_symbol': new_step.symbol,
             'location': self.loc,
-            'step_index': self.index
+            'step_index': self.index,
+            'file_ids': self.file_ids
         })
         return conclusion
 
@@ -279,8 +279,8 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         # Queue builder task to find additional justifications
         self.queue_builder_task({
             'proposition': self.proposition,
-            'step_symbol': new_step.symbol,
             'location': self.loc,
-            'step_index': self.index
+            'step_index': self.index,
+            'file_ids': self.file_ids
         })
         return self.gptjson()
