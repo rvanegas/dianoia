@@ -27,6 +27,8 @@ class ArgumentBuilderAgent:
     def build_argument(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Build additional argument steps for a proposition with optional formalization guidance"""
         try:
+            logger.debug(f"ArgumentBuilderAgent starting task with data: {conversation_data}")
+            
             # Extract the argument structure from conversation data
             loc = conversation_data.get('loc', 'argument')
             index = conversation_data.get('index', 0)
@@ -68,8 +70,7 @@ class ArgumentBuilderAgent:
             }
             justifications.append(basic_justification)
             
-
-            return AgentResult(
+            result = AgentResult(
                 agent_type=self.name,
                 operation="build_argument",
                 data={
@@ -82,15 +83,20 @@ class ArgumentBuilderAgent:
                 reasoning=f"Generated {len(justifications)} justification options (basic + formalization-guided)"
             )
             
+            logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
+            return result
+            
         except Exception as e:
             logger.error(f"Builder agent error: {e}")
-            return AgentResult(
+            result = AgentResult(
                 agent_type=self.name,
                 operation="build_argument",
                 data={"error": str(e)},
                 confidence=0.0,
                 reasoning=f"Error in argument building: {e}"
             )
+            logger.debug(f"ArgumentBuilderAgent task failed. Output: {result}")
+            return result
     
     def _get_proposition_at_location(self, conversation_data: Dict[str, Any], loc: str, index: int) -> str:
         """Extract proposition from the specified location and index"""
