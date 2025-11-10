@@ -72,7 +72,8 @@ function Conversation({
     setEvaluatingMode,
     inputRef,
     saveSnapshot,
-    argLoc
+    argLoc,
+    sessionId
   } = useConversationState(conversation, setConversation)
 
   const {
@@ -96,7 +97,9 @@ function Conversation({
     argLoc,
     saveSnapshot,
     createConversationFromProposition,
-    setEvaluatingMode
+    setEvaluatingMode,
+    conversation.id,
+    sessionId
   )
 
   const {

@@ -49,6 +49,7 @@ class Arguments(BaseModel):
     file_ids: list[str] = []
     formalization: list[str] = []
     arg: list[Step] = []
+    conversation_id: str | None = None  # Format: "session_uuid:conversation_id"
 
     # pylint: disable=arguments-differ
     def model_post_init(self, __context):
