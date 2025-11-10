@@ -14,67 +14,117 @@ from services.conversation import AssistantResponseError
 
 router = APIRouter()
 
-def handle_argument_operation(operation_name: str):
-    """Decorator to handle conversation identification, logging, and assistant errors"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(args, session_id: str = Query(..., description="Session UUID"),
-                         conversation_id: int = Query(..., description="Conversation ID"),
-                         **kwargs):
-            try:
-                # Handle conversation identification
-                conversation_identifier = f"{session_id}:{conversation_id}"
-                args.conversation_id = conversation_identifier
-                logger.info(f"{operation_name} operation for conversation: {conversation_identifier}")
-                
-                # Execute the original function
-                result = await func(args, **kwargs)
-                return {"reply": result}
-            except AssistantResponseError as e:
-                logger.error(f"{operation_name} error: {e}")
-                raise HTTPException(status_code=422, detail=str(e))
-        return wrapper
-    return decorator
-
 @router.post('/theses')
-@handle_argument_operation("Theses")
-async def theses(args: ArgumentsWithProposition):
-    return args.theses()
+async def theses(args: ArgumentsWithProposition, 
+                session_id: str = Query(..., description="Session UUID"),
+                conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Theses operation for conversation: {conversation_identifier}")
+        result = args.theses()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Theses error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post('/argue')
-@handle_argument_operation("Argue")
-async def argue(args: ArgumentsWithLoc):
-    return args.argue()
+async def argue(args: ArgumentsWithLoc, 
+               session_id: str = Query(..., description="Session UUID"),
+               conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Argue operation for conversation: {conversation_identifier}")
+        result = args.argue()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Argue error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/assume")
-@handle_argument_operation("Assume")
-async def assume(args: ArgumentsWithStep):
-    return args.assume()
+async def assume(args: ArgumentsWithStep, 
+                session_id: str = Query(..., description="Session UUID"),
+                conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Assume operation for conversation: {conversation_identifier}")
+        result = args.assume()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Assume error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/remove")
-@handle_argument_operation("Remove")
-async def remove(args: ArgumentsWithStep):
-    return args.remove()
+async def remove(args: ArgumentsWithStep, 
+                session_id: str = Query(..., description="Session UUID"),
+                conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Remove operation for conversation: {conversation_identifier}")
+        result = args.remove()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Remove error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/ai-justify")
-@handle_argument_operation("AI justify")
-async def ai_justify(args: ArgumentsWithStep):
-    return args.ai_justify()
+async def ai_justify(args: ArgumentsWithStep, 
+                    session_id: str = Query(..., description="Session UUID"),
+                    conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"AI justify operation for conversation: {conversation_identifier}")
+        result = args.ai_justify()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"AI justify error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/user-justify")
-@handle_argument_operation("User justify")
-async def user_justify(args: ArgumentsWithStepAndProposition):
-    return args.user_justify()
+async def user_justify(args: ArgumentsWithStepAndProposition, 
+                      session_id: str = Query(..., description="Session UUID"),
+                      conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"User justify operation for conversation: {conversation_identifier}")
+        result = args.user_justify()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"User justify error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/explain")
-@handle_argument_operation("Explain")
-async def explain(args: ArgumentsWithStep):
-    return args.explain()
+async def explain(args: ArgumentsWithStep, 
+                session_id: str = Query(..., description="Session UUID"),
+                conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Explain operation for conversation: {conversation_identifier}")
+        result = args.explain()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Explain error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/evaluate")
-@handle_argument_operation("Evaluate")
-async def evaluate(args: Arguments):
-    return args.evaluate()
+async def evaluate(args: Arguments, 
+                 session_id: str = Query(..., description="Session UUID"),
+                 conversation_id: int = Query(..., description="Conversation ID")):
+    try:
+        conversation_identifier = f"{session_id}:{conversation_id}"
+        args.conversation_id = conversation_identifier
+        logger.info(f"Evaluate operation for conversation: {conversation_identifier}")
+        result = args.evaluate()
+        return {"reply": result}
+    except AssistantResponseError as e:
+        logger.error(f"Evaluate error: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):

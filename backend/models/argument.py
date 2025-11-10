@@ -136,6 +136,7 @@ class Arguments(BaseModel):
     def queue_builder_task(self, data: dict):
         """Queue a task for the builder agent"""
         if self.conversation_id:
+            logger.info(f"Queueing task with conversation_id: '{self.conversation_id}'")
             task_data = {
                 'argument_data': self.gptjson(),  # Use gptjson() format
                 **data
@@ -147,6 +148,8 @@ class Arguments(BaseModel):
             )
             logger.debug(f"Queued builder task for conversation {self.conversation_id}")
             logger.debug(f"Task data: {task_data}")
+        else:
+            logger.warning("No conversation_id available for task queuing")
 
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
