@@ -151,6 +151,23 @@ class Arguments(BaseModel):
         else:
             logger.warning("No conversation_id available for task queuing")
 
+    def queue_evaluator_task(self, data: dict):
+        """Queue a task for the evaluator agent"""
+        if self.conversation_id:
+            task_data = {
+                'argument_data': self.gptjson(),  # Use gptjson() format
+                **data
+            }
+            coordinator.queue_task(
+                agent_type='evaluator',
+                conversation_id=self.conversation_id,
+                data=task_data
+            )
+            logger.debug(f"Queued evaluator task for conversation {self.conversation_id}")
+            logger.debug(f"Task data: {task_data}")
+        else:
+            logger.warning("No conversation_id available for evaluator task queuing")
+
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
     loc: str
@@ -175,6 +192,13 @@ class ArgumentsWithLoc(Arguments):
         self.arg.append(new_step)
         # Queue builder task to find additional justifications
         self.queue_builder_task({
+            'proposition': new_proposition,
+            'location': self.loc,
+            'step_index': 0,
+            'file_ids': self.file_ids
+        })
+        # Queue evaluator task to evaluate the new argument
+        self.queue_evaluator_task({
             'proposition': new_proposition,
             'location': self.loc,
             'step_index': 0,
@@ -210,6 +234,13 @@ class ArgumentsWithStep(Arguments):
             'step_index': self.index,
             'file_ids': self.file_ids
         })
+        # Queue evaluator task to evaluate the modified argument
+        self.queue_evaluator_task({
+            'proposition': new_proposition,
+            'location': self.loc,
+            'step_index': self.index,
+            'file_ids': self.file_ids
+        })
         return conclusion
 
     def ai_justify(self):
@@ -237,6 +268,12 @@ class ArgumentsWithStep(Arguments):
                 for premise in premises:
                     step.justifiers.append(premise)
         del self.arg[self.index]
+        # Queue evaluator task to evaluate the modified argument
+        self.queue_evaluator_task({
+            'location': self.loc,
+            'step_index': self.index,
+            'file_ids': self.file_ids
+        })
         return self.gptjson()
 
     def assume(self):
@@ -248,6 +285,12 @@ class ArgumentsWithStep(Arguments):
         self.arg[self.index].truth = "1.0"
         self.assumptions.append(self.arg[self.index])
         del self.arg[self.index]
+        # Queue evaluator task to evaluate the modified argument
+        self.queue_evaluator_task({
+            'location': self.loc,
+            'step_index': self.index,
+            'file_ids': self.file_ids
+        })
         return self.gptjson()
 
     def explain(self):
@@ -281,6 +324,13 @@ class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithPropositio
         conclusion.justifiers.append(new_step.symbol)
         # Queue builder task to find additional justifications
         self.queue_builder_task({
+            'proposition': self.proposition,
+            'location': self.loc,
+            'step_index': self.index,
+            'file_ids': self.file_ids
+        })
+        # Queue evaluator task to evaluate the modified argument
+        self.queue_evaluator_task({
             'proposition': self.proposition,
             'location': self.loc,
             'step_index': self.index,
