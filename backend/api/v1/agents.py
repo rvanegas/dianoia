@@ -83,11 +83,15 @@ async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
             results_by_agent[agent_type] = []
         results_by_agent[agent_type].append(result)
     
+    # Check if all tasks for this conversation are complete
+    tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id)
+    
     return {
         "conversation_id": conversation_id,
         "results_by_agent": results_by_agent,
         "total_count": len(all_results),
-        "agent_types": list(results_by_agent.keys())
+        "agent_types": list(results_by_agent.keys()),
+        "tasks_complete": tasks_complete
     }
 
 
