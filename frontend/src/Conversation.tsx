@@ -344,7 +344,6 @@ function Conversation({
   const explanationDiv = () => {
     return (
       <>
-        <FlexRow>{currentSnapshot.formalization?.map((prop, key) => (<div key={key}>{prop}</div>))}</FlexRow>
         <FlexRow>{currentSnapshot.explanation}</FlexRow>
       </>
     )
@@ -435,7 +434,7 @@ function Conversation({
             {counterArgumentDiv()}
           </Section>
         )}
-        {currentSnapshot.formalization && currentSnapshot.formalization.length != 0 && currentSnapshot.explanation && (
+        {currentSnapshot.explanation && (
           <Section>
             <FlexRow label="Explanation:" />
             {explanationDiv()}
