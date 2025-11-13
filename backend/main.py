@@ -2,8 +2,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.v1.argument import router as argument_router
-from api.v1.agents import router as agents_router
+from api.argument import router as argument_router
+from api.agents import router as agents_router
 
 app = FastAPI()
 
@@ -14,5 +14,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(argument_router, prefix="/api/v1/argument")
-app.include_router(agents_router, prefix="/api/v1/agents")
+app.include_router(argument_router, prefix="/api/argument")
+app.include_router(agents_router, prefix="/api/agents")
