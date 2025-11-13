@@ -2,7 +2,7 @@ import threading
 import time
 import uuid
 from queue import Queue
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -29,6 +29,89 @@ class AgentTask:
             self.created_at = time.time()
 
 
+class AgentResultManager:
+    """Manages agent results with disciplined cleanup and maintenance"""
+    
+    def __init__(self):
+        self.results_by_conversation: Dict[str, List[Dict[str, Any]]] = {}
+    
+    def add_result(self, conversation_id: str, result: Dict[str, Any]):
+        """Add a new result and clean up outdated ones"""
+        if conversation_id not in self.results_by_conversation:
+            self.results_by_conversation[conversation_id] = []
+        
+        # Clean up outdated results before adding the new one
+        self._cleanup_outdated_results(conversation_id, result)
+        
+        # Add the new result
+        self.results_by_conversation[conversation_id].append(result)
+    
+    def _cleanup_outdated_results(self, conversation_id: str, new_result: Dict[str, Any]):
+        """Remove outdated results based on the new result"""
+        results = self.results_by_conversation[conversation_id]
+        agent_type = new_result.get('agent_type')
+        operation = new_result.get('operation')
+        
+        # Get the proposition or argument identifier for this result
+        target_id = self._get_result_target_id(new_result)
+        
+        # Remove outdated results of the same type for the same target
+        results[:] = [
+            result for result in results
+            if not self._is_outdated_result(result, agent_type, operation, target_id)
+        ]
+    
+    def _get_result_target_id(self, result: Dict[str, Any]) -> str:
+        """Get a unique identifier for what this result targets"""
+        agent_type = result.get('agent_type')
+        data = result.get('data', {})
+        
+        if agent_type == 'builder':
+            # Builder targets a specific proposition in arguments
+            proposition = data.get('proposition', '')
+            location = data.get('location', '')
+            return f"builder:{location}:{proposition}"
+        
+        elif agent_type == 'formalizer':
+            # Formalizer targets a specific proposition in arguments or assumptions
+            proposition = data.get('proposition', '')
+            return f"formalizer:{proposition}"
+        
+        elif agent_type == 'evaluator':
+            # Evaluator targets the entire argument as a whole
+            location = data.get('location', '')
+            return f"evaluator:{location}"
+        
+        elif agent_type == 'rewriter':
+            # Rewriter targets a specific proposition
+            proposition = data.get('proposition', '')
+            return f"rewriter:{proposition}"
+        
+        # Fallback to using the entire result as identifier
+        return f"{agent_type}:{hash(str(result))}"
+    
+    def _is_outdated_result(self, result: Dict[str, Any], new_agent_type: str, 
+                           new_operation: str, target_id: str) -> bool:
+        """Check if a result is outdated and should be removed"""
+        agent_type = result.get('agent_type')
+        
+        # If it's the same agent type, check if it targets the same thing
+        if agent_type == new_agent_type:
+            result_target_id = self._get_result_target_id(result)
+            return result_target_id == target_id
+        
+        return False
+    
+    def get_results(self, conversation_id: str) -> List[Dict[str, Any]]:
+        """Get all results for a conversation"""
+        return self.results_by_conversation.get(conversation_id, [])
+    
+    def cleanup_conversation(self, conversation_id: str):
+        """Remove all results for a conversation"""
+        if conversation_id in self.results_by_conversation:
+            del self.results_by_conversation[conversation_id]
+
+
 class AgentCoordinator:
     """Manages background agent tasks using threading"""
     
@@ -36,7 +119,7 @@ class AgentCoordinator:
         self.task_queue = Queue()
         self.workers = []
         self.running = True
-        self.agent_results = {}  # Store results by conversation_id
+        self.result_manager = AgentResultManager()  # Use the new result manager
         self.task_history = {}   # Store task history by task_id
         
         # Start background workers
@@ -118,14 +201,12 @@ class AgentCoordinator:
                 'processed_at': time.time()
             }
             
-            # Store result by conversation_id
-            if task.conversation_id not in self.agent_results:
-                self.agent_results[task.conversation_id] = []
-            self.agent_results[task.conversation_id].append(task.result)
+            # Store result using the disciplined result manager
+            self.result_manager.add_result(task.conversation_id, task.result)
             
             # Debug logging
             # logger.info(f"Stored result for {task.agent_type} agent in conversation {task.conversation_id}")
-            # logger.debug(f"Current results for conversation {task.conversation_id}: {self.agent_results[task.conversation_id]}")
+            # logger.debug(f"Current results for conversation {task.conversation_id}: {self.result_manager.get_results(task.conversation_id)}")
             
             task.status = 'completed'
             task.completed_at = time.time()
@@ -162,13 +243,68 @@ class AgentCoordinator:
         # logger.info(f"Queued task {task_id} for {agent_type} agent in conversation {conversation_id}")
         return task_id
     
+    def _cleanup_outdated_results_for_task(self, conversation_id: str, agent_type: str, data: Dict[str, Any]):
+        """Clean up outdated results when a new task is queued"""
+        results = self.result_manager.get_results(conversation_id)
+        
+        # Determine what this task targets
+        target_id = self._get_task_target_id(agent_type, data)
+        
+        # Remove outdated results of the same type for the same target
+        outdated_results = [
+            result for result in results
+            if self._is_outdated_result_for_task(result, agent_type, target_id)
+        ]
+        
+        if outdated_results:
+            logger.info(f"Cleaning up {len(outdated_results)} outdated results for {agent_type} targeting {target_id}")
+            for result in outdated_results:
+                results.remove(result)
+    
+    def _get_task_target_id(self, agent_type: str, data: Dict[str, Any]) -> str:
+        """Get a unique identifier for what this task targets"""
+        if agent_type == 'builder':
+            # Builder targets a specific proposition in arguments
+            proposition = data.get('proposition', '')
+            location = data.get('location', '')
+            return f"builder:{location}:{proposition}"
+        
+        elif agent_type == 'formalizer':
+            # Formalizer targets a specific proposition in arguments or assumptions
+            proposition = data.get('proposition', '')
+            return f"formalizer:{proposition}"
+        
+        elif agent_type == 'evaluator':
+            # Evaluator targets the entire argument as a whole
+            location = data.get('location', '')
+            return f"evaluator:{location}"
+        
+        elif agent_type == 'rewriter':
+            # Rewriter targets a specific proposition
+            proposition = data.get('proposition', '')
+            return f"rewriter:{proposition}"
+        
+        # Fallback to using the entire data as identifier
+        return f"{agent_type}:{hash(str(data))}"
+    
+    def _is_outdated_result_for_task(self, result: Dict[str, Any], new_agent_type: str, target_id: str) -> bool:
+        """Check if a result is outdated for a new task"""
+        agent_type = result.get('agent_type')
+        
+        # If it's the same agent type, check if it targets the same thing
+        if agent_type == new_agent_type:
+            result_target_id = self.result_manager._get_result_target_id(result)
+            return result_target_id == target_id
+        
+        return False
+    
     def get_task_status(self, task_id: str) -> Optional[AgentTask]:
         """Get the status of a specific task"""
         return self.task_history.get(task_id)
     
     def get_conversation_results(self, conversation_id: str) -> list:
         """Get all results for a conversation"""
-        results = self.agent_results.get(conversation_id, [])
+        results = self.result_manager.get_results(conversation_id)
         # logger.debug(f"Retrieved {len(results)} results for conversation {conversation_id}")
         # logger.debug(f"Results: {results}")
         return results
@@ -191,6 +327,11 @@ class AgentCoordinator:
         """Get all active tasks"""
         return [task for task in self.task_history.values() 
                 if task.status in ['pending', 'running']]
+    
+    def cleanup_conversation_results(self, conversation_id: str):
+        """Clean up all results for a conversation"""
+        self.result_manager.cleanup_conversation(conversation_id)
+        logger.info(f"Cleaned up results for conversation {conversation_id}")
     
     def stop(self):
         """Stop all workers"""

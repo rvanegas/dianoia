@@ -9,13 +9,6 @@ from core.utils import logger
 
 router = APIRouter()
 
-
-
-
-
-
-
-
 @router.get("/results/{conversation_id}")
 async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
     """Get all agent results for a conversation, grouped by agent type"""
@@ -39,7 +32,6 @@ async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
         "agent_types": list(results_by_agent.keys()),
         "tasks_complete": tasks_complete
     }
-
 
 @router.get("/active")
 async def get_active_tasks() -> Dict[str, Any]:
