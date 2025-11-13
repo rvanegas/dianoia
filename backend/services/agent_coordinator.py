@@ -128,7 +128,7 @@ class AgentCoordinator:
     
     def _start_workers(self):
         """Start background worker threads for each agent type"""
-        agent_types = ['builder', 'evaluator', 'formalizer', 'rewriter']
+        agent_types = ['builder', 'content_evaluator', 'form_evaluator', 'formalizer', 'rewriter']
         
         for agent_type in agent_types:
             worker = threading.Thread(
@@ -182,7 +182,9 @@ class AgentCoordinator:
             
             if task.agent_type == 'builder':
                 result = agent.build_argument(task_data)
-            elif task.agent_type == 'evaluator':
+            elif task.agent_type == 'content_evaluator':
+                result = agent.evaluate_propositions(task_data)
+            elif task.agent_type == 'form_evaluator':
                 result = agent.evaluate_propositions(task_data)
             elif task.agent_type == 'formalizer':
                 result = agent.formalize_proposition(task_data)
@@ -274,10 +276,10 @@ class AgentCoordinator:
             proposition = data.get('proposition', '')
             return f"formalizer:{proposition}"
         
-        elif agent_type == 'evaluator':
-            # Evaluator targets the entire argument as a whole
+        elif agent_type in ['content_evaluator', 'form_evaluator']:
+            # Evaluators target the entire argument as a whole
             location = data.get('location', '')
-            return f"evaluator:{location}"
+            return f"{agent_type}:{location}"
         
         elif agent_type == 'rewriter':
             # Rewriter targets a specific proposition
