@@ -43,6 +43,12 @@ class AgentResultManager:
         # Clean up outdated results before adding the new one
         self._cleanup_outdated_results(conversation_id, result)
         
+        # Check if this form evaluator result should be added
+        if result.get('agent_type') == 'form_evaluator':
+            if not self._should_add_form_evaluator_result(conversation_id, result):
+                # Don't add the result if formalization is incomplete
+                return
+        
         # Add the new result
         self.results_by_conversation[conversation_id].append(result)
     
@@ -60,6 +66,10 @@ class AgentResultManager:
             result for result in results
             if not self._is_outdated_result(result, agent_type, operation, target_id)
         ]
+        
+        # Special handling for form evaluator results
+        if agent_type == 'form_evaluator':
+            self._cleanup_form_evaluator_results(conversation_id, new_result)
     
     def _get_result_target_id(self, result: Dict[str, Any]) -> str:
         """Get a unique identifier for what this result targets"""
@@ -77,10 +87,10 @@ class AgentResultManager:
             proposition = data.get('proposition', '')
             return f"formalizer:{proposition}"
         
-        elif agent_type == 'evaluator':
-            # Evaluator targets the entire argument as a whole
+        elif agent_type in ['content_evaluator', 'form_evaluator']:
+            # Evaluators target the entire argument as a whole
             location = data.get('location', '')
-            return f"evaluator:{location}"
+            return f"{agent_type}:{location}"
         
         elif agent_type == 'rewriter':
             # Rewriter targets a specific proposition
@@ -101,6 +111,42 @@ class AgentResultManager:
             return result_target_id == target_id
         
         return False
+    
+    def _cleanup_form_evaluator_results(self, conversation_id: str, new_result: Dict[str, Any]):
+        """Special cleanup for form evaluator results - ensure only one exists when appropriate"""
+        results = self.results_by_conversation[conversation_id]
+        data = new_result.get('data', {})
+        
+        # Get the argument from the new result
+        argument = data.get('argument', [])
+        if not argument:
+            return
+        
+        # Check if all propositions are formalized
+        from services.agent_coordinator import coordinator
+        if not coordinator.check_formalization_completion(conversation_id, argument):
+            # If not all propositions are formalized, remove all form evaluator results
+            results[:] = [
+                result for result in results
+                if result.get('agent_type') != 'form_evaluator'
+            ]
+            logger.info(f"Removed form evaluator results for conversation {conversation_id} - not all propositions formalized")
+    
+    def _should_add_form_evaluator_result(self, conversation_id: str, result: Dict[str, Any]) -> bool:
+        """Check if a form evaluator result should be added based on formalization completion"""
+        try:
+            data = result.get('data', {})
+            argument = data.get('argument', [])
+            if not argument:
+                return False
+            
+            # Check if all propositions are formalized
+            from services.agent_coordinator import coordinator
+            return coordinator.check_formalization_completion(conversation_id, argument)
+            
+        except Exception as e:
+            logger.error(f"Error checking if form evaluator result should be added: {e}")
+            return False
     
     def get_results(self, conversation_id: str) -> List[Dict[str, Any]]:
         """Get all results for a conversation"""
@@ -334,6 +380,28 @@ class AgentCoordinator:
         """Clean up all results for a conversation"""
         self.result_manager.cleanup_conversation(conversation_id)
         logger.info(f"Cleaned up results for conversation {conversation_id}")
+    
+    def check_formalization_completion(self, conversation_id: str, argument: list) -> bool:
+        """Check if all propositions in an argument have been formalized"""
+        try:
+            # Get existing results for this conversation
+            existing_results = self.get_conversation_results(conversation_id)
+            
+            # Get formalized propositions
+            formalized_propositions = set()
+            for result in existing_results:
+                if result.get('agent_type') == 'formalizer':
+                    existing_proposition = result.get('data', {}).get('proposition')
+                    if existing_proposition:
+                        formalized_propositions.add(existing_proposition)
+            
+            # Check if all argument propositions have been formalized
+            argument_propositions = set(argument)
+            return argument_propositions.issubset(formalized_propositions)
+            
+        except Exception as e:
+            logger.error(f"Error checking formalization completion: {e}")
+            return False
     
     def stop(self):
         """Stop all workers"""
