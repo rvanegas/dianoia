@@ -143,14 +143,98 @@ class EvaluationAgent:
     def __init__(self):
         self.name = "evaluator"
     
+    def _determine_evaluation_mode(self, conversation_data: Dict[str, Any]) -> str:
+        """Determine whether to evaluate in content mode or formal validity mode"""
+        try:
+            conversation_id = conversation_data.get('conversation_id')
+            if not conversation_id:
+                return "content"  # Default to content mode if no conversation_id
+            
+            from services.agent_coordinator import coordinator
+            
+            # Get existing results for this conversation
+            existing_results = coordinator.get_conversation_results(conversation_id)
+            
+            # Check if we have formalizations for all propositions in the argument
+            argument = conversation_data.get('argument', [])
+            if not argument:
+                return "content"
+            
+            # Count formalizations
+            formalization_count = 0
+            for result in existing_results:
+                if result.get('agent_type') == 'formalizer':
+                    formalization_count += 1
+            
+            # If we have formalizations for all propositions, use formal validity mode
+            if formalization_count >= len(argument):
+                return "formal_validity"
+            else:
+                return "content"
+                
+        except Exception as e:
+            logger.error(f"Error determining evaluation mode: {e}")
+            return "content"  # Default to content mode on error
+    
+    def _get_formalizations_for_argument(self, conversation_data: Dict[str, Any]) -> List[str]:
+        """Get formalizations for all propositions in the argument"""
+        try:
+            conversation_id = conversation_data.get('conversation_id')
+            if not conversation_id:
+                return []
+            
+            from services.agent_coordinator import coordinator
+            
+            # Get existing results for this conversation
+            existing_results = coordinator.get_conversation_results(conversation_id)
+            
+            # Get the argument propositions
+            argument = conversation_data.get('argument', [])
+            if not argument:
+                return []
+            
+            # Map propositions to their formalizations
+            formalizations = []
+            for proposition in argument:
+                # Find the formalization for this proposition
+                formalization = None
+                for result in existing_results:
+                    if (result.get('agent_type') == 'formalizer' and 
+                        result.get('data', {}).get('proposition') == proposition):
+                        formalization = result.get('data', {}).get('ascii')
+                        break
+                
+                if formalization:
+                    formalizations.append(formalization)
+                else:
+                    # If no formalization found, use the original proposition
+                    formalizations.append(proposition)
+            
+            return formalizations
+            
+        except Exception as e:
+            logger.error(f"Error getting formalizations for argument: {e}")
+            return []
+    
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate the truth, validity, and soundness of propositions and arguments"""
         try:
             # logger.info(f"EvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
             # logger.debug(f"EvaluationAgent starting task with data: {conversation_data}")
             
+            # Determine evaluation mode based on whether formalizations are available
+            evaluation_mode = self._determine_evaluation_mode(conversation_data)
+            
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
+            
+            # Add evaluation mode to the data
+            conversation_data['evaluation_mode'] = evaluation_mode
+            
+            # If in formal validity mode, add formalizations to the data
+            if evaluation_mode == "formal_validity":
+                formalizations = self._get_formalizations_for_argument(conversation_data)
+                conversation_data['formalizations'] = formalizations
             
             # Pass the data directly to the agent for evaluation
             evaluation_response = agent_gpt_evaluate.call(json.dumps(conversation_data), file_ids)
@@ -162,7 +246,7 @@ class EvaluationAgent:
             logical_issues = evaluation_result.get("logical_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            # logger.info(f"EvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
+            # logger.info(f"EvaluationAgent completed - Mode: {evaluation_mode}, Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
             # if logical_issues:
             #     logger.info(f"EvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
             # if recommendations:
@@ -176,10 +260,11 @@ class EvaluationAgent:
                     "proposition_count": proposition_count,
                     "argument_validity": argument_validity,
                     "logical_issues": logical_issues,
-                    "recommendations": recommendations
+                    "recommendations": recommendations,
+                    "evaluation_mode": evaluation_mode
                 },
                 confidence=argument_validity,
-                reasoning=f"Evaluated {proposition_count} propositions with {len(logical_issues)} issues identified"
+                reasoning=f"Evaluated {proposition_count} propositions in {evaluation_mode} mode with {len(logical_issues)} issues identified"
             )
             
             # logger.debug(f"EvaluationAgent task completed successfully. Output: {result}")
