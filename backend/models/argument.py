@@ -137,7 +137,14 @@ class Arguments(BaseModel):
         if self.conversation_id:
             # logger.info(f"Queueing task with conversation_id: '{self.conversation_id}'")
             task_data = {
-                'argument_data': self.gptjson(),  # Use gptjson() format
+                'argument_data': {
+                    'argument': [step.dict() for step in self.argument],
+                    'counter_argument': [step.dict() for step in self.counter_argument],
+                    'assumptions': [step.dict() for step in self.assumptions],
+                    'thesis': self.thesis,
+                    'counter_thesis': self.counter_thesis,
+                    'presupposition': self.presupposition
+                },
                 **data
             }
             coordinator.queue_task(
@@ -151,21 +158,29 @@ class Arguments(BaseModel):
             logger.warning("No conversation_id available for task queuing")
 
     def queue_evaluator_task(self, data: dict):
-        """Queue a task for the evaluator agent"""
+        """Queue a task for the content evaluator agent"""
         if self.conversation_id:
+            # Extract argument propositions for content evaluator
+            argument_propositions = []
+            for step in self.argument:
+                argument_propositions.append(step.proposition)
+            
             task_data = {
-                'argument_data': self.gptjson(),  # Use gptjson() format
-                **data
+                'argument': argument_propositions,
+                'thesis': self.thesis,
+                'counter_thesis': self.counter_thesis,
+                'assumptions': self.assumptions,
+                'file_ids': self.file_ids
             }
             coordinator.queue_task(
-                agent_type='evaluator',
+                agent_type='content_evaluator',
                 conversation_id=self.conversation_id,
                 data=task_data
             )
-            # logger.debug(f"Queued evaluator task for conversation {self.conversation_id}")
+            # logger.debug(f"Queued content evaluator task for conversation {self.conversation_id}")
             # logger.debug(f"Task data: {task_data}")
         else:
-            logger.warning("No conversation_id available for evaluator task queuing")
+            logger.warning("No conversation_id available for content evaluator task queuing")
 
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
