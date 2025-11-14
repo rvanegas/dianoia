@@ -260,17 +260,14 @@ class FormEvaluationAgent:
     def _get_formalizations_for_argument(self, conversation_data: Dict[str, Any]) -> List[str]:
         """Get formalizations for all propositions in the argument"""
         try:
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                return []
+            conversation_id = conversation_data['conversation_id']
             
+            # Get existing results
             from services.agent_coordinator import coordinator
-            
-            # Get existing results for this conversation
             existing_results = coordinator.get_conversation_results(conversation_id)
             
             # Get the argument propositions
-            argument = conversation_data.get('argument', [])
+            argument = conversation_data['argument']
             if not argument:
                 return []
             
@@ -300,7 +297,7 @@ class FormEvaluationAgent:
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
-            logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data.get('conversation_id', 'unknown')}")
+            logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
             logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
             
             # Get file_ids from task data
@@ -343,10 +340,10 @@ class FormEvaluationAgent:
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
                     "evaluation_mode": "formal_validity",
-                    "argument": conversation_data.get('argument', []),
-                    "thesis": conversation_data.get('thesis', ''),
-                    "counter_thesis": conversation_data.get('counter_thesis', ''),
-                    "assumptions": conversation_data.get('assumptions', [])
+                    "argument": conversation_data['argument'],
+                    "thesis": conversation_data['thesis'],
+                    "counter_thesis": conversation_data['counter_thesis'],
+                    "assumptions": conversation_data['assumptions']
                 },
                 confidence=argument_validity,
                 reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified"
