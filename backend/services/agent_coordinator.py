@@ -14,7 +14,7 @@ from services.agents import AGENTS
 class AgentTask:
     """Represents a task for an agent to process"""
     id: str
-    agent_type: str  # 'builder', 'evaluator', 'formalizer', 'rewriter'
+    agent_type: str  # 'builder', 'content_evaluator', 'form_evaluator', 'formalizer', 'rewriter'
     conversation_id: str
     data: Dict[str, Any]
     status: str = 'pending'  # 'pending', 'running', 'completed', 'failed'
