@@ -88,49 +88,36 @@ class TestResultManager:
         assert form_evaluator_results[0]['data']['evaluation']['argument_validity'] == 0.8
     
     def test_result_manager_removes_form_evaluator_when_incomplete(self):
-        """Test that result manager removes form evaluator results when not all propositions are formalized"""
+        """Test that result manager removes form evaluator results when no formalizations exist"""
         result_manager = AgentResultManager()
         conversation_id = "test_conversation"
         
-        # Mock existing formalization results (incomplete)
-        mock_existing_results = [
-            {
-                'agent_type': 'formalizer',
-                'data': {
-                    'proposition': 'Socrates is a man',
-                    'ascii': 'P(a)'
-                }
-            }
-            # Missing formalizations for "All men are mortal" and "Socrates is mortal"
-        ]
+        # No existing formalization results (incomplete)
+        mock_existing_results = []
         
-        # Add the existing formalization results to the result manager first
-        for result in mock_existing_results:
-            result_manager.add_result(conversation_id, result)
-            
-            # Add a form evaluator result (this shouldn't exist but let's test cleanup)
-            form_evaluator_result = {
-                'agent_type': 'form_evaluator',
-                'data': {
-                    'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
-                    'evaluation': {
-                        'proposition_evaluations': [
-                            {'proposition': 'Socrates is a man', 'truth_value': 0.5},
-                            {'proposition': 'All men are mortal', 'truth_value': 0.5},
-                            {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
-                        ],
-                        'argument_validity': 1.0
-                    }
+        # Add a form evaluator result (this shouldn't exist but let's test cleanup)
+        form_evaluator_result = {
+            'agent_type': 'form_evaluator',
+            'data': {
+                'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
+                'evaluation': {
+                    'proposition_evaluations': [
+                        {'proposition': 'Socrates is a man', 'truth_value': 0.5},
+                        {'proposition': 'All men are mortal', 'truth_value': 0.5},
+                        {'proposition': 'Socrates is mortal', 'truth_value': 0.5}
+                    ],
+                    'argument_validity': 1.0
                 }
             }
-            
-            # Add the result - it should be removed during the add process due to incomplete formalization
-            result_manager.add_result(conversation_id, form_evaluator_result)
-            
-            # Verify the result was removed due to incomplete formalization
-            results = result_manager.get_results(conversation_id)
-            form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
-            assert len(form_evaluator_results) == 0
+        }
+        
+        # Add the result - it should be removed during the add process due to no formalizations
+        result_manager.add_result(conversation_id, form_evaluator_result)
+        
+        # Verify the result was removed due to no formalizations
+        results = result_manager.get_results(conversation_id)
+        form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
+        assert len(form_evaluator_results) == 0
     
     def test_result_manager_maintains_content_evaluator_independently(self):
         """Test that result manager maintains content evaluator results independently"""

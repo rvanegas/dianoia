@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from core.utils import logger
-from services.agents import AGENTS
+from services.agents import ArgumentBuilderAgent, ContentEvaluationAgent, FormEvaluationAgent, FormalizationAgent, RewriterAgent
 
 
 @dataclass
@@ -102,88 +102,45 @@ class AgentResultManager:
     
     def _is_outdated_result(self, result: Dict[str, Any], new_agent_type: str, 
                            new_operation: str, target_id: str) -> bool:
-        """Check if a result is outdated and should be removed"""
+        """Check if a result is outdated compared to a new result"""
         agent_type = result.get('agent_type')
+        operation = result.get('operation')
         
-        # If it's the same agent type, check if it targets the same thing
-        if agent_type == new_agent_type:
+        # If it's the same agent type and operation, check if it targets the same thing
+        if agent_type == new_agent_type and operation == new_operation:
             result_target_id = self._get_result_target_id(result)
             return result_target_id == target_id
         
         return False
     
     def _cleanup_form_evaluator_results(self, conversation_id: str, new_result: Dict[str, Any]):
-        """Special cleanup for form evaluator results - ensure only one exists when appropriate"""
+        """Special cleanup for form evaluator results when formalizations change"""
         results = self.results_by_conversation[conversation_id]
-        data = new_result['data']
         
-        # Get the argument from the new result
-        argument = data['argument']
-        if not argument:
-            return
-        
-        # Check if all propositions are formalized
-        # Get existing results for this conversation
-        existing_results = self.get_results(conversation_id)
-        
-        # Get formalized propositions
-        formalized_propositions = set()
-        for existing_result in existing_results:
-            if existing_result.get('agent_type') == 'formalizer':
-                existing_proposition = existing_result.get('data', {}).get('proposition')
-                if existing_proposition:
-                    formalized_propositions.add(existing_proposition)
-        
-        # Check if all argument propositions have been formalized
-        argument_propositions = set(argument)
-        if not argument_propositions.issubset(formalized_propositions):
-            # If not all propositions are formalized, remove all form evaluator results
-            results[:] = [
-                result for result in results
-                if result.get('agent_type') != 'form_evaluator'
-            ]
-            logger.info(f"Removed form evaluator results for conversation {conversation_id} - not all propositions formalized")
+        # Remove all form evaluator results when a new formalization is added
+        # This ensures form evaluator runs again with the new formalization
+        results[:] = [
+            result for result in results
+            if result.get('agent_type') != 'form_evaluator'
+        ]
     
     def _should_add_form_evaluator_result(self, conversation_id: str, result: Dict[str, Any]) -> bool:
-        """Check if a form evaluator result should be added based on formalization completion"""
-        try:
-            data = result['data']
-            argument = data['argument']
-            if not argument:
-                logger.debug(f"Form evaluator result has no argument data")
-                return False
-            
-            # Check if all propositions are formalized
-            # Get existing results for this conversation
-            existing_results = self.get_results(conversation_id)
-            
-            # Get formalized propositions
-            formalized_propositions = set()
-            for existing_result in existing_results:
-                if existing_result.get('agent_type') == 'formalizer':
-                    existing_proposition = existing_result.get('data', {}).get('proposition')
-                    if existing_proposition:
-                        formalized_propositions.add(existing_proposition)
-            
-            # Check if all argument propositions have been formalized
-            argument_propositions = set(argument)
-            
-            logger.debug(f"Form evaluator check - Argument propositions: {argument_propositions}")
-            logger.debug(f"Form evaluator check - Formalized propositions: {formalized_propositions}")
-            logger.debug(f"Form evaluator check - Is subset: {argument_propositions.issubset(formalized_propositions)}")
-            
-            return argument_propositions.issubset(formalized_propositions)
-            
-        except Exception as e:
-            logger.error(f"Error checking if form evaluator result should be added: {e}")
-            return False
+        """Check if a form evaluator result should be added"""
+        # Get all formalizations for this conversation
+        formalizations = []
+        for existing_result in self.results_by_conversation.get(conversation_id, []):
+            if existing_result.get('agent_type') == 'formalizer':
+                formalizations.append(existing_result)
+        
+        # Only add form evaluator result if we have formalizations
+        return len(formalizations) > 0
     
     def get_results(self, conversation_id: str) -> List[Dict[str, Any]]:
         """Get all results for a conversation"""
         return self.results_by_conversation.get(conversation_id, [])
     
     def cleanup_conversation(self, conversation_id: str):
-        """Remove all results for a conversation"""
+        """Clean up all results for a conversation"""
         if conversation_id in self.results_by_conversation:
             del self.results_by_conversation[conversation_id]
 
@@ -197,6 +154,15 @@ class AgentCoordinator:
         self.running = True
         self.result_manager = AgentResultManager()  # Use the new result manager
         self.task_history = {}   # Store task history by task_id
+        
+        # Create agents with coordinator dependency injected
+        self.agents = {
+            'builder': ArgumentBuilderAgent(self),
+            'content_evaluator': ContentEvaluationAgent(self),
+            'form_evaluator': FormEvaluationAgent(self),
+            'formalizer': FormalizationAgent(self),
+            'rewriter': RewriterAgent(self)
+        }
         
         # Start background workers
         self._start_workers()
@@ -248,7 +214,7 @@ class AgentCoordinator:
             self._update_task(task)
             
             # Get the appropriate agent
-            agent = AGENTS.get(task.agent_type)
+            agent = self.agents.get(task.agent_type)
             if not agent:
                 raise ValueError(f"Unknown agent type: {task.agent_type}")
             

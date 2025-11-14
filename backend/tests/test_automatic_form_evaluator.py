@@ -10,7 +10,7 @@ class TestAutomaticFormEvaluator:
     
     def test_formalization_queues_form_evaluator_when_complete(self):
         """Test that formalization agent queues form evaluator when all propositions are formalized"""
-        agent = FormalizationAgent()
+        agent = FormalizationAgent(coordinator)
         
         # Mock existing results with formalizations for all but one proposition
         mock_existing_results = [
@@ -35,10 +35,8 @@ class TestAutomaticFormEvaluator:
         
         # Mock the GPT response for formalization
         mock_response = {
-            "formalization": {
-                "ascii": "Q(a)",
-                "json": {}
-            },
+            "ascii": "Q(a)",
+            "latex": "Q(a)",
             "confidence": 0.95,
             "reasoning": "Direct predicate application"
         }
@@ -90,7 +88,7 @@ class TestAutomaticFormEvaluator:
     
     def test_formalization_does_not_queue_form_evaluator_when_incomplete(self):
         """Test that formalization agent does not queue form evaluator when not all propositions are formalized"""
-        agent = FormalizationAgent()
+        agent = FormalizationAgent(coordinator)
         
         # Mock existing results with formalizations for only some propositions
         mock_existing_results = [
@@ -107,10 +105,8 @@ class TestAutomaticFormEvaluator:
         
         # Mock the GPT response for formalization
         mock_response = {
-            "formalization": {
-                "ascii": "forall x. (P(x) -> Q(x))",
-                "json": {}
-            },
+            "ascii": "forall x. (P(x) -> Q(x))",
+            "latex": "\\forall x. (P(x) \\rightarrow Q(x))",
             "confidence": 0.95,
             "reasoning": "Universal quantification"
         }
