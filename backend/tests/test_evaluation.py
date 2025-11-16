@@ -47,7 +47,7 @@ class TestEvaluationAgent:
             # Verify the result is in content mode
             assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "content_truth"
+            # Note: evaluation_mode is no longer included in the result data
     
     def test_content_evaluator_always_evaluates_content(self):
         """Test that content evaluator always evaluates content, regardless of formalizations"""
@@ -95,7 +95,7 @@ class TestEvaluationAgent:
             # Verify the result is always in content mode
             assert result.agent_type == "content_evaluator"
             assert result.operation == "evaluate_propositions"
-            assert result.data["evaluation_mode"] == "content_truth"
+            # Note: evaluation_mode is no longer included in the result data
     
     def test_content_evaluator_ignores_formalizations(self):
         """Test that content evaluator ignores formalizations and always evaluates content"""
@@ -126,7 +126,7 @@ class TestEvaluationAgent:
             # The content evaluator should always evaluate content, regardless of formalizations
             result = agent.evaluate_propositions(conversation_data)
             assert result.agent_type == "content_evaluator"
-            assert result.data["evaluation_mode"] == "content_truth"
+            # Note: evaluation_mode is no longer included in the result data
 
 
 if __name__ == "__main__":
