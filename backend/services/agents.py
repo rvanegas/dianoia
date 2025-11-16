@@ -36,6 +36,9 @@ class ArgumentBuilderAgent:
             # Queue formalizer task for the specific proposition this builder is working on
             self._queue_formalizer_task_for_proposition(conversation_data)
             
+            # Queue content evaluator task to evaluate the argument
+            self._queue_content_evaluator_task(conversation_data)
+            
             # Pass the data directly to the agent without taking it apart
             basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
             basic_propositions = json.loads(basic_response)["propositions"]
@@ -59,7 +62,7 @@ class ArgumentBuilderAgent:
                     "total_justifications": len(justifications)
                 },
                 confidence=0.8,
-                reasoning=f"Generated {len(justifications)} justification options and queued formalizer task"
+                reasoning=f"Generated {len(justifications)} justification options and queued formalizer and content evaluator tasks"
             )
             
             # logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
