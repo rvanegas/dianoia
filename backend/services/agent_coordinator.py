@@ -288,61 +288,6 @@ class AgentCoordinator:
         # logger.info(f"Queued task {task_id} for {agent_type} agent in conversation {conversation_id}")
         return task_id
     
-    def _cleanup_outdated_results_for_task(self, conversation_id: str, agent_type: str, data: Dict[str, Any]):
-        """Clean up outdated results when a new task is queued"""
-        results = self.result_manager.get_results(conversation_id)
-        
-        # Determine what this task targets
-        target_id = self._get_task_target_id(agent_type, data)
-        
-        # Remove outdated results of the same type for the same target
-        outdated_results = [
-            result for result in results
-            if self._is_outdated_result_for_task(result, agent_type, target_id)
-        ]
-        
-        if outdated_results:
-            logger.info(f"Cleaning up {len(outdated_results)} outdated results for {agent_type} targeting {target_id}")
-            for result in outdated_results:
-                results.remove(result)
-    
-    def _get_task_target_id(self, agent_type: str, data: Dict[str, Any]) -> str:
-        """Get a unique identifier for what this task targets"""
-        if agent_type == 'builder':
-            # Builder targets a specific proposition in arguments
-            proposition = data.get('proposition', '')
-            location = data.get('location', '')
-            return f"builder:{location}:{proposition}"
-        
-        elif agent_type == 'formalizer':
-            # Formalizer targets a specific proposition in arguments or assumptions
-            proposition = data.get('proposition', '')
-            return f"formalizer:{proposition}"
-        
-        elif agent_type in ['content_evaluator', 'form_evaluator']:
-            # Evaluators target the entire argument as a whole
-            location = data.get('location', '')
-            return f"{agent_type}:{location}"
-        
-        elif agent_type == 'rewriter':
-            # Rewriter targets a specific proposition
-            proposition = data.get('proposition', '')
-            return f"rewriter:{proposition}"
-        
-        # Fallback to using the entire data as identifier
-        return f"{agent_type}:{hash(str(data))}"
-    
-    def _is_outdated_result_for_task(self, result: Dict[str, Any], new_agent_type: str, target_id: str) -> bool:
-        """Check if a result is outdated for a new task"""
-        agent_type = result.get('agent_type')
-        
-        # If it's the same agent type, check if it targets the same thing
-        if agent_type == new_agent_type:
-            result_target_id = self.result_manager._get_result_target_id(result)
-            return result_target_id == target_id
-        
-        return False
-    
     def get_task_status(self, task_id: str) -> Optional[AgentTask]:
         """Get the status of a specific task"""
         return self.task_history.get(task_id)
