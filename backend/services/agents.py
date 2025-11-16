@@ -20,9 +20,11 @@ class AgentResult:
 
 
 class ArgumentBuilderAgent:
-    """Agent that builds complex multi-step arguments"""
+    """Agent that builds arguments from content"""
     
-    def __init__(self, coordinator=None):
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("ArgumentBuilderAgent requires a coordinator")
         self.name = "builder"
         self.coordinator = coordinator
     
@@ -79,7 +81,9 @@ class ArgumentBuilderAgent:
 class ContentEvaluationAgent:
     """Agent that evaluates the truth and validity of argument propositions"""
     
-    def __init__(self, coordinator=None):
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("ContentEvaluationAgent requires a coordinator")
         self.name = "content_evaluator"
         self.coordinator = coordinator
     
@@ -146,7 +150,9 @@ class ContentEvaluationAgent:
 class FormEvaluationAgent:
     """Agent that evaluates only the logical validity of formalized arguments"""
     
-    def __init__(self, coordinator=None):
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("FormEvaluationAgent requires a coordinator")
         self.name = "form_evaluator"
         self.coordinator = coordinator
     
@@ -262,16 +268,15 @@ class FormEvaluationAgent:
 class FormalizationAgent:
     """Agent that formalizes propositions into logical notation"""
     
-    def __init__(self, coordinator=None):
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("FormalizationAgent requires a coordinator")
         self.name = "formalizer"
         self.coordinator = coordinator
     
     def _get_existing_formalizations(self, conversation_id: str) -> List[Dict[str, Any]]:
         """Get existing formalizations for this conversation"""
         try:
-            if not self.coordinator:
-                return []
-                
             existing_results = self.coordinator.get_conversation_results(conversation_id)
             formalizations = []
             
@@ -291,6 +296,11 @@ class FormalizationAgent:
             logger.info(f"FormalizationAgent starting task for conversation: {conversation_data['conversation_id']}")
             logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
             
+            # Validate required data
+            argument_data = conversation_data.get('argument_data')
+            if not argument_data:
+                raise ValueError("FormalizationAgent requires argument_data in conversation_data")
+            
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
@@ -307,7 +317,7 @@ class FormalizationAgent:
             formalization_data = {
                 'proposition': proposition,
                 'existing_formalizations': existing_formalizations,
-                'argument_data': conversation_data.get('argument_data', {})
+                'argument_data': argument_data
             }
             
             logger.debug(f"FormalizationAgent sending data: {formalization_data}")
@@ -340,8 +350,12 @@ class FormalizationAgent:
                 reasoning=reasoning
             )
             
-            # Check if we should queue form evaluator after formalization
-            self._check_and_queue_form_evaluator(conversation_data)
+            # Trigger reactive agent queueing based on the new formalization
+            self.coordinator.react_to_argument_state_change(
+                conversation_data.get('conversation_id', ''),
+                argument_data,
+                conversation_data
+            )
             
             # logger.debug(f"FormalizationAgent task completed successfully. Output: {result}")
             return result
@@ -358,94 +372,15 @@ class FormalizationAgent:
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")
             return result
     
-    def _check_and_queue_form_evaluator(self, conversation_data: Dict[str, Any]):
-        """Check if all propositions are formalized and queue form evaluator if so"""
-        try:
-            if not self.coordinator:
-                logger.warning("No coordinator available for queueing form evaluator")
-                return
-                
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                logger.warning("No conversation_id found in formalizer task data")
-                return
-            
-            # Get the argument data
-            argument_data = conversation_data.get('argument_data', {})
-            argument = argument_data.get('argument', [])
-            if not argument:
-                logger.warning("No argument found in formalizer task data")
-                return
-            
-            # Extract proposition texts from the argument
-            argument_propositions = []
-            
-            # Debug: log the argument type and content
-            # logger.debug(f"Argument type: {type(argument)}, content: {argument}")
-            
-            # Handle different argument formats
-            if isinstance(argument, str):
-                # If argument is a string, treat it as a single proposition
-                argument_propositions = [argument]
-            elif isinstance(argument, list):
-                # If argument is a list, extract propositions from each step
-                for step in argument:
-                    if isinstance(step, dict):
-                        proposition = step.get('proposition', '')
-                    else:
-                        proposition = str(step)
-                    if proposition:
-                        argument_propositions.append(proposition)
-            else:
-                # Fallback: convert to string and treat as single proposition
-                argument_propositions = [str(argument)]
-            
-            # Get existing formalizations
-            existing_results = self.coordinator.get_conversation_results(conversation_id)
-            formalized_propositions = set()
-            for result in existing_results:
-                if result.get('agent_type') == 'formalizer':
-                    existing_proposition = result.get('data', {}).get('proposition')
-                    if existing_proposition:
-                        formalized_propositions.add(existing_proposition)
-            
-            # Add the current proposition being formalized
-            current_proposition = conversation_data.get('proposition', '')
-            if current_proposition:
-                formalized_propositions.add(current_proposition)
-            
-            # Check if all propositions are now formalized
-            argument_propositions_set = set(argument_propositions)
-            if argument_propositions_set.issubset(formalized_propositions):
-                # logger.info(f"All propositions formalized, queueing form evaluator")
-                # Queue form evaluator task
-                task_data = {
-                    'argument': argument_propositions,
-                    'thesis': argument_data.get('thesis', ''),
-                    'counter_thesis': argument_data.get('counter_thesis', ''),
-                    'assumptions': argument_data.get('assumptions', []),
-                    'file_ids': conversation_data.get('file_ids', [])
-                }
-                
-                self.coordinator.queue_task(
-                    agent_type='form_evaluator',
-                    conversation_id=conversation_id,
-                    data=task_data
-                )
-                
-                # logger.info(f"Queued form evaluator task for conversation {conversation_id}")
-            else:
-                # logger.info(f"Not all propositions formalized yet. Formalized: {formalized_propositions}, Needed: {argument_propositions_set}")
-                pass
-            
-        except Exception as e:
-            logger.error(f"Error checking and queueing form evaluator: {e}")
+
     
 
 class RewriterAgent:
     """Agent that recommends proposition rewrites, rephrasing, and splitting (STUB)"""
     
-    def __init__(self, coordinator=None):
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("RewriterAgent requires a coordinator")
         self.name = "rewriter"
         self.coordinator = coordinator
     

@@ -249,6 +249,14 @@ class AgentCoordinator:
             # Store result using the disciplined result manager
             self.result_manager.add_result(task.conversation_id, task.result)
             
+            # If this was a formalizer task, trigger argument state change reaction
+            if task.agent_type == 'formalizer':
+                # Get the argument data from the task
+                argument_data = task.data.get('argument_data', {})
+                if argument_data:
+                    # Trigger reactive agent queueing based on the new formalization
+                    self.react_to_argument_state_change(task.conversation_id, argument_data, task.data)
+            
             # Debug logging
             # logger.info(f"Stored result for {task.agent_type} agent in conversation {task.conversation_id}")
             # logger.debug(f"Current results for conversation {task.conversation_id}: {self.result_manager.get_results(task.conversation_id)}")
@@ -351,6 +359,7 @@ class AgentCoordinator:
         This method analyzes the current argument state and queues necessary agents
         to keep results in sync with the new argument state.
         """
+
         change_data = change_data or {}
         
         # Extract all propositions from the argument
@@ -413,7 +422,7 @@ class AgentCoordinator:
             'counter_thesis': argument_data.get('counter_thesis', ''),
             'assumptions': argument_data.get('assumptions', []),
             'file_ids': argument_data.get('file_ids', []),
-            **change_data
+            'conversation_id': conversation_id
         }
         self.queue_task(
             agent_type='content_evaluator',
@@ -421,21 +430,58 @@ class AgentCoordinator:
             data=analysis_task_data
         )
         
-        # Queue form evaluator if we have formalizations
-        if existing_formalizations:
-            form_evaluator_task_data = {
-                'argument': argument_propositions,
-                'thesis': argument_data.get('thesis', ''),
-                'counter_thesis': argument_data.get('counter_thesis', ''),
-                'assumptions': argument_data.get('assumptions', []),
-                'file_ids': argument_data.get('file_ids', []),
-                **change_data
-            }
-            self.queue_task(
-                agent_type='form_evaluator',
-                conversation_id=conversation_id,
-                data=form_evaluator_task_data
-            )
+        # Check if all propositions are formalized and queue form evaluator if so
+        try:
+            # Extract proposition texts from the argument for form evaluator check
+            form_eval_argument_propositions = []
+            
+            # Extract propositions from list[Step] format
+            argument_steps = argument_data.get('argument', [])
+            if not isinstance(argument_steps, list):
+                raise ValueError(f"Expected argument to be list[Step], got {type(argument_steps)}")
+            
+            for step in argument_steps:
+                if not isinstance(step, dict):
+                    raise ValueError(f"Expected step to be dict, got {type(step)}")
+                proposition = step.get('proposition', '')
+                if proposition:
+                    form_eval_argument_propositions.append(proposition)
+            
+            # Get existing formalizations
+            formalized_propositions = set()
+            for result in existing_results:
+                if result.get('agent_type') == 'formalizer':
+                    existing_proposition = result.get('data', {}).get('proposition')
+                    if existing_proposition:
+                        formalized_propositions.add(existing_proposition)
+            
+            # Add the current proposition being formalized (from change_data)
+            current_proposition = change_data.get('proposition', '')
+            if current_proposition:
+                formalized_propositions.add(current_proposition)
+            
+            # Check if all propositions are now formalized
+            form_eval_argument_propositions_set = set(form_eval_argument_propositions)
+            
+            if form_eval_argument_propositions_set.issubset(formalized_propositions):
+                # Queue form evaluator task
+                form_evaluator_task_data = {
+                    'argument': form_eval_argument_propositions,
+                    'thesis': argument_data.get('thesis', ''),
+                    'counter_thesis': argument_data.get('counter_thesis', ''),
+                    'assumptions': argument_data.get('assumptions', []),
+                    'file_ids': argument_data.get('file_ids', []),
+                    **change_data
+                }
+                
+                self.queue_task(
+                    agent_type='form_evaluator',
+                    conversation_id=conversation_id,
+                    data=form_evaluator_task_data
+                )
+                
+        except Exception as e:
+            logger.error(f"Error checking and queueing form evaluator: {e}")
         
         logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
     

@@ -44,7 +44,6 @@ class TestAutomaticFormEvaluator:
         
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
              patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'check_formalization_completion', return_value=True), \
              patch.object(coordinator, 'queue_task') as mock_queue_task:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
@@ -74,8 +73,10 @@ class TestAutomaticFormEvaluator:
             assert result.data["proposition"] == "Socrates is mortal"
             assert result.data["ascii"] == "Q(a)"
             
+
+            
             # Verify that form evaluator was queued
-            mock_queue_task.assert_called_once_with(
+            mock_queue_task.assert_called_with(
                 agent_type='form_evaluator',
                 conversation_id='test_conversation',
                 data={
@@ -83,7 +84,18 @@ class TestAutomaticFormEvaluator:
                     'thesis': 'Socrates is mortal',
                     'counter_thesis': '',
                     'assumptions': [],
-                    'file_ids': []
+                    'file_ids': [],
+                    'proposition': 'Socrates is mortal',
+                    'conversation_id': 'test_conversation',
+                    'argument_data': {
+                        'argument': [
+                            {'proposition': 'Socrates is a man'},
+                            {'proposition': 'All men are mortal'},
+                            {'proposition': 'Socrates is mortal'}
+                        ],
+                        'thesis': 'Socrates is mortal',
+                        'assumptions': []
+                    }
                 }
             )
     
@@ -145,8 +157,9 @@ class TestAutomaticFormEvaluator:
             assert result.data["proposition"] == "All men are mortal"
             assert result.data["ascii"] == "forall x. (P(x) -> Q(x))"
             
-            # Verify that form evaluator was NOT queued
-            mock_queue_task.assert_not_called()
+            # Verify that form evaluator was NOT queued (but other agents may be queued)
+            form_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'form_evaluator']
+            assert len(form_evaluator_calls) == 0, "Form evaluator should not be queued when not all propositions are formalized"
 
 
 if __name__ == "__main__":
