@@ -338,8 +338,9 @@ class FormalizationAgent:
             formalization_result = json.loads(formalization_response)
             
             # Extract formalization results
-            ascii_formalization = formalization_result.get("ascii", "")
-            latex_formalization = formalization_result.get("latex", "")
+            formalization_obj = formalization_result.get("formalization", {})
+            ascii_formalization = formalization_obj.get("ascii", "")
+            json_formalization = formalization_obj.get("json", {})
             confidence = formalization_result.get("confidence", 0.0)
             reasoning = formalization_result.get("reasoning", "")
             
@@ -351,7 +352,7 @@ class FormalizationAgent:
                 data={
                     "proposition": proposition,
                     "ascii": ascii_formalization,
-                    "latex": latex_formalization,
+                    "json": json_formalization,
                     "confidence": confidence,
                     "reasoning": reasoning,
                     "formalization_mode": "proposition_to_logic"
