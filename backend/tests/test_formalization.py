@@ -14,8 +14,9 @@ class TestFormalizationAgent:
         
         # Mock the GPT response to simulate abstract predicate usage
         mock_response = {
-            "ascii": "forall x. (P(x) -> Q(x))",
-            "latex": "\\forall x. (P(x) \\rightarrow Q(x))",
+            "formalization": {
+                "ascii": "forall x. (P(x) -> Q(x))"
+            },
             "confidence": 0.9,
             "reasoning": "Universal quantification with conditional using abstract predicates P and Q"
         }
@@ -45,8 +46,9 @@ class TestFormalizationAgent:
         
         # Mock the GPT response to simulate abstract predicate usage
         mock_response = {
-            "ascii": "P(a)",
-            "latex": "P(a)",
+            "formalization": {
+                "ascii": "P(a)"
+            },
             "confidence": 0.95,
             "reasoning": "Direct predicate application using abstract predicate P"
         }
@@ -90,8 +92,9 @@ class TestFormalizationAgent:
         
         # Mock the GPT response to simulate consistent formalization
         mock_response = {
-            "ascii": "P(a)",
-            "latex": "P(a)",
+            "formalization": {
+                "ascii": "P(a)"
+            },
             "confidence": 0.95,
             "reasoning": "Consistent with existing formalization: using P for mouse as established"
         }

@@ -400,6 +400,100 @@ class AgentCoordinator:
             logger.error(f"Error checking formalization completion: {e}")
             return False
     
+    def react_to_argument_state_change(self, conversation_id: str, argument_data: Dict[str, Any], change_data: Dict[str, Any] = None):
+        """
+        Reactively queue agents based on argument state changes.
+        This method analyzes the current argument state and queues necessary agents
+        to keep results in sync with the new argument state.
+        """
+        change_data = change_data or {}
+        
+        # Extract all propositions from the argument
+        all_propositions = []
+        argument_propositions = [step['proposition'] for step in argument_data.get('argument', [])]
+        counter_argument_propositions = [step['proposition'] for step in argument_data.get('counter_argument', [])]
+        assumption_propositions = [step['proposition'] for step in argument_data.get('assumptions', [])]
+        
+        all_propositions.extend(argument_propositions)
+        all_propositions.extend(counter_argument_propositions)
+        all_propositions.extend(assumption_propositions)
+        
+        # Get existing results to understand current state
+        existing_results = self.get_conversation_results(conversation_id)
+        
+        # Queue builder agent for content discovery
+        discovery_task_data = {
+            'argument_data': {
+                'argument': argument_data.get('argument', []),
+                'counter_argument': argument_data.get('counter_argument', []),
+                'assumptions': argument_data.get('assumptions', []),
+                'thesis': argument_data.get('thesis', ''),
+                'counter_thesis': argument_data.get('counter_thesis', ''),
+                'presupposition': argument_data.get('presupposition', '')
+            },
+            **change_data
+        }
+        self.queue_task(
+            agent_type='builder',
+            conversation_id=conversation_id,
+            data=discovery_task_data
+        )
+        
+        # Queue formalizer for any new propositions
+        existing_formalizations = set()
+        for result in existing_results:
+            if result.get('agent_type') == 'formalizer':
+                existing_proposition = result.get('data', {}).get('proposition')
+                if existing_proposition:
+                    existing_formalizations.add(existing_proposition)
+        
+        # Queue formalizer for propositions that haven't been formalized yet
+        for proposition in all_propositions:
+            if proposition not in existing_formalizations:
+                formalizer_task_data = {
+                    'proposition': proposition,
+                    'argument_data': discovery_task_data['argument_data'],
+                    'file_ids': argument_data.get('file_ids', [])
+                }
+                self.queue_task(
+                    agent_type='formalizer',
+                    conversation_id=conversation_id,
+                    data=formalizer_task_data
+                )
+        
+        # Queue content evaluator for argument analysis
+        analysis_task_data = {
+            'argument': argument_propositions,
+            'thesis': argument_data.get('thesis', ''),
+            'counter_thesis': argument_data.get('counter_thesis', ''),
+            'assumptions': argument_data.get('assumptions', []),
+            'file_ids': argument_data.get('file_ids', []),
+            **change_data
+        }
+        self.queue_task(
+            agent_type='content_evaluator',
+            conversation_id=conversation_id,
+            data=analysis_task_data
+        )
+        
+        # Queue form evaluator if we have formalizations
+        if existing_formalizations:
+            form_evaluator_task_data = {
+                'argument': argument_propositions,
+                'thesis': argument_data.get('thesis', ''),
+                'counter_thesis': argument_data.get('counter_thesis', ''),
+                'assumptions': argument_data.get('assumptions', []),
+                'file_ids': argument_data.get('file_ids', []),
+                **change_data
+            }
+            self.queue_task(
+                agent_type='form_evaluator',
+                conversation_id=conversation_id,
+                data=form_evaluator_task_data
+            )
+        
+        logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
+    
     def stop(self):
         """Stop all workers"""
         self.running = False

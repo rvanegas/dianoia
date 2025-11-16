@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
 from services.agent_coordinator import coordinator
-from services.agent_queuing import queue_argument_state_change
 
 def clean_citations(proposition: str) -> str:
     """
@@ -134,8 +133,8 @@ class Arguments(BaseModel):
         return self.gptjson()
 
     def queue_argument_state_change(self, data: dict):
-        """Queue analysis and discovery for argument state changes"""
-        # Prepare argument data for the centralized queuing function
+        """Reactively queue agents for argument state changes"""
+        # Prepare argument data for the reactive coordinator
         argument_data = {
             'argument': [step.model_dump() for step in self.argument],
             'counter_argument': [step.model_dump() for step in self.counter_argument],
@@ -146,8 +145,8 @@ class Arguments(BaseModel):
             'file_ids': self.file_ids
         }
         
-        # Use the centralized queuing function
-        queue_argument_state_change(coordinator, self.conversation_id, argument_data, data)
+        # Use the reactive coordinator method
+        coordinator.react_to_argument_state_change(self.conversation_id, argument_data, data)
 
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
