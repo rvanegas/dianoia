@@ -103,94 +103,67 @@ class ArgumentBuilderAgent:
 
     def _queue_formalizer_task_for_proposition(self, conversation_data: Dict[str, Any]):
         """Queue formalizer task for the proposition this builder is working on"""
-        try:
-            if not self.coordinator:
-                logger.warning("No coordinator available for queueing formalizer task")
-                return
-                
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                logger.warning("No conversation_id found in builder task data")
-                return
+        conversation_id = conversation_data['conversation_id']
+        proposition = conversation_data['proposition']
+        
+        # Get existing formalizations to avoid duplicate work
+        existing_results = self.coordinator.get_conversation_results(conversation_id)
+        formalized_propositions = set()
+        for result in existing_results:
+            if result.get('agent_type') == 'formalizer':
+                existing_proposition = result.get('data', {}).get('proposition')
+                if existing_proposition:
+                    formalized_propositions.add(existing_proposition)
+        
+        # Only queue formalizer task if this proposition hasn't been formalized yet
+        if proposition not in formalized_propositions:
+            logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
             
-            # Get the proposition this builder is working on
-            proposition = conversation_data.get('proposition', '')
-            if not proposition:
-                logger.warning("No proposition found in builder task data")
-                return
+            task_data = {
+                'proposition': proposition,
+                'argument_data': conversation_data.get('argument_data', {}),
+                'file_ids': conversation_data.get('file_ids', [])
+            }
             
-            # Get existing formalizations to avoid duplicate work
-            existing_results = self.coordinator.get_conversation_results(conversation_id)
-            formalized_propositions = set()
-            for result in existing_results:
-                if result.get('agent_type') == 'formalizer':
-                    existing_proposition = result.get('data', {}).get('proposition')
-                    if existing_proposition:
-                        formalized_propositions.add(existing_proposition)
+            self.coordinator.queue_task(
+                agent_type='formalizer',
+                conversation_id=conversation_id,
+                data=task_data
+            )
             
-            # Only queue formalizer task if this proposition hasn't been formalized yet
-            if proposition not in formalized_propositions:
-                logger.info(f"Queueing formalizer task for proposition: '{proposition[:50]}...'")
-                
-                task_data = {
-                    'proposition': proposition,
-                    'argument_data': conversation_data.get('argument_data', {}),
-                    'file_ids': conversation_data.get('file_ids', [])
-                }
-                
-                self.coordinator.queue_task(
-                    agent_type='formalizer',
-                    conversation_id=conversation_id,
-                    data=task_data
-                )
-                
-                logger.info(f"Queued formalizer task for proposition: {proposition}")
-            else:
-                logger.info(f"Proposition already formalized: {proposition}")
-
-        except Exception as e:
-            logger.error(f"Error queueing formalizer task for proposition: {e}")
+            logger.info(f"Queued formalizer task for proposition: {proposition}")
+        else:
+            logger.info(f"Proposition already formalized: {proposition}")
     
     def _queue_content_evaluator_task(self, conversation_data: Dict[str, Any]):
         """Queue content evaluator task for the argument"""
-        try:
-            if not self.coordinator:
-                logger.warning("No coordinator available for queueing content evaluator task")
-                return
-
-            conversation_id = conversation_data.get('conversation_id')
-            if not conversation_id:
-                logger.warning("No conversation_id found in builder task data")
-                return
+        conversation_id = conversation_data['conversation_id']
+        
+        # Get existing content evaluations from agent results
+        existing_results = self.coordinator.get_conversation_results(conversation_id)
+        content_evaluations = [r for r in existing_results if r.get('agent_type') == 'content_evaluator']
+        
+        # Only queue content evaluator task if there isn't already one
+        if not content_evaluations:
+            logger.info(f"Queueing content evaluator task for conversation: {conversation_id}")
             
-            # Get existing content evaluations from agent results
-            existing_results = self.coordinator.get_conversation_results(conversation_id)
-            content_evaluations = [r for r in existing_results if r.get('agent_type') == 'content_evaluator']
+            task_data = {
+                'argument': conversation_data.get('argument', []),
+                'thesis': conversation_data.get('thesis', ''),
+                'counter_thesis': conversation_data.get('counter_thesis', ''),
+                'assumptions': conversation_data.get('assumptions', []),
+                'file_ids': conversation_data.get('file_ids', [])
+            }
             
-            # Only queue content evaluator task if there isn't already one
-            if not content_evaluations:
-                logger.info(f"Queueing content evaluator task for conversation: {conversation_id}")
-                
-                task_data = {
-                    'argument': conversation_data.get('argument', []),
-                    'thesis': conversation_data.get('thesis', ''),
-                    'counter_thesis': conversation_data.get('counter_thesis', ''),
-                    'assumptions': conversation_data.get('assumptions', []),
-                    'file_ids': conversation_data.get('file_ids', [])
-                }
-                
-                self.coordinator.queue_task(
-                    agent_type='content_evaluator',
-                    conversation_id=conversation_id,
-                    data=task_data
-                )
-                
-                logger.info(f"Queued content evaluator task for conversation: {conversation_id}")
-            else:
-                logger.info(f"Content evaluator already exists for conversation: {conversation_id}")
-
-        except Exception as e:
-            logger.error(f"Error queueing content evaluator task: {e}")
+            self.coordinator.queue_task(
+                agent_type='content_evaluator',
+                conversation_id=conversation_id,
+                data=task_data
+            )
+            
+            logger.info(f"Queued content evaluator task for conversation: {conversation_id}")
+        else:
+            logger.info(f"Content evaluator already exists for conversation: {conversation_id}")
 
 
 class ContentEvaluationAgent:
@@ -269,43 +242,33 @@ class FormEvaluationAgent:
     
     def _get_formalizations_for_argument(self, conversation_data: Dict[str, Any]) -> List[str]:
         """Get formalizations for all propositions in the argument"""
-        try:
-            conversation_id = conversation_data['conversation_id']
-            
-            # Get existing results
-            if not self.coordinator:
-                logger.warning("No coordinator available for getting formalizations")
-                return []
-                
-            existing_results = self.coordinator.get_conversation_results(conversation_id)
-            
-            # Get the argument propositions
-            argument = conversation_data['argument']
-            if not argument:
-                return []
-            
-            # Map propositions to their formalizations
-            formalizations = []
-            for proposition in argument:
-                # Find the formalization for this proposition
-                formalization = None
-                for result in existing_results:
-                    if (result.get('agent_type') == 'formalizer' and 
-                        result.get('data', {}).get('proposition') == proposition):
-                        formalization = result.get('data', {}).get('ascii')
-                        break
-                
-                if formalization:
-                    formalizations.append(formalization)
-                else:
-                    # If no formalization found, use the original proposition
-                    formalizations.append(proposition)
-            
-            return formalizations
-            
-        except Exception as e:
-            logger.error(f"Error getting formalizations for argument: {e}")
+        conversation_id = conversation_data['conversation_id']
+        argument = conversation_data['argument']
+        
+        if not argument:
             return []
+        
+        # Get existing results
+        existing_results = self.coordinator.get_conversation_results(conversation_id)
+        
+        # Map propositions to their formalizations
+        formalizations = []
+        for proposition in argument:
+            # Find the formalization for this proposition
+            formalization = None
+            for result in existing_results:
+                if (result.get('agent_type') == 'formalizer' and 
+                    result.get('data', {}).get('proposition') == proposition):
+                    formalization = result.get('data', {}).get('ascii')
+                    break
+            
+            if formalization:
+                formalizations.append(formalization)
+            else:
+                # If no formalization found, use the original proposition
+                formalizations.append(proposition)
+        
+        return formalizations
     
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
