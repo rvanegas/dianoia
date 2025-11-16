@@ -428,10 +428,8 @@ class AgentCoordinator:
                     if existing_proposition:
                         formalized_propositions.add(existing_proposition)
             
-            # Add the current proposition being formalized (from change_data)
-            current_proposition = change_data.get('proposition', '')
-            if current_proposition:
-                formalized_propositions.add(current_proposition)
+            # Note: We don't include the current proposition being formalized
+            # because the formalization result hasn't been saved yet
             
             # Check if all propositions are now formalized
             form_eval_argument_propositions_set = set(form_eval_argument_propositions)
