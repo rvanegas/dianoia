@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from core.utils import find_index, logger
 from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
 from services.agent_coordinator import coordinator
+from services.agent_queuing import queue_argument_state_change
 
 def clean_citations(proposition: str) -> str:
     """
@@ -134,43 +135,19 @@ class Arguments(BaseModel):
 
     def queue_argument_state_change(self, data: dict):
         """Queue analysis and discovery for argument state changes"""
-        # Extract argument propositions for analysis
-        argument_propositions = []
-        for step in self.argument:
-            argument_propositions.append(step.proposition)
-        
-        # Queue content discovery (builder agent)
-        discovery_task_data = {
-            'argument_data': {
-                'argument': [step.dict() for step in self.argument],
-                'counter_argument': [step.dict() for step in self.counter_argument],
-                'assumptions': [step.dict() for step in self.assumptions],
-                'thesis': self.thesis,
-                'counter_thesis': self.counter_thesis,
-                'presupposition': self.presupposition
-            },
-            **data
-        }
-        coordinator.queue_task(
-            agent_type='builder',
-            conversation_id=self.conversation_id,
-            data=discovery_task_data
-        )
-        
-        # Queue argument analysis (content evaluator)
-        analysis_task_data = {
-            'argument': argument_propositions,
+        # Prepare argument data for the centralized queuing function
+        argument_data = {
+            'argument': [step.dict() for step in self.argument],
+            'counter_argument': [step.dict() for step in self.counter_argument],
+            'assumptions': [step.dict() for step in self.assumptions],
             'thesis': self.thesis,
             'counter_thesis': self.counter_thesis,
-            'assumptions': self.assumptions,
-            'file_ids': self.file_ids,
-            **data
+            'presupposition': self.presupposition,
+            'file_ids': self.file_ids
         }
-        coordinator.queue_task(
-            agent_type='content_evaluator',
-            conversation_id=self.conversation_id,
-            data=analysis_task_data
-        )
+        
+        # Use the centralized queuing function
+        queue_argument_state_change(coordinator, self.conversation_id, argument_data, data)
 
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
