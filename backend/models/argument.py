@@ -59,13 +59,13 @@ class Arguments(BaseModel):
 
     def gptjsont(self):
         """arguments json to return to frontend used by theses()"""
-        return self.json(include={
+        return self.model_dump_json(include={
             "thesis", "counter_thesis",
             "presupposition", "proposition"})
 
     def gptjson(self):
         """arguments json to return to frontend"""
-        return self.json(include={
+        return self.model_dump_json(include={
             "assumptions", "argument", "counter_argument",
             "explanation"})
 
@@ -102,8 +102,8 @@ class Arguments(BaseModel):
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
-            "assumptions": [s.json() for s in self.assumptions],
-            "argument": [s.json() for s in new_arg]
+            "assumptions": [s.model_dump_json() for s in self.assumptions],
+            "argument": [s.model_dump_json() for s in new_arg]
         }
         return props, new_arg
 
@@ -137,9 +137,9 @@ class Arguments(BaseModel):
         """Queue analysis and discovery for argument state changes"""
         # Prepare argument data for the centralized queuing function
         argument_data = {
-            'argument': [step.dict() for step in self.argument],
-            'counter_argument': [step.dict() for step in self.counter_argument],
-            'assumptions': [step.dict() for step in self.assumptions],
+            'argument': [step.model_dump() for step in self.argument],
+            'counter_argument': [step.model_dump() for step in self.counter_argument],
+            'assumptions': [step.model_dump() for step in self.assumptions],
             'thesis': self.thesis,
             'counter_thesis': self.counter_thesis,
             'presupposition': self.presupposition,
@@ -207,7 +207,7 @@ class ArgumentsWithStep(Arguments):
 
     def ai_justify(self):
         """use gpt to add steps to justify indicated conclusion"""
-        response = gpt_justify.call(self.json(), self.file_ids)
+        response = gpt_justify.call(self.model_dump_json(), self.file_ids)
         new_propositions = json.loads(response)["propositions"]
         for p in new_propositions:
             # Clean citations from the proposition
