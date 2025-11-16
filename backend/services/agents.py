@@ -34,8 +34,6 @@ class ArgumentBuilderAgent:
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
             
-
-            
             # Pass the data directly to the agent without taking it apart
             basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
             basic_propositions = json.loads(basic_response)["propositions"]
