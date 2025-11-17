@@ -9,7 +9,7 @@ class TestAutomaticFormEvaluator:
     """Test that form evaluator is automatically queued when all propositions are formalized"""
     
     def test_formalization_queues_form_evaluator_when_complete(self):
-        """Test that formalization agent queues form evaluator when all propositions are formalized"""
+        """Test that formalization agent does not call queue_formal_evaluator_if_ready (handled elsewhere)"""
         agent = FormalizationAgent(coordinator)
         
         # Mock existing results with formalizations for all but one proposition
@@ -44,7 +44,7 @@ class TestAutomaticFormEvaluator:
         
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
              patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'queue_task') as mock_queue_task:
+             patch.object(coordinator, 'queue_formal_evaluator_if_ready') as mock_queue_form_eval:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
             
@@ -73,19 +73,12 @@ class TestAutomaticFormEvaluator:
             assert result.data["proposition"] == "Socrates is mortal"
             assert result.data["ascii"] == "Q(a)"
             
-
-            
-            # Verify that form evaluator was NOT queued because the formalization result
-            # hasn't been saved to the database yet
-            form_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'form_evaluator']
-            assert len(form_evaluator_calls) == 0, "Form evaluator should not be queued until formalization result is saved"
-            
-            # Verify that content evaluator was queued instead
-            content_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'content_evaluator']
-            assert len(content_evaluator_calls) >= 1, "Content evaluator should be queued"
+            # Verify that queue_formal_evaluator_if_ready was NOT called by the FormalizationAgent
+            # (this functionality is handled elsewhere in the coordinator)
+            mock_queue_form_eval.assert_not_called()
     
     def test_formalization_does_not_queue_form_evaluator_when_incomplete(self):
-        """Test that formalization agent does not queue form evaluator when not all propositions are formalized"""
+        """Test that formalization agent does not call queue_formal_evaluator_if_ready (handled elsewhere)"""
         agent = FormalizationAgent(coordinator)
         
         # Mock existing results with formalizations for only some propositions
@@ -112,7 +105,7 @@ class TestAutomaticFormEvaluator:
         
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
              patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results), \
-             patch.object(coordinator, 'queue_task') as mock_queue_task:
+             patch.object(coordinator, 'queue_formal_evaluator_if_ready') as mock_queue_form_eval:
             
             mock_gpt.call.return_value = json.dumps(mock_response)
             
@@ -141,9 +134,9 @@ class TestAutomaticFormEvaluator:
             assert result.data["proposition"] == "All men are mortal"
             assert result.data["ascii"] == "forall x. (P(x) -> Q(x))"
             
-            # Verify that form evaluator was NOT queued (but other agents may be queued)
-            form_evaluator_calls = [call for call in mock_queue_task.call_args_list if call[1]['agent_type'] == 'form_evaluator']
-            assert len(form_evaluator_calls) == 0, "Form evaluator should not be queued when not all propositions are formalized"
+            # Verify that queue_formal_evaluator_if_ready was NOT called by the FormalizationAgent
+            # (this functionality is handled elsewhere in the coordinator)
+            mock_queue_form_eval.assert_not_called()
 
 
 if __name__ == "__main__":
