@@ -13,15 +13,12 @@ class TestArgumentRemove:
         # Create an argument with multiple steps and justifiers
         argument_data = {
             "thesis": "Socrates is mortal",
-            "counter_thesis": "Socrates is not mortal", 
-            "presupposition": "",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="All men are mortal", justifiers=["A"], truth="1.0", valid="1.0"),
                 Step(symbol="C", proposition="Socrates is mortal", justifiers=["B"], truth="1.0", valid="1.0")
             ],
-            "counter_argument": [],
             "loc": "argument",
             "index": 1,  # Remove step B (All men are mortal)
             "conversation_id": "test_session:1"
@@ -63,15 +60,12 @@ class TestArgumentRemove:
         """Test removing a step that has no justifiers"""
         argument_data = {
             "thesis": "Socrates is mortal",
-            "counter_thesis": "Socrates is not mortal",
-            "presupposition": "",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="C", proposition="Socrates is mortal", justifiers=["A"], truth="1.0", valid="1.0")
             ],
-            "counter_argument": [],
             "loc": "argument", 
             "index": 1,  # Remove step B (All men are mortal)
             "conversation_id": "test_session:1"
@@ -99,14 +93,11 @@ class TestArgumentRemove:
         """Test removing a step from assumptions (should not transfer justifiers)"""
         argument_data = {
             "thesis": "Socrates is mortal",
-            "counter_thesis": "Socrates is not mortal",
-            "presupposition": "",
             "assumptions": [
                 Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="All men are mortal", justifiers=["A"], truth="1.0", valid="1.0")
             ],
             "argument": [],
-            "counter_argument": [],
             "loc": "assumptions",
             "index": 1,  # Remove step B from assumptions
             "conversation_id": "test_session:1"
@@ -130,8 +121,6 @@ class TestArgumentRemove:
         """Test removing a step with complex justifier relationships"""
         argument_data = {
             "thesis": "Complex argument",
-            "counter_thesis": "Counter argument",
-            "presupposition": "",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Premise A", justifiers=[], truth="1.0", valid="1.0"),
@@ -139,7 +128,6 @@ class TestArgumentRemove:
                 Step(symbol="C", proposition="Premise C", justifiers=["A", "B"], truth="1.0", valid="1.0"),
                 Step(symbol="D", proposition="Conclusion", justifiers=["C"], truth="1.0", valid="1.0")
             ],
-            "counter_argument": [],
             "loc": "argument",
             "index": 2,  # Remove step C (Premise C)
             "conversation_id": "test_session:1"
@@ -169,14 +157,11 @@ class TestArgumentRemove:
         """Test that remove() queues argument state change"""
         argument_data = {
             "thesis": "Test thesis",
-            "counter_thesis": "Test counter thesis",
-            "presupposition": "",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Step A", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="Step B", justifiers=["A"], truth="1.0", valid="1.0")
             ],
-            "counter_argument": [],
             "loc": "argument",
             "index": 1,
             "conversation_id": "test_session:1"
@@ -202,19 +187,13 @@ class TestArgumentRemove:
                 assert call[1]['conversation_id'] == 'test_session:1'
     
     def test_remove_step_preserves_other_arguments(self):
-        """Test that remove() doesn't affect other arguments (counter_argument)"""
+        """Test that remove() doesn't affect other arguments"""
         argument_data = {
             "thesis": "Test thesis",
-            "counter_thesis": "Test counter thesis", 
-            "presupposition": "",
             "assumptions": [],
             "argument": [
                 Step(symbol="A", proposition="Step A", justifiers=[], truth="1.0", valid="1.0"),
                 Step(symbol="B", proposition="Step B", justifiers=["A"], truth="1.0", valid="1.0")
-            ],
-            "counter_argument": [
-                Step(symbol="X", proposition="Counter X", justifiers=[], truth="1.0", valid="1.0"),
-                Step(symbol="Y", proposition="Counter Y", justifiers=["X"], truth="1.0", valid="1.0")
             ],
             "loc": "argument",
             "index": 1,
@@ -223,14 +202,17 @@ class TestArgumentRemove:
         
         args = ArgumentsWithStep(**argument_data)
         
-        # Store original counter_argument
-        original_counter = args.counter_argument.copy()
+        # Store original argument
+        original_argument = args.argument.copy()
         
         with patch.object(coordinator, 'queue_task'):
             result = args.remove()
             
-            # Verify counter_argument was not affected
-            assert len(args.counter_argument) == len(original_counter)
-            assert args.counter_argument[0].symbol == original_counter[0].symbol
-            assert args.counter_argument[1].symbol == original_counter[1].symbol
-            assert args.counter_argument[1].justifiers == original_counter[1].justifiers
+            # Verify the step at index 1 was removed
+            assert len(args.argument) == 1
+            assert args.argument[0].symbol == "A"
+            assert args.argument[0].proposition == "Step A"
+            
+            # Verify the removed step is no longer present
+            step_b_symbols = [step.symbol for step in args.argument if step.symbol == "B"]
+            assert len(step_b_symbols) == 0

@@ -337,11 +337,9 @@ class AgentCoordinator:
         # Extract all propositions from the argument
         all_propositions = []
         argument_propositions = [step['proposition'] for step in argument_data.get('argument', [])]
-        counter_argument_propositions = [step['proposition'] for step in argument_data.get('counter_argument', [])]
         assumption_propositions = [step['proposition'] for step in argument_data.get('assumptions', [])]
         
         all_propositions.extend(argument_propositions)
-        all_propositions.extend(counter_argument_propositions)
         all_propositions.extend(assumption_propositions)
         
         # Get existing results to understand current state
@@ -351,11 +349,8 @@ class AgentCoordinator:
         discovery_task_data = {
             'argument_data': {
                 'argument': argument_data.get('argument', []),
-                'counter_argument': argument_data.get('counter_argument', []),
                 'assumptions': argument_data.get('assumptions', []),
-                'thesis': argument_data.get('thesis', ''),
-                'counter_thesis': argument_data.get('counter_thesis', ''),
-                'presupposition': argument_data.get('presupposition', '')
+                'thesis': argument_data.get('thesis', '')
             },
             **change_data
         }
@@ -393,7 +388,6 @@ class AgentCoordinator:
         analysis_task_data = {
             'argument': argument_propositions,
             'thesis': argument_data.get('thesis', ''),
-            'counter_thesis': argument_data.get('counter_thesis', ''),
             'assumptions': argument_data.get('assumptions', []),
             'file_ids': argument_data.get('file_ids', []),
             'conversation_id': conversation_id
@@ -463,7 +457,6 @@ class AgentCoordinator:
                 form_evaluator_task_data = {
                     'argument': form_eval_argument_propositions,
                     'thesis': argument_data.get('thesis', ''),
-                    'counter_thesis': argument_data.get('counter_thesis', ''),
                     'assumptions': argument_data.get('assumptions', []),
                     'file_ids': argument_data.get('file_ids', []),
                     **change_data
