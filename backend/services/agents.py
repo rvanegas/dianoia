@@ -90,8 +90,8 @@ class ContentEvaluationAgent:
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate the truth and validity of argument propositions"""
         try:
-            logger.info(f"ContentEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            logger.debug(f"ContentEvaluationAgent starting task with data: {conversation_data}")
+            # logger.info(f"ContentEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
+            # logger.debug(f"ContentEvaluationAgent starting task with data: {conversation_data}")
             
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
@@ -106,11 +106,11 @@ class ContentEvaluationAgent:
             truth_issues = evaluation_result.get("truth_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            logger.info(f"ContentEvaluationAgent completed - Propositions: {proposition_count}, Truth Score: {overall_truth_score:.2f}")
-            if truth_issues:
-                logger.info(f"ContentEvaluationAgent found {len(truth_issues)} truth issues: {truth_issues}")
-            if recommendations:
-                logger.info(f"ContentEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            # logger.info(f"ContentEvaluationAgent completed - Propositions: {proposition_count}, Truth Score: {overall_truth_score:.2f}")
+            # if truth_issues:
+            #     logger.info(f"ContentEvaluationAgent found {len(truth_issues)} truth issues: {truth_issues}")
+            # if recommendations:
+            #     logger.info(f"ContentEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
             result = AgentResult(
                 agent_type=self.name,
@@ -197,8 +197,8 @@ class FormEvaluationAgent:
     def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
-            logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
+            # logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
+            # logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
             
             # Get file_ids from task data
             file_ids = conversation_data.get('file_ids', [])
@@ -212,7 +212,7 @@ class FormEvaluationAgent:
                 'formalizations': formalizations
             }
             
-            logger.debug(f"FormEvaluationAgent sending clean data: {form_evaluation_data}")
+            # logger.debug(f"FormEvaluationAgent sending clean data: {form_evaluation_data}")
             
             # Pass the clean data to the agent for evaluation
             evaluation_response = agent_gpt_evaluate_form.call(json.dumps(form_evaluation_data), file_ids)
@@ -224,11 +224,11 @@ class FormEvaluationAgent:
             logical_issues = evaluation_result.get("logical_issues", [])
             recommendations = evaluation_result.get("recommendations", [])
             
-            logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
-            if logical_issues:
-                logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
-            if recommendations:
-                logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
+            # logger.info(f"FormEvaluationAgent completed - Propositions: {proposition_count}, Validity: {argument_validity:.2f}")
+            # if logical_issues:
+            #     logger.info(f"FormEvaluationAgent found {len(logical_issues)} logical issues: {logical_issues}")
+            # if recommendations:
+            #     logger.info(f"FormEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
             
             result = AgentResult(
                 agent_type=self.name,
@@ -249,7 +249,7 @@ class FormEvaluationAgent:
                 reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified"
             )
             
-            # logger.debug(f"FormEvaluationAgent task completed successfully. Output: {result}")
+            # logger.info(f"FormEvaluationAgent task completed successfully. Output: {result}")
             return result
             
         except Exception as e:
@@ -293,8 +293,8 @@ class FormalizationAgent:
     def formalize_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
         """Formalize a proposition into logical notation"""
         try:
-            logger.info(f"FormalizationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
+            # logger.info(f"FormalizationAgent starting task for conversation: {conversation_data['conversation_id']}")
+            # logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
             
             # Validate required data
             argument_data = conversation_data.get('argument_data')
@@ -320,7 +320,7 @@ class FormalizationAgent:
                 'argument_data': argument_data
             }
             
-            logger.debug(f"FormalizationAgent sending data: {formalization_data}")
+            # logger.debug(f"FormalizationAgent sending data: {formalization_data}")
             
             # Pass the data to the agent for formalization
             formalization_response = agent_gpt_formalize.call(json.dumps(formalization_data), file_ids)
@@ -333,7 +333,7 @@ class FormalizationAgent:
             confidence = formalization_result.get("confidence", 0.0)
             reasoning = formalization_result.get("reasoning", "")
             
-            logger.info(f"FormalizationAgent completed - Proposition: '{proposition[:50]}...', Confidence: {confidence:.2f}")
+            # logger.info(f"FormalizationAgent completed - Proposition: '{proposition[:50]}...', Confidence: {confidence:.2f}")
             
             result = AgentResult(
                 agent_type=self.name,
