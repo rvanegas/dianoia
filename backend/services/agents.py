@@ -350,13 +350,6 @@ class FormalizationAgent:
                 reasoning=reasoning
             )
             
-            # Trigger reactive agent queueing based on the new formalization
-            self.coordinator.react_to_argument_state_change(
-                conversation_data.get('conversation_id', ''),
-                argument_data,
-                conversation_data
-            )
-            
             # logger.debug(f"FormalizationAgent task completed successfully. Output: {result}")
             return result
             
@@ -371,8 +364,6 @@ class FormalizationAgent:
             )
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")
             return result
-    
-
     
 
 class RewriterAgent:

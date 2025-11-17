@@ -29,7 +29,6 @@ class AgentTask:
             self.created_at = time.time()
 
 
-
 class AgentResultManager:
     """Manages agent results with disciplined cleanup and maintenance"""
     
@@ -248,15 +247,15 @@ class AgentCoordinator:
             
             # Store result using the disciplined result manager
             self.result_manager.add_result(task.conversation_id, task.result)
-            
+                        
             # If this was a formalizer task, trigger argument state change reaction
             if task.agent_type == 'formalizer':
                 # Get the argument data from the task
                 argument_data = task.data.get('argument_data', {})
                 if argument_data:
                     # Trigger reactive agent queueing based on the new formalization
-                    self.react_to_argument_state_change(task.conversation_id, argument_data, task.data)
-            
+                    self.queue_formal_evaluator_if_ready(task.conversation_id, argument_data, task.data)
+
             # Debug logging
             # logger.info(f"Stored result for {task.agent_type} agent in conversation {task.conversation_id}")
             # logger.debug(f"Current results for conversation {task.conversation_id}: {self.result_manager.get_results(task.conversation_id)}")
@@ -403,7 +402,25 @@ class AgentCoordinator:
             data=analysis_task_data
         )
         
-        # Check if all propositions are formalized and queue form evaluator if so
+        # logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
+    
+    def queue_formal_evaluator_if_ready(self, conversation_id: str, argument_data: Dict[str, Any], change_data: Dict[str, Any] = None):
+        """
+        Queue a formal_evaluator task if all formalizations are in place and existing formal_evaluator is outdated.
+        Checks that no formal_evaluator is already 'pending' or 'running'.
+        """
+        change_data = change_data or {}
+        
+        # logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
+
+        # Check if there's already a pending or running formal_evaluator task
+        active_tasks = self.get_active_tasks()
+        for task in active_tasks:
+            if task.agent_type == 'form_evaluator' and task.conversation_id == conversation_id:
+                logger.info(f"Form evaluator task already active for conversation {conversation_id}")
+                return
+        
+        # logger.debug(f"Checking if formal evaluator is ready for conversation {conversation_id}")
         try:
             # Extract proposition texts from the argument for form evaluator check
             form_eval_argument_propositions = []
@@ -419,8 +436,14 @@ class AgentCoordinator:
                 proposition = step.get('proposition', '')
                 if proposition:
                     form_eval_argument_propositions.append(proposition)
-            
+
+            # logger.debug(f"Form evaluator argument propositions: {form_eval_argument_propositions}")
+
             # Get existing formalizations
+            existing_results = self.get_conversation_results(conversation_id)
+
+            # logger.debug(f"Existing results: {existing_results}")
+
             formalized_propositions = set()
             for result in existing_results:
                 if result.get('agent_type') == 'formalizer':
@@ -450,11 +473,13 @@ class AgentCoordinator:
                     conversation_id=conversation_id,
                     data=form_evaluator_task_data
                 )
+                # logger.info(f"Queued form evaluator task for conversation {conversation_id}")
+            else:
+                pass
+                # logger.info(f"Not all propositions formalized yet for conversation {conversation_id}")
                 
         except Exception as e:
             logger.error(f"Error checking and queueing form evaluator: {e}")
-        
-        logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
     
     def stop(self):
         """Stop all workers"""
