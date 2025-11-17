@@ -30,16 +30,13 @@ function getSessionId(): string {
 function initialSnapshot() : ConversationSnapshot {
   return {
     thesis: '',
-    counter_thesis: '',
-    presupposition: '',
     assumptions: [],
     argument: [],
-    counter_argument: [],
     lastPrompt: '',
     evaluationsPending: false,
     explanation: '',
     argMode: 'thesis',
-    file_ids: [],
+    file_ids: []
   }
 }
 
@@ -264,11 +261,11 @@ export function useConversationActions(
   }
 
   const handleArgue = async (thesisAttr: string) => {
-    if (!['thesis', 'counter_thesis'].includes(thesisAttr)) {
+    if (thesisAttr !== 'thesis') {
       throw new Error('bad params')
     }
-    const argumentAttr = thesisAttr == 'thesis' ? 'argument' : 'counter_argument'
-    const thesisLabel = thesisAttr == 'thesis' ? 'Thesis' : 'Counter-Thesis'
+    const argumentAttr = 'argument'
+    const thesisLabel = 'Thesis'
     const lastPrompt = `Argue for ${thesisLabel}`
     setUserMode('waiting')
     
