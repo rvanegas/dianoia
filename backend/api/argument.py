@@ -30,18 +30,18 @@ def get_conversation_handler(operation_name: str):
         return conversation_handler
     return handler
 
-@router.post('/theses')
-async def theses(args: ArgumentsWithProposition,
-        handler = Depends(get_conversation_handler("Theses"))):
-    args = handler(args)
-    result = args.theses()
-    return {"reply": result}
-
 @router.post('/argue')
-async def argue(args: ArgumentsWithLoc,
+async def argue(args: ArgumentsWithProposition,
         handler = Depends(get_conversation_handler("Argue"))):
     args = handler(args)
     result = args.argue()
+    return {"reply": result}
+
+@router.post('/gen-name')
+async def gen_name(args: ArgumentsWithProposition,
+        handler = Depends(get_conversation_handler("gen_name"))):
+    args = handler(args)
+    result = args.gen_name()
     return {"reply": result}
 
 @router.post("/assume")

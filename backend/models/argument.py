@@ -5,7 +5,7 @@ import time
 
 from pydantic import BaseModel
 from core.utils import find_index, logger
-from services.conversation import gpt_theses, gpt_justify, gpt_evaluate, gpt_explain
+from services.conversation import gpt_justify, gpt_evaluate, gpt_explain, gpt_gen_name
 from services.agent_coordinator import coordinator
 
 def clean_citations(proposition: str) -> str:
@@ -55,8 +55,7 @@ class Arguments(BaseModel):
 
     def gptjsont(self):
         """arguments json to return to frontend used by theses()"""
-        return self.model_dump_json(include={
-            "thesis", "proposition"})
+        return self.model_dump_json(include={"proposition"})
 
     def gptjson(self):
         """arguments json to return to frontend"""
@@ -144,22 +143,6 @@ class ArgumentsWithLoc(Arguments):
         super().model_post_init(__context)
         assert self.loc in ["argument"]
         self.arg = getattr(self, self.loc)
-
-    def argue(self):
-        """just copy thesis into argument"""
-        assert len(self.arg) == 0
-        thesis_attr = "thesis"
-        new_proposition = getattr(self, thesis_attr)
-        new_step = self.new_step(new_proposition)
-        self.arg.append(new_step)
-        # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change({
-            'proposition': new_proposition,
-            'location': self.loc,
-            'step_index': 0,
-            'file_ids': self.file_ids
-        })
-        return self.gptjson()
 
 class ArgumentsWithStep(Arguments):
     """arguments with a specific step indicated by position"""
@@ -254,9 +237,26 @@ class ArgumentsWithProposition(Arguments):
     """arguments with a proposition"""
     proposition: str
 
-    def theses(self):
-        """convert user input into theses using gpt"""
-        return gpt_theses.call(self.gptjsont(), self.file_ids)
+    def argue(self):
+        """just copy thesis into argument"""
+        assert len(self.arg) == 0
+        thesis_attr = "thesis"
+        new_step = self.new_step(self.proposition)
+        self.argument.append(new_step)
+        logger.debug(f"arg: {self.argument}")
+        # Queue analysis and discovery for the argument state change
+        self.queue_argument_state_change({
+            'proposition': self.proposition,
+            'location': 'argument',
+            'step_index': 0,
+            'file_ids': self.file_ids
+        })
+        logger.debug(f"gptjson: {self.gptjson()}")
+        return self.gptjson()
+
+    def gen_name(self):
+        """generate name from proposition"""
+        return gpt_gen_name.call(self.gptjsont(), self.file_ids)
 
 class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithProposition):
     """arguments with a proposition and location to make a new step"""
