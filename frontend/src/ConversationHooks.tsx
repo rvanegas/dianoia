@@ -87,7 +87,8 @@ export function useConversationState(
     else {
       newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
       snapshotRenderCount.current += 1
-      setSnapshotIndex(prev => prev + 1)
+      const newSnapshotIndex = snapshotIndex + 1
+      setSnapshotIndex(newSnapshotIndex)
     }
     const newConversation = {...conversation, snapshots: newSnaps}
     if (convName) newConversation.name = convName
