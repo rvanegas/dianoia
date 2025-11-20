@@ -427,7 +427,7 @@ export function useConversationNavigation(
   conversation: ConversationType,
   setSnapshotIndex: (index: number) => void,
   setUserMode: (mode: UserMode) => void,
-  snapshotRenderCount: React.MutableRefObject<number>
+  snapshotRenderCount: React.RefObject<number>
 ) {
   const handleUndo = () => {
     if (snapshotIndex <= 0) return
