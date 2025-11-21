@@ -65,15 +65,12 @@ function Conversation({
     setTargetIndex,
     inputText,
     setInputText,
-    prompt,
-    setPrompt,
     copied,
     setCopied,
     evaluatingMode,
     setEvaluatingMode,
     inputRef,
     saveSnapshot,
-    argLoc,
     sessionId
   } = useConversationState(conversation, setConversation)
 
@@ -91,11 +88,9 @@ function Conversation({
     currentSnapshot,
     userMode,
     setUserMode,
-    setPrompt,
     setInputText,
     targetLoc,
     targetIndex,
-    argLoc,
     saveSnapshot,
     createConversationFromProposition,
     setEvaluatingMode,
@@ -203,10 +198,10 @@ function Conversation({
             setTargetLoc(loc)
             setTargetIndex(stepIndex)
           }}
-          onAssume={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
-          onRemove={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+          onAssume={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
+          onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
           onDispute={handleDispute}
-          onExplain={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+          onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
           setUserMode={setUserMode}
           setTargetLoc={setTargetLoc}
           setTargetIndex={setTargetIndex}
@@ -263,10 +258,10 @@ function Conversation({
               setTargetLoc(loc)
               setTargetIndex(stepIndex)
             }}
-            onAssume={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
-            onRemove={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+            onAssume={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
+            onRemove={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
             onDispute={handleDispute}
-            onExplain={(action, prompt, loc, stepIndex, errorLabel) => handleAction(action, prompt, loc, stepIndex, errorLabel)}
+            onExplain={(action, loc, stepIndex, errorLabel) => handleAction(action, loc, stepIndex, errorLabel)}
             setUserMode={setUserMode}
             setTargetLoc={setTargetLoc}
             setTargetIndex={setTargetIndex}
@@ -359,18 +354,6 @@ function Conversation({
           <Section>
             <FlexRow label="Explanation:" />
             {explanationDiv()}
-          </Section>
-        )}
-        {currentSnapshot.lastPrompt && (
-          <Section>
-            <FlexRow label="LastPrompt:" />
-            <FlexRow>{currentSnapshot.lastPrompt}</FlexRow>
-          </Section>
-        )}
-        {prompt && (
-          <Section>
-            <FlexRow label="Prompt:" />
-            <FlexRow>{prompt}</FlexRow>
           </Section>
         )}
       </FlexTable>

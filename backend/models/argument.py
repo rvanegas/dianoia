@@ -43,7 +43,6 @@ class Arguments(BaseModel):
     thesis: str
     assumptions: list[Step]
     argument: list[Step]
-    lastPrompt: str | None = None
     explanation: str | None = None
     file_ids: list[str] = []
     arg: list[Step] = []
