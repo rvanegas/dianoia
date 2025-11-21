@@ -28,9 +28,11 @@ const FlexRow = ({
   children?: React.ReactNode
   chevron?: React.ReactNode
 }) => (
-  <div className="flex">
-    <div className="w-[20px] flex-shrink-0">{chevron}</div>
-    <div className={label ? "text-lg font-bold text-left" : "text-left"}>{label || children}</div>
+  <div className="flex flex-col">
+    <div className="flex">
+      <div className="w-[20px] flex-shrink-0">{chevron}</div>
+      <div className={label ? "text-lg font-bold text-left" : "text-left"}>{label || children}</div>
+    </div>
   </div>
 )
 

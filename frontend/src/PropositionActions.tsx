@@ -44,7 +44,7 @@ export default function PropositionActions({
       onClick: async () => {
         await onAIJustify(loc, stepIndex)
       },
-      show: true
+      show: loc !== 'assumptions'
     },
     {
       label: 'User Justify',
@@ -53,35 +53,35 @@ export default function PropositionActions({
         setTargetLoc(loc)
         setTargetIndex(stepIndex)
       },
-      show: true
+      show: loc !== 'assumptions'
     },
     {
       label: 'Assume',
       onClick: async () => {
         await onAssume('assume', loc, stepIndex, `Assume proposition (${step.symbol})`)
       },
-      show: !isLastStep && !hasJustifiers
+      show: loc !== 'assumptions' && !isLastStep && !hasJustifiers
     },
     {
       label: 'Remove',
       onClick: async () => {
         await onRemove('remove', loc, stepIndex, `Remove proposition (${step.symbol})`)
       },
-      show: !isLastStep
+      show: loc === 'assumptions' || !isLastStep
     },
     {
       label: 'Dispute',
       onClick: async () => {
         await onDispute(step)
       },
-      show: !isLastStep
+      show: loc === 'assumptions' || !isLastStep
     },
     {
       label: 'Explain',
       onClick: async () => {
         await onExplain('explain', loc, stepIndex, `Explain inference to proposition (${step.symbol})`)
       },
-      show: hasJustifiers
+      show: loc !== 'assumptions' && hasJustifiers
     }
   ]
 
