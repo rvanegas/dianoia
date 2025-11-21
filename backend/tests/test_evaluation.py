@@ -35,7 +35,6 @@ class TestEvaluationAgent:
             # Test data
             conversation_data = {
                 "argument": ["Socrates is a man", "All men are mortal", "Socrates is mortal"],
-                "thesis": "Socrates is mortal",
                 "assumptions": [],
                 "conversation_id": "test_conversation"
             }
@@ -82,7 +81,6 @@ class TestEvaluationAgent:
             # Test data
             conversation_data = {
                 "argument": ["Socrates is a man"],
-                "thesis": "Socrates is mortal",
                 "assumptions": [],
                 "conversation_id": "test_conversation"
             }
@@ -115,7 +113,6 @@ class TestEvaluationAgent:
             
             conversation_data = {
                 "argument": ["Socrates is a man"],
-                "thesis": "Socrates is mortal",
                 "assumptions": [],
                 "conversation_id": "test_conversation"
             }

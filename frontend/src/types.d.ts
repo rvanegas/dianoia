@@ -10,7 +10,6 @@ export type StepType = {
 }
 
 type ConversationSnapshot = {
-  thesis: string
   argument: StepType[]
   assumptions: StepType[]
   argMode: ArgMode

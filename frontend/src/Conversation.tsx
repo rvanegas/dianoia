@@ -6,7 +6,7 @@ import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
 import {useConversationState, useConversationActions, useConversationNavigation} from './ConversationHooks'
 import PropositionActions from './PropositionActions'
-import ThesisActions from './ThesisActions'
+
 import AllAgentResults from './AllAgentResults'
 
 const bigButtonClassNames = `bg-indigo-600 hover:bg-indigo-500
@@ -77,7 +77,6 @@ function Conversation({
   const {
     handleThesis,
     handleAIJustify,
-    handleArgue,
     handleUserJustify,
     evaluateSteps,
     handleAction,
@@ -320,24 +319,7 @@ function Conversation({
             <FlexRow>{renderAssociatedFileNames()}</FlexRow>
           </Section>
         )}
-        {currentSnapshot.thesis && (
-          <Section>
-            <FlexRow label="Thesis:" />
-            <FlexRow
-              chevron={
-                currentSnapshot.argument.length == 0 ? (
-                  <ThesisActions
-                    thesisType="thesis"
-                    userMode={userMode}
-                    onArgue={handleArgue}
-                  />
-                ) : undefined
-              }
-            >
-              {currentSnapshot.thesis}
-            </FlexRow>
-          </Section>
-        )}
+
         {currentSnapshot.assumptions.length > 0 && (
           <Section>
             <FlexRow label="Assumptions:" />
