@@ -325,11 +325,11 @@ class AgentCoordinator:
         return [task for task in self.task_history.values() 
                 if task.status in ['pending', 'running']]
     
-    def react_to_argument_state_change(self, conversation_id: str, argument_data: Dict[str, Any], change_data: Dict[str, Any] = None):
+    def react_to_user_argument_change(self, conversation_id: str, argument_data: Dict[str, Any], change_data: Dict[str, Any] = None):
         """
-        Reactively queue agents based on argument state changes.
+        Reactively queue agents based on user-initiated argument changes.
         This method analyzes the current argument state and queues necessary agents
-        to keep results in sync with the new argument state.
+        to keep results in sync with the new argument state after user modifications.
         """
 
         change_data = change_data or {}
@@ -347,10 +347,10 @@ class AgentCoordinator:
         
         # Queue builder agent for content discovery
         discovery_task_data = {
-                    'argument_data': {
-            'argument': argument_data.get('argument', []),
-            'assumptions': argument_data.get('assumptions', [])
-        },
+            'argument_data': {
+                'argument': argument_data.get('argument', []),
+                'assumptions': argument_data.get('assumptions', [])
+            },
             **change_data
         }
         self.queue_task(

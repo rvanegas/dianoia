@@ -333,8 +333,6 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     )
   }
 
-  ;(window as any).agent_results = resultsByAgent
-
   return (
     <div className="mt-4 space-y-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">🤖 Agent Suggestions & Evaluations</h3>

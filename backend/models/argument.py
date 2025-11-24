@@ -119,7 +119,7 @@ class Arguments(BaseModel):
                 self.add_evaluations(self.argument + self.assumptions, step)
         return self.gptjson()
 
-    def queue_argument_state_change(self, data: dict):
+    def queue_argument_state_change(self, change_data: dict):
         """Reactively queue agents for argument state changes"""
         # Prepare argument data for the reactive coordinator
         argument_data = {
@@ -129,7 +129,7 @@ class Arguments(BaseModel):
         }
         
         # Use the reactive coordinator method
-        coordinator.react_to_argument_state_change(self.conversation_id, argument_data, data)
+        coordinator.react_to_user_argument_change(self.conversation_id, argument_data, change_data)
 
 class ArgumentsWithLoc(Arguments):
     """arguments with a specific thesis indicated"""
