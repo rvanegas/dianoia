@@ -12,6 +12,7 @@ from services.argument_service import (
     ArgumentPropositionService,
     ArgumentStepAndPropositionService)
 from services.file import FileData, create_file
+from services.agent_coordinator import coordinator
 
 router = APIRouter()
 
@@ -35,6 +36,12 @@ def get_conversation_handler(operation_name: str):
 async def argue(args: ArgumentsWithProposition,
         handler = Depends(get_conversation_handler("Argue"))):
     args = handler(args)
+    
+    # Clean up expired agent results
+    removed_count = coordinator.result_manager.cleanup_expired_conversations()
+    if removed_count > 0:
+        logger.info(f"Cleaned up {removed_count} expired conversations during argue call")
+    
     service = ArgumentPropositionService(args)
     result = service.argue()
     return {"reply": result}
