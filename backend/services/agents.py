@@ -14,9 +14,14 @@ class AgentResult:
     """Result from an agent operation"""
     agent_type: str
     operation: str
-    data: Dict[str, Any]
+    result_content: Dict[str, Any]  # The actual output from the agent
     confidence: float = 0.0
     reasoning: str = ""
+    target_metadata: Dict[str, Any] = None  # Metadata about what was targeted
+    
+    def __post_init__(self):
+        if self.target_metadata is None:
+            self.target_metadata = {}
 
 
 class ArgumentBuilderAgent:
@@ -52,14 +57,18 @@ class ArgumentBuilderAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="build_argument",
-                data={
+                result_content={
                     "proposition": conversation_data.get('proposition', ''),
                     "location": conversation_data.get('location', ''),
                     "justifications": justifications,
                     "total_justifications": len(justifications)
                 },
                 confidence=0.8,
-                reasoning=f"Generated {len(justifications)} justification options"
+                reasoning=f"Generated {len(justifications)} justification options",
+                target_metadata={
+                    'target_type': 'proposition',
+                    'target_content': conversation_data.get('proposition', '')
+                }
             )
             
             # logger.debug(f"ArgumentBuilderAgent task completed successfully. Output: {result}")
@@ -70,9 +79,13 @@ class ArgumentBuilderAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="build_argument",
-                data={"error": str(e)},
+                result_content={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in argument building: {e}"
+                reasoning=f"Error in argument building: {e}",
+                target_metadata={
+                    'target_type': 'proposition',
+                    'target_content': conversation_data.get('proposition', '')
+                }
             )
             # logger.debug(f"ArgumentBuilderAgent task failed. Output: {result}")
             return result
@@ -115,7 +128,7 @@ class ContentEvaluationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
-                data={
+                result_content={
                     "evaluation": evaluation_result,
                     "proposition_count": proposition_count,
                     "overall_truth_score": overall_truth_score,
@@ -126,7 +139,10 @@ class ContentEvaluationAgent:
                     "assumptions": conversation_data['assumptions']
                 },
                 confidence=overall_truth_score,
-                reasoning=f"Evaluated {proposition_count} propositions for truth with {len(truth_issues)} issues identified"
+                reasoning=f"Evaluated {proposition_count} propositions for truth with {len(truth_issues)} issues identified",
+                target_metadata={
+                    'target_type': 'argument'
+                }
             )
             
             # logger.debug(f"ContentEvaluationAgent task completed successfully. Output: {result}")
@@ -137,9 +153,12 @@ class ContentEvaluationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
-                data={"error": str(e)},
+                result_content={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in content evaluation: {e}"
+                reasoning=f"Error in content evaluation: {e}",
+                target_metadata={
+                    'target_type': 'argument'
+                }
             )
             # logger.debug(f"ContentEvaluationAgent task failed. Output: {result}")
             return result
@@ -174,8 +193,8 @@ class FormEvaluationAgent:
             formalization = None
             for result in existing_results:
                 if (result.get('agent_type') == 'formalizer' and 
-                    result.get('data', {}).get('proposition') == proposition):
-                    formalization = result.get('data', {}).get('ascii')
+                    result.get('result_content', {}).get('proposition') == proposition):
+                    formalization = result.get('result_content', {}).get('ascii')
                     break
             
             if formalization:
@@ -231,7 +250,7 @@ class FormEvaluationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
-                data={
+                result_content={
                     "evaluation": evaluation_result,
                     "argument_validity": argument_validity,
                     "proposition_count": proposition_count,
@@ -242,7 +261,10 @@ class FormEvaluationAgent:
                     "assumptions": conversation_data['assumptions']
                 },
                 confidence=argument_validity,
-                reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified"
+                reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified",
+                target_metadata={
+                    'target_type': 'argument'
+                }
             )
             
             # logger.info(f"FormEvaluationAgent task completed successfully. Output: {result}")
@@ -253,9 +275,12 @@ class FormEvaluationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
-                data={"error": str(e)},
+                result_content={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in form evaluation: {e}"
+                reasoning=f"Error in form evaluation: {e}",
+                target_metadata={
+                    'target_type': 'argument'
+                }
             )
             # logger.debug(f"FormEvaluationAgent task failed. Output: {result}")
             return result
@@ -278,7 +303,7 @@ class FormalizationAgent:
             
             for result in existing_results:
                 if result.get('agent_type') == 'formalizer':
-                    formalizations.append(result.get('data', {}))
+                    formalizations.append(result.get('result_content', {}))
             
             return formalizations
             
@@ -334,7 +359,7 @@ class FormalizationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="formalize_proposition",
-                data={
+                result_content={
                     "proposition": proposition,
                     "ascii": ascii_formalization,
                     "json": json_formalization,
@@ -343,7 +368,11 @@ class FormalizationAgent:
                     "formalization_mode": "proposition_to_logic"
                 },
                 confidence=confidence,
-                reasoning=reasoning
+                reasoning=reasoning,
+                target_metadata={
+                    'target_type': 'proposition',
+                    'target_content': proposition
+                }
             )
             
             # logger.debug(f"FormalizationAgent task completed successfully. Output: {result}")
@@ -354,9 +383,13 @@ class FormalizationAgent:
             result = AgentResult(
                 agent_type=self.name,
                 operation="formalize_proposition",
-                data={"error": str(e)},
+                result_content={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in formalization: {e}"
+                reasoning=f"Error in formalization: {e}",
+                target_metadata={
+                    'target_type': 'proposition',
+                    'target_content': conversation_data.get('proposition', '')
+                }
             )
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")
             return result

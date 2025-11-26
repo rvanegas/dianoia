@@ -15,21 +15,21 @@ class TestResultManager:
         mock_existing_results = [
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'Socrates is a man',
                     'ascii': 'P(a)'
                 }
             },
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'All men are mortal',
                     'ascii': 'forall x. (P(x) -> Q(x))'
                 }
             },
             {
                 'agent_type': 'formalizer',
-                'data': {
+                'result_content': {
                     'proposition': 'Socrates is mortal',
                     'ascii': 'Q(a)'
                 }
@@ -43,7 +43,7 @@ class TestResultManager:
         # Add a form evaluator result
         form_evaluator_result = {
             'agent_type': 'form_evaluator',
-            'data': {
+            'result_content': {
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
                 'evaluation': {
                     'proposition_evaluations': [
@@ -66,7 +66,7 @@ class TestResultManager:
         # Add another form evaluator result (should replace the first)
         new_form_evaluator_result = {
             'agent_type': 'form_evaluator',
-            'data': {
+            'result_content': {
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
                 'evaluation': {
                     'proposition_evaluations': [
@@ -85,7 +85,7 @@ class TestResultManager:
         results = result_manager.get_results(conversation_id)
         form_evaluator_results = [r for r in results if r.get('agent_type') == 'form_evaluator']
         assert len(form_evaluator_results) == 1
-        assert form_evaluator_results[0]['data']['evaluation']['argument_validity'] == 0.8
+        assert form_evaluator_results[0]['result_content']['evaluation']['argument_validity'] == 0.8
     
     def test_result_manager_removes_form_evaluator_when_incomplete(self):
         """Test that result manager removes form evaluator results when no formalizations exist"""
@@ -98,7 +98,7 @@ class TestResultManager:
         # Add a form evaluator result (this shouldn't exist but let's test cleanup)
         form_evaluator_result = {
             'agent_type': 'form_evaluator',
-            'data': {
+            'result_content': {
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
                 'evaluation': {
                     'proposition_evaluations': [
@@ -127,7 +127,7 @@ class TestResultManager:
         # Add a content evaluator result
         content_evaluator_result = {
             'agent_type': 'content_evaluator',
-            'data': {
+            'result_content': {
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
                 'evaluation': {
                     'proposition_evaluations': [
@@ -150,7 +150,7 @@ class TestResultManager:
         # Add another content evaluator result (should replace the first)
         new_content_evaluator_result = {
             'agent_type': 'content_evaluator',
-            'data': {
+            'result_content': {
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
                 'evaluation': {
                     'proposition_evaluations': [
@@ -169,7 +169,7 @@ class TestResultManager:
         results = result_manager.get_results(conversation_id)
         content_evaluator_results = [r for r in results if r.get('agent_type') == 'content_evaluator']
         assert len(content_evaluator_results) == 1
-        assert content_evaluator_results[0]['data']['evaluation']['argument_validity'] == 0.85
+        assert content_evaluator_results[0]['result_content']['evaluation']['argument_validity'] == 0.85
 
 
 if __name__ == "__main__":

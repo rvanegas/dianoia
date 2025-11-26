@@ -79,27 +79,27 @@ class AgentResultManager:
     def _get_result_target_id(self, result: Dict[str, Any]) -> str:
         """Get a unique identifier for what this result targets"""
         agent_type = result.get('agent_type')
-        data = result.get('data', {})
+        result_content = result.get('result_content', {})
         
         if agent_type == 'builder':
             # Builder targets a specific proposition in arguments
-            proposition = data.get('proposition', '')
-            location = data.get('location', '')
+            proposition = result_content.get('proposition', '')
+            location = result_content.get('location', '')
             return f"builder:{location}:{proposition}"
         
         elif agent_type == 'formalizer':
             # Formalizer targets a specific proposition in arguments or assumptions
-            proposition = data.get('proposition', '')
+            proposition = result_content.get('proposition', '')
             return f"formalizer:{proposition}"
         
         elif agent_type in ['content_evaluator', 'form_evaluator']:
             # Evaluators target the entire argument as a whole
-            location = data.get('location', '')
+            location = result_content.get('location', '')
             return f"{agent_type}:{location}"
         
         elif agent_type == 'rewriter':
             # Rewriter targets a specific proposition
-            proposition = data.get('proposition', '')
+            proposition = result_content.get('proposition', '')
             return f"rewriter:{proposition}"
         
         # Fallback to using the entire result as identifier
@@ -274,9 +274,10 @@ class AgentCoordinator:
             task.result = {
                 'agent_type': result.agent_type,
                 'operation': result.operation,
-                'data': result.data,
+                'result_content': result.result_content,
                 'confidence': result.confidence,
                 'reasoning': result.reasoning,
+                'target_metadata': result.target_metadata,
                 'processed_at': time.time()
             }
             
@@ -398,7 +399,7 @@ class AgentCoordinator:
         existing_formalizations = set()
         for result in existing_results:
             if result.get('agent_type') == 'formalizer':
-                existing_proposition = result.get('data', {}).get('proposition')
+                existing_proposition = result.get('result_content', {}).get('proposition')
                 if existing_proposition:
                     existing_formalizations.add(existing_proposition)
         
@@ -476,7 +477,7 @@ class AgentCoordinator:
             formalized_propositions = set()
             for result in existing_results:
                 if result.get('agent_type') == 'formalizer':
-                    existing_proposition = result.get('data', {}).get('proposition')
+                    existing_proposition = result.get('result_content', {}).get('proposition')
                     if existing_proposition:
                         formalized_propositions.add(existing_proposition)
             

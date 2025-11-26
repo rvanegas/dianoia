@@ -6,10 +6,11 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 type AgentResult = {
   agent_type: string
   operation: string
-  data: any
+  result_content: any
   confidence: number
   reasoning: string
   processed_at: number
+  target_metadata?: any
 }
 
 type AgentResultsProps = {
@@ -89,13 +90,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
               💭 {result.reasoning}
             </div>
-            {result.data?.justifications && result.data.justifications.length > 0 && (
+            {result.result_content?.justifications && result.result_content.justifications.length > 0 && (
               <div className="mt-3">
                 <div className="text-sm font-medium text-gray-700 mb-2">
                   💡 Suggested Justifications:
                 </div>
                 <ul className="space-y-2">
-                  {result.data.justifications.map((justification: any, jIndex: number) => (
+                  {result.result_content.justifications.map((justification: any, jIndex: number) => (
                     <li key={jIndex} className="text-sm text-gray-700 p-2 bg-green-50 rounded border border-green-200">
                       {justification.propositions?.join(', ') || 'No propositions'}
                     </li>
@@ -126,20 +127,20 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
               💭 {result.reasoning}
             </div>
-            {result.data?.evaluation && (
+            {result.result_content?.evaluation && (
               <div className="mt-3 space-y-2">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="bg-blue-50 p-2 rounded">
-                    <span className="font-medium">Validity:</span> {(result.data.evaluation.argument_validity * 100).toFixed(0)}%
+                    <span className="font-medium">Validity:</span> {(result.result_content.evaluation.argument_validity * 100).toFixed(0)}%
                   </div>
                 </div>
-                {result.data.evaluation.proposition_evaluations && result.data.evaluation.proposition_evaluations.length > 0 && (
+                {result.result_content.evaluation.proposition_evaluations && result.result_content.evaluation.proposition_evaluations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-gray-700 mb-2">
                       📊 Proposition Truth Values:
                     </div>
                     <div className="space-y-1">
-                      {result.data.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
+                      {result.result_content.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
                         <div key={pIndex} className="text-sm p-2 bg-gray-50 rounded border border-gray-200">
                           <div className="flex justify-between items-start">
                             <span className="text-gray-700 flex-1">{prop.proposition}</span>
@@ -161,13 +162,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                     </div>
                   </div>
                 )}
-                {result.data.evaluation.logical_issues && result.data.evaluation.logical_issues.length > 0 && (
+                {result.result_content.evaluation.logical_issues && result.result_content.evaluation.logical_issues.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-red-700 mb-2">
                       ⚠️ Logical Issues:
                     </div>
                     <ul className="space-y-1">
-                      {result.data.evaluation.logical_issues.map((issue: string, iIndex: number) => (
+                      {result.result_content.evaluation.logical_issues.map((issue: string, iIndex: number) => (
                         <li key={iIndex} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
                           {issue}
                         </li>
@@ -175,13 +176,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                     </ul>
                   </div>
                 )}
-                {result.data.evaluation.recommendations && result.data.evaluation.recommendations.length > 0 && (
+                {result.result_content.evaluation.recommendations && result.result_content.evaluation.recommendations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-blue-700 mb-2">
                       💡 Recommendations:
                     </div>
                     <ul className="space-y-1">
-                      {result.data.evaluation.recommendations.map((rec: string, rIndex: number) => (
+                      {result.result_content.evaluation.recommendations.map((rec: string, rIndex: number) => (
                         <li key={rIndex} className="text-sm text-blue-700 p-2 bg-blue-50 rounded border border-blue-200">
                           {rec}
                         </li>
@@ -214,20 +215,20 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
               💭 {result.reasoning}
             </div>
-            {result.data?.evaluation && (
+            {result.result_content?.evaluation && (
               <div className="mt-3 space-y-2">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="bg-orange-50 p-2 rounded border border-orange-200">
-                    <span className="font-medium">Formal Validity:</span> {(result.data.evaluation.argument_validity * 100).toFixed(0)}%
+                    <span className="font-medium">Formal Validity:</span> {(result.result_content.evaluation.argument_validity * 100).toFixed(0)}%
                   </div>
                 </div>
-                {result.data.evaluation.proposition_evaluations && result.data.evaluation.proposition_evaluations.length > 0 && (
+                {result.result_content.evaluation.proposition_evaluations && result.result_content.evaluation.proposition_evaluations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-gray-700 mb-2">
                       📐 Formal Proposition Analysis:
                     </div>
                     <div className="space-y-1">
-                      {result.data.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
+                      {result.result_content.evaluation.proposition_evaluations.map((prop: any, pIndex: number) => (
                         <div key={pIndex} className="text-sm p-2 bg-orange-50 rounded border border-orange-200">
                           <div className="flex justify-between items-start">
                             <span className="text-gray-700 flex-1">{prop.proposition}</span>
@@ -245,13 +246,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                     </div>
                   </div>
                 )}
-                {result.data.evaluation.logical_issues && result.data.evaluation.logical_issues.length > 0 && (
+                {result.result_content.evaluation.logical_issues && result.result_content.evaluation.logical_issues.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-red-700 mb-2">
                       ⚠️ Formal Logic Issues:
                     </div>
                     <ul className="space-y-1">
-                      {result.data.evaluation.logical_issues.map((issue: string, iIndex: number) => (
+                      {result.result_content.evaluation.logical_issues.map((issue: string, iIndex: number) => (
                         <li key={iIndex} className="text-sm text-red-700 p-2 bg-red-50 rounded border border-red-200">
                           {issue}
                         </li>
@@ -259,13 +260,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                     </ul>
                   </div>
                 )}
-                {result.data.evaluation.recommendations && result.data.evaluation.recommendations.length > 0 && (
+                {result.result_content.evaluation.recommendations && result.result_content.evaluation.recommendations.length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-orange-700 mb-2">
                       💡 Formal Logic Recommendations:
                     </div>
                     <ul className="space-y-1">
-                      {result.data.evaluation.recommendations.map((rec: string, rIndex: number) => (
+                      {result.result_content.evaluation.recommendations.map((rec: string, rIndex: number) => (
                         <li key={rIndex} className="text-sm text-orange-700 p-2 bg-orange-50 rounded border border-orange-200">
                           {rec}
                         </li>
@@ -298,31 +299,31 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
               💭 {result.reasoning}
             </div>
-            {result.data?.proposition && (
+            {result.result_content?.proposition && (
               <div className="mt-3 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">
                   📝 Original Proposition:
                 </div>
                 <div className="text-sm text-gray-700 p-2 bg-blue-50 rounded border border-blue-200">
-                  {result.data.proposition}
+                  {result.result_content.proposition}
                 </div>
-                {result.data.ascii && (
+                {result.result_content.ascii && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-gray-700 mb-2">
                       🔤 ASCII Formalization:
                     </div>
                     <div className="text-sm font-mono text-gray-800 p-2 bg-green-50 rounded border border-green-200">
-                      {result.data.ascii}
+                      {result.result_content.ascii}
                     </div>
                   </div>
                 )}
-                {result.data.json && Object.keys(result.data.json).length > 0 && (
+                {result.result_content.json && Object.keys(result.result_content.json).length > 0 && (
                   <div className="mt-3">
                     <div className="text-sm font-medium text-gray-700 mb-2">
                       🏗️ JSON Structure:
                     </div>
                     <div className="text-sm font-mono text-gray-800 p-2 bg-purple-50 rounded border border-purple-200 overflow-x-auto">
-                      <pre className="whitespace-pre-wrap">{JSON.stringify(result.data.json, null, 2)}</pre>
+                      <pre className="whitespace-pre-wrap">{JSON.stringify(result.result_content.json, null, 2)}</pre>
                     </div>
                   </div>
                 )}

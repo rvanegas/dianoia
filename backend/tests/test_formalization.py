@@ -43,7 +43,7 @@ class TestFormalizationAgent:
             # Verify the result uses abstract predicate names
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
-            assert result.data["ascii"] == "forall x. (P(x) -> Q(x))"
+            assert result.result_content["ascii"] == "forall x. (P(x) -> Q(x))"
     
     def test_formalization_avoids_descriptive_predicates(self):
         """Test that formalization does NOT use descriptive predicate names"""
@@ -78,7 +78,7 @@ class TestFormalizationAgent:
             result = agent.formalize_proposition(conversation_data)
             
             # Verify the result does NOT contain descriptive predicate names
-            ascii_formalization = result.data["ascii"]
+            ascii_formalization = result.result_content["ascii"]
             assert "Socrates" not in ascii_formalization
             assert "mortal" not in ascii_formalization
             assert "is" not in ascii_formalization
@@ -141,7 +141,7 @@ class TestFormalizationAgent:
             # Verify the result
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
-            assert result.data["ascii"] == "P(a)"
+            assert result.result_content["ascii"] == "P(a)"
 
 
 if __name__ == "__main__":
