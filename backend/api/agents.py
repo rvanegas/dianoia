@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Dict, Any
 
@@ -9,8 +9,8 @@ from core.utils import logger
 
 router = APIRouter()
 
-@router.get("/results/{conversation_id}")
-async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
+@router.get("/results")
+async def get_conversation_results(conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)")) -> Dict[str, Any]:
     """Get all agent results for a conversation, grouped by agent type"""
     all_results = coordinator.get_conversation_results(conversation_id)
     
@@ -34,9 +34,15 @@ async def get_conversation_results(conversation_id: str) -> Dict[str, Any]:
     }
 
 @router.get("/active")
-async def get_active_tasks() -> Dict[str, Any]:
-    """Get all currently active tasks"""
+async def get_active_tasks(conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)")) -> Dict[str, Any]:
+    """Get all currently active tasks for a specific conversation"""
     active_tasks = coordinator.get_active_tasks()
+    
+    # Filter tasks by conversation_id
+    filtered_tasks = [
+        task for task in active_tasks 
+        if task.conversation_id == conversation_id
+    ]
     
     return {
         "active_tasks": [
@@ -46,7 +52,7 @@ async def get_active_tasks() -> Dict[str, Any]:
                 "status": task.status,
                 "conversation_id": task.conversation_id
             }
-            for task in active_tasks
+            for task in filtered_tasks
         ],
-        "count": len(active_tasks)
+        "count": len(filtered_tasks)
     } 

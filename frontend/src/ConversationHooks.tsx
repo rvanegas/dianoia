@@ -153,10 +153,9 @@ export function useConversationActions(
   // Reusable API call wrapper
   const makeApiCall = async (operationInfo: ApiOperationInfo) => {
     try {
-      // Add session_id and conversation_id as query parameters
+      // Add conversation_id as query parameter (format: session_id:conversation_id)
       const url = new URL(operationInfo.url)
-      url.searchParams.set('session_id', sessionId)
-      url.searchParams.set('conversation_id', conversationId.toString())
+      url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
       
       const response = await axios.post(url.toString(), operationInfo.data)
       
