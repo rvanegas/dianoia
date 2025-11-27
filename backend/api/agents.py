@@ -10,9 +10,13 @@ from core.utils import logger
 router = APIRouter()
 
 @router.get("/results")
-async def get_conversation_results(conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)")) -> Dict[str, Any]:
-    """Get all agent results for a conversation, grouped by agent type"""
-    all_results = coordinator.get_conversation_results(conversation_id)
+async def get_conversation_results(
+    conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)"),
+    snapshot_id: str = Query(..., description="Snapshot ID for filtering results")
+) -> Dict[str, Any]:
+    """Get latest agent results for a conversation/snapshot, grouped by agent type"""
+    # Use the new StaleResultsPropagation system to get latest results
+    all_results = coordinator.get_latest_results(conversation_id, snapshot_id)
     
     # Group results by agent type
     results_by_agent = {}
@@ -41,6 +45,7 @@ async def get_conversation_results(conversation_id: str = Query(..., description
     
     return {
         "conversation_id": conversation_id,
+        "snapshot_id": snapshot_id,
         "results_by_agent": results_by_agent,
         "total_count": len(all_results),
         "agent_types": list(results_by_agent.keys()),
