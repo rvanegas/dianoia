@@ -16,6 +16,19 @@ AGENT_RESULT_TTL_SECONDS = 3 * 24 * 60 * 60  # 3 days in seconds
 
 
 @dataclass
+class StoredAgentResult:
+    """Stored agent result with all necessary fields for result management"""
+    agent_type: str
+    operation: str
+    result_content: Dict[str, Any]
+    confidence: float
+    reasoning: str
+    target_metadata: Dict[str, Any]
+    snapshot_id: str
+    processed_at: float
+
+
+@dataclass
 class AgentTask:
     """Represents a task for an agent to process"""
     id: str
@@ -39,10 +52,10 @@ class AgentResultManager:
     """Manages agent results with disciplined cleanup and TTL maintenance"""
     
     def __init__(self):
-        self.results_by_conversation: Dict[str, List[Dict[str, Any]]] = {}
+        self.results_by_conversation: Dict[str, List[StoredAgentResult]] = {}
         self.conversation_timestamps: Dict[str, float] = {}  # Track last activity per conversation
     
-    def add_result(self, conversation_id: str, result: Dict[str, Any]):
+    def add_result(self, conversation_id: str, result: StoredAgentResult):
         """Add a new result and clean up outdated ones"""
         if conversation_id not in self.results_by_conversation:
             self.results_by_conversation[conversation_id] = []
@@ -51,7 +64,7 @@ class AgentResultManager:
         self._cleanup_outdated_results(conversation_id, result)
         
         # Check if this form evaluator result should be added
-        if result.get('agent_type') == 'form_evaluator':
+        if result.agent_type == 'form_evaluator':
             if not self._should_add_form_evaluator_result(conversation_id, result):
                 # Don't add the result if formalization is incomplete
                 return
@@ -60,11 +73,11 @@ class AgentResultManager:
         self.results_by_conversation[conversation_id].append(result)
         self.conversation_timestamps[conversation_id] = time.time()
     
-    def _cleanup_outdated_results(self, conversation_id: str, new_result: Dict[str, Any]):
+    def _cleanup_outdated_results(self, conversation_id: str, new_result: StoredAgentResult):
         """Remove outdated results based on the new result"""
         results = self.results_by_conversation[conversation_id]
-        agent_type = new_result.get('agent_type')
-        operation = new_result.get('operation')
+        agent_type = new_result.agent_type
+        operation = new_result.operation
         
         # Get the proposition or argument identifier for this result
         target_id = self._get_result_target_id(new_result)
@@ -75,44 +88,39 @@ class AgentResultManager:
             if not self._is_outdated_result(result, agent_type, operation, target_id)
         ]
         
-        # Special handling for form evaluator results
-        if agent_type == 'form_evaluator':
-            self._cleanup_form_evaluator_results(conversation_id, new_result)
+
     
-    def _get_result_target_id(self, result: Dict[str, Any]) -> str:
+    def _get_result_target_id(self, result: StoredAgentResult) -> str:
         """Get a unique identifier for what this result targets"""
-        agent_type = result.get('agent_type')
-        result_content = result.get('result_content', {})
+        agent_type = result.agent_type
+        target_metadata = result.target_metadata
+        target_type = target_metadata.get('target_type', '')
+        target_content = target_metadata.get('target_content', '')
         
         if agent_type == 'builder':
-            # Builder targets a specific proposition in arguments
-            proposition = result_content.get('proposition', '')
-            location = result_content.get('location', '')
-            return f"builder:{location}:{proposition}"
+            # Builder targets a specific proposition
+            return f"builder:{target_type}:{target_content}"
         
         elif agent_type == 'formalizer':
-            # Formalizer targets a specific proposition in arguments or assumptions
-            proposition = result_content.get('proposition', '')
-            return f"formalizer:{proposition}"
+            # Formalizer targets a specific proposition
+            return f"formalizer:{target_type}:{target_content}"
         
         elif agent_type in ['content_evaluator', 'form_evaluator']:
             # Evaluators target the entire argument as a whole
-            location = result_content.get('location', '')
-            return f"{agent_type}:{location}"
+            return f"{agent_type}:{target_type}"
         
         elif agent_type == 'rewriter':
             # Rewriter targets a specific proposition
-            proposition = result_content.get('proposition', '')
-            return f"rewriter:{proposition}"
+            return f"rewriter:{target_type}:{target_content}"
         
         # Fallback to using the entire result as identifier
         return f"{agent_type}:{hash(str(result))}"
     
-    def _is_outdated_result(self, result: Dict[str, Any], new_agent_type: str, 
+    def _is_outdated_result(self, result: StoredAgentResult, new_agent_type: str, 
                            new_operation: str, target_id: str) -> bool:
         """Check if a result is outdated compared to a new result"""
-        agent_type = result.get('agent_type')
-        operation = result.get('operation')
+        agent_type = result.agent_type
+        operation = result.operation
         
         # If it's the same agent type and operation, check if it targets the same thing
         if agent_type == new_agent_type and operation == new_operation:
@@ -121,29 +129,18 @@ class AgentResultManager:
         
         return False
     
-    def _cleanup_form_evaluator_results(self, conversation_id: str, new_result: Dict[str, Any]):
-        """Special cleanup for form evaluator results when formalizations change"""
-        results = self.results_by_conversation[conversation_id]
-        
-        # Remove all form evaluator results when a new formalization is added
-        # This ensures form evaluator runs again with the new formalization
-        results[:] = [
-            result for result in results
-            if result.get('agent_type') != 'form_evaluator'
-        ]
-    
-    def _should_add_form_evaluator_result(self, conversation_id: str, result: Dict[str, Any]) -> bool:
+    def _should_add_form_evaluator_result(self, conversation_id: str, result: StoredAgentResult) -> bool:
         """Check if a form evaluator result should be added"""
         # Get all formalizations for this conversation
         formalizations = []
         for existing_result in self.results_by_conversation.get(conversation_id, []):
-            if existing_result.get('agent_type') == 'formalizer':
+            if existing_result.agent_type == 'formalizer':
                 formalizations.append(existing_result)
         
         # Only add form evaluator result if we have formalizations
         return len(formalizations) > 0
     
-    def get_results(self, conversation_id: str) -> List[Dict[str, Any]]:
+    def get_results(self, conversation_id: str) -> List[StoredAgentResult]:
         """Get all results for a conversation"""
         results = self.results_by_conversation.get(conversation_id, [])
         
@@ -277,7 +274,25 @@ class AgentCoordinator:
             else:
                 raise ValueError(f"Unknown agent type: {task.agent_type}")
             
-            # Convert agent result to task result
+            # Set snapshot_id on the agent result
+            result.snapshot_id = agent_input.snapshot_id
+            
+            # Create stored agent result
+            stored_result = StoredAgentResult(
+                agent_type=result.agent_type,
+                operation=result.operation,
+                result_content=result.result_content,
+                confidence=result.confidence,
+                reasoning=result.reasoning,
+                target_metadata=result.target_metadata,
+                snapshot_id=result.snapshot_id,
+                processed_at=time.time()
+            )
+            
+            # Store result using the disciplined result manager
+            self.result_manager.add_result(task.agent_input.conversation_id, stored_result)
+            
+            # Keep task.result as dict for backward compatibility with task history
             task.result = {
                 'agent_type': result.agent_type,
                 'operation': result.operation,
@@ -285,11 +300,9 @@ class AgentCoordinator:
                 'confidence': result.confidence,
                 'reasoning': result.reasoning,
                 'target_metadata': result.target_metadata,
+                'snapshot_id': result.snapshot_id,
                 'processed_at': time.time()
             }
-            
-            # Store result using the disciplined result manager
-            self.result_manager.add_result(task.agent_input.conversation_id, task.result)
                         
             # If this was a formalizer task, trigger argument state change reaction
             if task.agent_type == 'formalizer':
@@ -343,7 +356,7 @@ class AgentCoordinator:
         """Get the status of a specific task"""
         return self.task_history.get(task_id)
     
-    def get_conversation_results(self, conversation_id: str) -> list:
+    def get_conversation_results(self, conversation_id: str) -> List[StoredAgentResult]:
         """Get all results for a conversation"""
         results = self.result_manager.get_results(conversation_id)
         # logger.debug(f"Retrieved {len(results)} results for conversation {conversation_id}")
@@ -410,8 +423,8 @@ class AgentCoordinator:
         # Queue formalizer for any new propositions
         existing_formalizations = set()
         for result in existing_results:
-            if result.get('agent_type') == 'formalizer':
-                existing_proposition = result.get('result_content', {}).get('proposition')
+            if result.agent_type == 'formalizer':
+                existing_proposition = result.result_content.get('proposition')
                 if existing_proposition:
                     existing_formalizations.add(existing_proposition)
         

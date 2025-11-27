@@ -19,6 +19,7 @@ class AgentResult:
     confidence: float = 0.0
     reasoning: str = ""
     target_metadata: Dict[str, Any] = None  # Metadata about what was targeted
+    snapshot_id: str = ""  # Links result to specific snapshot
     
     def __post_init__(self):
         if self.target_metadata is None:
