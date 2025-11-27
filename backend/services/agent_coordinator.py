@@ -16,6 +16,13 @@ AGENT_RESULT_TTL_SECONDS = 3 * 24 * 60 * 60  # 3 days in seconds
 
 
 @dataclass
+class TargetMetadata:
+    """Metadata about what an agent result targets"""
+    target_type: str  # 'argument', 'proposition', etc.
+    target_content: str  # The specific content being targeted
+
+
+@dataclass
 class StoredAgentResult:
     """Stored agent result with all necessary fields for result management"""
     agent_type: str
@@ -23,7 +30,7 @@ class StoredAgentResult:
     result_content: Dict[str, Any]
     confidence: float
     reasoning: str
-    target_metadata: Dict[str, Any]
+    target_metadata: TargetMetadata
     snapshot_id: str
     processed_at: float
 
@@ -94,8 +101,8 @@ class AgentResultManager:
         """Get a unique identifier for what this result targets"""
         agent_type = result.agent_type
         target_metadata = result.target_metadata
-        target_type = target_metadata.get('target_type', '')
-        target_content = target_metadata.get('target_content', '')
+        target_type = target_metadata.target_type
+        target_content = target_metadata.target_content
         
         if agent_type == 'builder':
             # Builder targets a specific proposition
@@ -278,13 +285,17 @@ class AgentCoordinator:
             result.snapshot_id = agent_input.snapshot_id
             
             # Create stored agent result
+            target_metadata = TargetMetadata(
+                target_type=agent_input.agent_data.target_type,
+                target_content=agent_input.agent_data.target_content or ''
+            )
             stored_result = StoredAgentResult(
                 agent_type=result.agent_type,
                 operation=result.operation,
                 result_content=result.result_content,
                 confidence=result.confidence,
                 reasoning=result.reasoning,
-                target_metadata=result.target_metadata,
+                target_metadata=target_metadata,
                 snapshot_id=result.snapshot_id,
                 processed_at=time.time()
             )
