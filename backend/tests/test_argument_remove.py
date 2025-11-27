@@ -22,12 +22,13 @@ class TestArgumentRemove:
             ],
             "loc": "argument",
             "index": 1,  # Remove step B (All men are mortal)
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
                 # Create the argument object
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
     
         # Mock the coordinator to avoid actual agent queuing
         with patch.object(coordinator, 'queue_task') as mock_queue:
@@ -69,11 +70,12 @@ class TestArgumentRemove:
             ],
             "loc": "argument", 
             "index": 1,  # Remove step B (All men are mortal)
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
             result = service.remove()
@@ -101,11 +103,12 @@ class TestArgumentRemove:
             "argument": [],
             "loc": "assumptions",
             "index": 1,  # Remove step B from assumptions
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
             result = service.remove()
@@ -131,11 +134,12 @@ class TestArgumentRemove:
             ],
             "loc": "argument",
             "index": 2,  # Remove step C (Premise C)
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
             result = service.remove()
@@ -165,11 +169,12 @@ class TestArgumentRemove:
             ],
             "loc": "argument",
             "index": 1,
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
         
         with patch.object(coordinator, 'queue_task') as mock_queue:
             service.remove()
@@ -184,9 +189,10 @@ class TestArgumentRemove:
             assert 'content_evaluator' in agent_types
             assert 'formalizer' in agent_types
             
-            # Verify conversation_id was passed correctly
+            # Verify conversation_id was passed correctly in AgentInput objects
             for call in calls:
-                assert call[1]['conversation_id'] == 'test_session:1'
+                agent_input = call[1]['agent_input']
+                assert agent_input.conversation_id == 'test_session:1'
     
     def test_remove_step_preserves_other_arguments(self):
         """Test that remove() doesn't affect other arguments"""
@@ -198,11 +204,12 @@ class TestArgumentRemove:
             ],
             "loc": "argument",
             "index": 1,
-            "conversation_id": "test_session:1"
+            "conversation_id": "test_session:1",
+            "snapshot_id": "test_snapshot_123"
         }
         
         args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args)
+        service = ArgumentStepService(args, "test_snapshot_123")
         
         # Store original argument
         original_argument = args.argument.copy()

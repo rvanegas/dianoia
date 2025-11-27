@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from services.conversation import gpt_justify, gpt_evaluate
 from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_content, agent_gpt_evaluate_form, agent_gpt_formalize
+from schemas.agent_input import AgentInput, FilteredAgentInput
 
 from core.utils import logger
 
@@ -33,16 +34,16 @@ class ArgumentBuilderAgent:
         self.name = "builder"
         self.coordinator = coordinator
     
-    def build_argument(self, conversation_data: Dict[str, Any]) -> AgentResult:
+    def build_argument(self, agent_input: AgentInput) -> AgentResult:
         """Build additional argument steps for a proposition with optional formalization guidance"""
         try:
-            # logger.debug(f"ArgumentBuilderAgent starting task with data: {conversation_data}")
+            # logger.debug(f"ArgumentBuilderAgent starting task with data: {agent_input}")
             
             # Get file_ids from task data
-            file_ids = conversation_data.get('file_ids', [])
+            file_ids = agent_input.file_ids
             
             # Pass the data directly to the agent without taking it apart
-            basic_response = agent_gpt_justify.call(json.dumps(conversation_data), file_ids)
+            basic_response = agent_gpt_justify.call(json.dumps(agent_input.model_dump()), file_ids)
             basic_propositions = json.loads(basic_response)["propositions"]
             
             basic_justification = {
@@ -58,8 +59,8 @@ class ArgumentBuilderAgent:
                 agent_type=self.name,
                 operation="build_argument",
                 result_content={
-                    "proposition": conversation_data.get('proposition', ''),
-                    "location": conversation_data.get('location', ''),
+                    "proposition": agent_input.agent_data.target_content or '',
+                    "location": "argument",
                     "justifications": justifications,
                     "total_justifications": len(justifications)
                 },
@@ -67,7 +68,7 @@ class ArgumentBuilderAgent:
                 reasoning=f"Generated {len(justifications)} justification options",
                 target_metadata={
                     'target_type': 'proposition',
-                    'target_content': conversation_data.get('proposition', '')
+                    'target_content': agent_input.agent_data.target_content or ''
                 }
             )
             
@@ -84,7 +85,7 @@ class ArgumentBuilderAgent:
                 reasoning=f"Error in argument building: {e}",
                 target_metadata={
                     'target_type': 'proposition',
-                    'target_content': conversation_data.get('proposition', '')
+                    'target_content': agent_input.agent_data.target_content or ''
                 }
             )
             # logger.debug(f"ArgumentBuilderAgent task failed. Output: {result}")
@@ -100,17 +101,20 @@ class ContentEvaluationAgent:
         self.name = "content_evaluator"
         self.coordinator = coordinator
     
-    def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
+    def evaluate_propositions(self, agent_input: FilteredAgentInput) -> AgentResult:
         """Evaluate the truth and validity of argument propositions"""
         try:
-            # logger.info(f"ContentEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            # logger.debug(f"ContentEvaluationAgent starting task with data: {conversation_data}")
+            # logger.info(f"ContentEvaluationAgent starting task for conversation: {agent_input.conversation_id}")
+            # logger.debug(f"ContentEvaluationAgent starting task with data: {agent_input}")
             
-            # Get file_ids from task data
-            file_ids = conversation_data.get('file_ids', [])
-            
+            # Use direct access for FilteredAgentInput
+            file_ids = agent_input.file_ids
+            payload = agent_input.model_dump()
+            arg_for_result = agent_input.agent_data.argument
+            assumptions_for_result = agent_input.agent_data.assumptions
+
             # Pass the data directly to the agent
-            evaluation_response = agent_gpt_evaluate_content.call(json.dumps(conversation_data), file_ids)
+            evaluation_response = agent_gpt_evaluate_content.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
             
             # Log key evaluation metrics
@@ -135,8 +139,8 @@ class ContentEvaluationAgent:
                     "truth_issues": truth_issues,
                     "recommendations": recommendations,
                     "evaluation_mode": "content_truth",
-                    "argument": conversation_data['argument'],
-                    "assumptions": conversation_data['assumptions']
+                    "argument": arg_for_result,
+                    "assumptions": assumptions_for_result
                 },
                 confidence=overall_truth_score,
                 reasoning=f"Evaluated {proposition_count} propositions for truth with {len(truth_issues)} issues identified",
@@ -173,56 +177,52 @@ class FormEvaluationAgent:
         self.name = "form_evaluator"
         self.coordinator = coordinator
     
-    def _get_formalizations_for_argument(self, conversation_data: Dict[str, Any]) -> List[str]:
+    def _get_formalizations_for_argument(self, agent_input: FilteredAgentInput) -> List[str]:
         """Get formalizations for all propositions in the argument"""
-        conversation_id = conversation_data['conversation_id']
-        argument = conversation_data['argument']
+        argument = agent_input.agent_data.argument
+        assumptions = agent_input.agent_data.assumptions
         
-        if not argument:
-            return []
-        
-        # Get existing results
-        existing_results = self.coordinator.get_conversation_results(conversation_id)
-        
-        # Map propositions to their formalizations
+        # Extract formalizations from argument and assumption steps
         formalizations = []
         missing_formalizations = []
         
-        for proposition in argument:
-            # Find the formalization for this proposition
-            formalization = None
-            for result in existing_results:
-                if (result.get('agent_type') == 'formalizer' and 
-                    result.get('result_content', {}).get('proposition') == proposition):
-                    formalization = result.get('result_content', {}).get('ascii')
-                    break
-            
-            if formalization:
-                formalizations.append(formalization)
+        # Check argument steps
+        for step in argument:
+            if step.formalization:
+                formalizations.append(step.formalization)
             else:
-                # Missing formalization is an error - collect for reporting
-                missing_formalizations.append(proposition)
+                missing_formalizations.append(f"argument step {step.symbol}")
         
-        # If any formalizations are missing, raise an error
+        # Check assumption steps
+        for step in assumptions:
+            if step.formalization:
+                formalizations.append(step.formalization)
+            else:
+                missing_formalizations.append(f"assumption step {step.symbol}")
+        
         if missing_formalizations:
-            error_msg = f"Missing formalizations for propositions: {missing_formalizations}"
+            error_msg = f"Missing formalizations for steps: {missing_formalizations}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        if not formalizations:
+            error_msg = "No formalizations found for form evaluation"
             logger.error(error_msg)
             raise ValueError(error_msg)
         
         return formalizations
 
-    def evaluate_propositions(self, conversation_data: Dict[str, Any]) -> AgentResult:
+    def evaluate_propositions(self, agent_input: FilteredAgentInput) -> AgentResult:
         """Evaluate only the logical validity of formalized arguments"""
         try:
-            # logger.info(f"FormEvaluationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            # logger.debug(f"FormEvaluationAgent starting task with data: {conversation_data}")
+            # logger.info(f"FormEvaluationAgent starting task for conversation: {agent_input.conversation_id}")
+            # logger.debug(f"FormEvaluationAgent starting task with data: {agent_input}")
             
-            # Get file_ids from task data
-            file_ids = conversation_data.get('file_ids', [])
-            
-            # Add formalizations to the data
-            formalizations = self._get_formalizations_for_argument(conversation_data)
-            conversation_data['formalizations'] = formalizations
+            # Use direct access for AgentInput
+            file_ids = agent_input.file_ids
+            formalizations = self._get_formalizations_for_argument(agent_input)
+            assumptions_for_result = agent_input.agent_data.assumptions
+            argument_for_result = agent_input.agent_data.argument
             
             # Create a clean data structure for the form evaluator - ONLY formalizations
             form_evaluation_data = {
@@ -257,8 +257,8 @@ class FormEvaluationAgent:
                     "logical_issues": logical_issues,
                     "recommendations": recommendations,
                     "evaluation_mode": "formal_validity",
-                    "argument": conversation_data['argument'],
-                    "assumptions": conversation_data['assumptions']
+                    "argument": argument_for_result,
+                    "assumptions": assumptions_for_result
                 },
                 confidence=argument_validity,
                 reasoning=f"Evaluated {proposition_count} propositions for formal validity with {len(logical_issues)} issues identified",
@@ -311,34 +311,34 @@ class FormalizationAgent:
             logger.error(f"Error getting existing formalizations: {e}")
             return []
     
-    def formalize_proposition(self, conversation_data: Dict[str, Any]) -> AgentResult:
+    def formalize_proposition(self, agent_input: AgentInput) -> AgentResult:
         """Formalize a proposition into logical notation"""
         try:
-            # logger.info(f"FormalizationAgent starting task for conversation: {conversation_data['conversation_id']}")
-            # logger.debug(f"FormalizationAgent starting task with data: {conversation_data}")
+            # logger.info(f"FormalizationAgent starting task for conversation: {agent_input.conversation_id}")
+            # logger.debug(f"FormalizationAgent starting task with data: {agent_input}")
             
             # Validate required data
-            argument_data = conversation_data.get('argument_data')
+            argument_data = agent_input.agent_data.argument
             if not argument_data:
-                raise ValueError("FormalizationAgent requires argument_data in conversation_data")
+                raise ValueError("FormalizationAgent requires argument data")
             
             # Get file_ids from task data
-            file_ids = conversation_data.get('file_ids', [])
+            file_ids = agent_input.file_ids
             
             # Get the proposition to formalize
-            proposition = conversation_data.get('proposition', '')
+            proposition = agent_input.agent_data.target_content
             if not proposition:
                 raise ValueError("No proposition provided for formalization")
             
             # Get existing formalizations for context
-            conversation_id = conversation_data.get('conversation_id')
+            conversation_id = agent_input.conversation_id
             existing_formalizations = self._get_existing_formalizations(conversation_id)
             
             # Create formalization data
             formalization_data = {
                 'proposition': proposition,
                 'existing_formalizations': existing_formalizations,
-                'argument_data': argument_data
+                'argument_data': [step.model_dump() for step in argument_data]
             }
             
             # logger.debug(f"FormalizationAgent sending data: {formalization_data}")
@@ -388,7 +388,7 @@ class FormalizationAgent:
                 reasoning=f"Error in formalization: {e}",
                 target_metadata={
                     'target_type': 'proposition',
-                    'target_content': conversation_data.get('proposition', '')
+                    'target_content': agent_input.agent_data.target_content or ''
                 }
             )
             # logger.debug(f"FormalizationAgent task failed. Output: {result}")

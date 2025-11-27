@@ -5,7 +5,7 @@ Tests the Step model updates and normalized agent input schema.
 
 import pytest
 from schemas.step import Step
-from schemas.agent_input import AgentInput, AgentContext, TaskData, AgentMetadata, FilteredAgentInput
+from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 
 
 class TestStepModelUpdates:
@@ -69,40 +69,32 @@ class TestNormalizedAgentInput:
     
     def test_agent_input_creation(self):
         """Test creating a normalized AgentInput"""
-        context = AgentContext(
+        agent_data = AgentData(
             assumptions=[
                 Step(symbol="A", proposition="Background assumption", justifiers=[], truth="1.0", valid="1.0")
             ],
             argument=[
                 Step(symbol="B", proposition="Main argument", justifiers=["A"], truth="0.8", valid="0.9")
             ],
-            file_ids=["file1.pdf", "file2.pdf"]
-        )
-        
-        task_data = TaskData(
+            latest_results=[],
             target_type="argument",
             target_content=None
-        )
-        
-        metadata = AgentMetadata(
-            triggered_by="user_action",
-            trigger_source="proposition_added",
-            ttl_seconds=3600
         )
         
         agent_input = AgentInput(
             conversation_id="conv_123",
             snapshot_id="snap_456",
-            context=context,
-            task_data=task_data,
-            metadata=metadata
+            agent_data=agent_data,
+            file_ids=["file1.pdf", "file2.pdf"],
+            triggered_by="user_action",
+            trigger_source="proposition_added"
         )
         
         assert agent_input.conversation_id == "conv_123"
         assert agent_input.snapshot_id == "snap_456"
-        assert len(agent_input.context.assumptions) == 1
-        assert len(agent_input.context.argument) == 1
-        assert len(agent_input.context.file_ids) == 2
+        assert len(agent_input.agent_data.assumptions) == 1
+        assert len(agent_input.agent_data.argument) == 1
+        assert len(agent_input.file_ids) == 2
     
     def test_filtered_input_for_content_evaluation(self):
         """Test creating filtered input for content evaluation agent"""
@@ -116,28 +108,31 @@ class TestNormalizedAgentInput:
             formalization="Test formalization"
         )
         
-        context = AgentContext(
+        agent_data = AgentData(
             assumptions=[step],
             argument=[step],
-            file_ids=[]
+            latest_results=[],
+            target_type="argument",
+            target_content=None
         )
         
         agent_input = AgentInput(
             conversation_id="conv_123",
             snapshot_id="snap_456",
-            context=context,
-            task_data=TaskData(target_type="argument"),
-            metadata=AgentMetadata(triggered_by="user_action", trigger_source="test")
+            agent_data=agent_data,
+            file_ids=[],
+            triggered_by="user_action",
+            trigger_source="test"
         )
         
         # Create filtered input for content evaluation
         filtered_input = FilteredAgentInput.for_content_evaluation(agent_input)
         
         # Formalization should be excluded
-        assert filtered_input.context.assumptions[0].formalization is None
-        assert filtered_input.context.argument[0].formalization is None
+        assert filtered_input.agent_data.assumptions[0].formalization is None
+        assert filtered_input.agent_data.argument[0].formalization is None
         # Content should be preserved
-        assert filtered_input.context.assumptions[0].proposition == "Test proposition"
+        assert filtered_input.agent_data.assumptions[0].proposition == "Test proposition"
     
     def test_filtered_input_for_formal_evaluation(self):
         """Test creating filtered input for formal evaluation agent"""
@@ -153,66 +148,75 @@ class TestNormalizedAgentInput:
             formalization="Test formalization"
         )
         
-        context = AgentContext(
+        agent_data = AgentData(
             assumptions=[step],
             argument=[step],
-            file_ids=[]
+            latest_results=[],
+            target_type="argument",
+            target_content=None
         )
         
         agent_input = AgentInput(
             conversation_id="conv_123",
             snapshot_id="snap_456",
-            context=context,
-            task_data=TaskData(target_type="argument"),
-            metadata=AgentMetadata(triggered_by="user_action", trigger_source="test")
+            agent_data=agent_data,
+            file_ids=[],
+            triggered_by="user_action",
+            trigger_source="test"
         )
         
         # Create filtered input for formal evaluation
         filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
         
         # All steps should be included (parallel to for_content_evaluation)
-        assert len(filtered_input.context.assumptions) == 1
-        assert len(filtered_input.context.argument) == 1
+        assert len(filtered_input.agent_data.assumptions) == 1
+        assert len(filtered_input.agent_data.argument) == 1
         
         # Content should be stripped out (parallel to for_content_evaluation)
-        assert filtered_input.context.assumptions[0].proposition is None
-        assert filtered_input.context.argument[0].proposition is None
+        assert filtered_input.agent_data.assumptions[0].proposition is None
+        assert filtered_input.agent_data.argument[0].proposition is None
         
         # Other attributes should be preserved
-        assert filtered_input.context.assumptions[0].formalization == "Test formalization"
-        assert filtered_input.context.assumptions[0].symbol == "A"
-        assert filtered_input.context.assumptions[0].justifiers == ["B"]
-        assert filtered_input.context.assumptions[0].truth == "0.9"
+        assert filtered_input.agent_data.assumptions[0].formalization == "Test formalization"
+        assert filtered_input.agent_data.assumptions[0].symbol == "A"
+        assert filtered_input.agent_data.assumptions[0].justifiers == ["B"]
+        assert filtered_input.agent_data.assumptions[0].truth == "0.9"
     
 
     
-    def test_task_data_proposition_target(self):
-        """Test task data with proposition target"""
-        task_data = TaskData(
+    def test_agent_data_proposition_target(self):
+        """Test agent data with proposition target"""
+        agent_data = AgentData(
+            assumptions=[],
+            argument=[],
+            latest_results=[],
             target_type="proposition",
             target_content="Socrates is mortal"
         )
         
-        assert task_data.target_type == "proposition"
-        assert task_data.target_content == "Socrates is mortal"
+        assert agent_data.target_type == "proposition"
+        assert agent_data.target_content == "Socrates is mortal"
     
 
     
     def test_filtered_agent_input_inheritance(self):
         """Test that FilteredAgentInput properly inherits from AgentInput"""
         # Create a base agent input
-        context = AgentContext(
+        agent_data = AgentData(
             assumptions=[Step(symbol="A", proposition="Test", justifiers=[], truth="1.0", valid="1.0")],
             argument=[],
-            file_ids=[]
+            latest_results=[],
+            target_type="argument",
+            target_content=None
         )
         
         base_input = AgentInput(
             conversation_id="conv_123",
             snapshot_id="snap_456",
-            context=context,
-            task_data=TaskData(target_type="argument"),
-            metadata=AgentMetadata(triggered_by="user_action", trigger_source="test")
+            agent_data=agent_data,
+            file_ids=[],
+            triggered_by="user_action",
+            trigger_source="test"
         )
         
         # Test that FilteredAgentInput is an instance of AgentInput
@@ -223,10 +227,8 @@ class TestNormalizedAgentInput:
         # Test that all AgentInput attributes are preserved
         assert filtered_input.conversation_id == base_input.conversation_id
         assert filtered_input.snapshot_id == base_input.snapshot_id
-        assert filtered_input.task_data == base_input.task_data
-        assert filtered_input.metadata == base_input.metadata
-    
-
+        assert filtered_input.agent_data == base_input.agent_data
+        assert filtered_input.file_ids == base_input.file_ids
 
 
 if __name__ == "__main__":

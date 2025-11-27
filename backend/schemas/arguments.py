@@ -54,3 +54,10 @@ class ArgumentsWithProposition(Arguments):
 class ArgumentsWithStepAndProposition(ArgumentsWithStep, ArgumentsWithProposition):
     """Arguments with a proposition and location to make a new step"""
     pass
+
+
+class ArgumentData(BaseModel):
+    """Schema for argument data passed between services and agents"""
+    assumptions: List[Step]
+    argument: List[Step]
+    file_ids: List[str] = []
