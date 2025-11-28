@@ -299,40 +299,26 @@ class FormalizationAgent:
             logger.error(f"Error getting existing formalizations: {e}")
             return []
     
-    def formalize_proposition(self, agent_input: AgentInput) -> AgentResult:
+    def formalize_proposition(self, agent_input: FilteredAgentInput) -> AgentResult:
         """Formalize a proposition into logical notation"""
         try:
             # logger.info(f"FormalizationAgent starting task for conversation: {agent_input.conversation_id}")
             # logger.debug(f"FormalizationAgent starting task with data: {agent_input}")
             
-            # Validate required data
-            argument_data = agent_input.agent_data.argument
-            if not argument_data:
-                raise ValueError("FormalizationAgent requires argument data")
-            
-            # Get file_ids from task data
+            # Use direct access for FilteredAgentInput
             file_ids = agent_input.file_ids
+            payload = agent_input.model_dump()
+            arg_for_result = agent_input.agent_data.argument
+            assumptions_for_result = agent_input.agent_data.assumptions
             
-            # Get the proposition to formalize
-            proposition = agent_input.agent_data.target_content
-            if not proposition:
-                raise ValueError("No proposition provided for formalization")
+            # Validate that we have argument data to formalize
+            if not agent_input.agent_data.argument:
+                raise ValueError("No argument provided for formalization")
             
-            # Get existing formalizations for context
-            conversation_id = agent_input.conversation_id
-            existing_formalizations = self._get_existing_formalizations(conversation_id)
+            # logger.debug(f"FormalizationAgent sending data: {payload}")
             
-            # Create formalization data
-            formalization_data = {
-                'proposition': proposition,
-                'existing_formalizations': existing_formalizations,
-                'argument_data': [step.model_dump() for step in argument_data]
-            }
-            
-            # logger.debug(f"FormalizationAgent sending data: {formalization_data}")
-            
-            # Pass the data to the agent for formalization
-            formalization_response = agent_gpt_formalize.call(json.dumps(formalization_data), file_ids)
+            # Pass the data directly to the agent
+            formalization_response = agent_gpt_formalize.call(json.dumps(payload), file_ids)
             formalization_result = json.loads(formalization_response)
             
             # Extract formalization results
@@ -348,18 +334,14 @@ class FormalizationAgent:
                 agent_type=self.name,
                 operation="formalize_proposition",
                 result_content={
-                    "proposition": proposition,
-                    "ascii": ascii_formalization,
-                    "json": json_formalization,
-                    "confidence": confidence,
-                    "reasoning": reasoning,
-                    "formalization_mode": "proposition_to_logic"
+                    **formalization_result,
+                    "formalization_mode": "proposition_to_logic",
+                    "argument": arg_for_result,
+                    "assumptions": assumptions_for_result
                 },
-                confidence=confidence,
-                reasoning=reasoning,
                 target_metadata={
-                    'target_type': 'proposition',
-                    'target_content': proposition
+                    'target_type': 'argument',
+                    'target_content': agent_input.agent_data.target_content
                 }
             )
             
@@ -375,7 +357,7 @@ class FormalizationAgent:
                 confidence=0.0,
                 reasoning=f"Error in formalization: {e}",
                 target_metadata={
-                    'target_type': 'proposition',
+                    'target_type': 'argument',
                     'target_content': agent_input.agent_data.target_content or ''
                 }
             )

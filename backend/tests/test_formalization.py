@@ -3,162 +3,79 @@ import json
 from unittest.mock import patch
 from services.agents import FormalizationAgent
 from services.agent_coordinator import coordinator
-from schemas.agent_input import AgentInput, AgentData
 from schemas.step import Step
+from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 
 
 class TestFormalizationAgent:
-    """Test the formalization agent functionality"""
+    """Test that the FormalizationAgent works correctly with the new structure"""
     
-    def test_formalization_uses_abstract_predicates(self):
-        """Test that formalization uses abstract predicate names (P, Q, R, etc.) instead of descriptive ones"""
+    def test_formalization_agent(self):
+        """Test that formalization agent works correctly"""
         agent = FormalizationAgent(coordinator)
         
-        # Mock the GPT response to simulate abstract predicate usage
+        # Mock the GPT response for formalization
         mock_response = {
-            "formalization": {
-                "ascii": "forall x. (P(x) -> Q(x))"
-            },
-            "confidence": 0.9,
-            "reasoning": "Universal quantification with conditional using abstract predicates P and Q"
-        }
-        
-        with patch('services.agents.agent_gpt_formalize') as mock_gpt:
-            mock_gpt.call.return_value = json.dumps(mock_response)
-            
-            # Test data
-            agent_data = AgentData(
-                assumptions=[],
-                argument=[
-                    Step(symbol="A", proposition="All mice are small", justifiers=[], truth="1.0", valid="1.0")
-                ],
-                latest_results=[],
-                target_type="proposition",
-                target_content="All mice are small"
-            )
-            agent_input = AgentInput(
-                conversation_id="test_conversation",
-                snapshot_id="test_snapshot_123",
-                
-                file_ids=[],
-                agent_data=agent_data
-            )
-            
-            # Call the formalization agent
-            result = agent.formalize_proposition(agent_input)
-            
-            # Verify the result uses abstract predicate names
-            assert result.agent_type == "formalizer"
-            assert result.operation == "formalize_proposition"
-            assert result.result_content["ascii"] == "forall x. (P(x) -> Q(x))"
-    
-    def test_formalization_avoids_descriptive_predicates(self):
-        """Test that formalization does NOT use descriptive predicate names"""
-        agent = FormalizationAgent(coordinator)
-        
-        # Mock the GPT response to simulate abstract predicate usage
-        mock_response = {
-            "formalization": {
-                "ascii": "P(a)"
-            },
-            "confidence": 0.95,
-            "reasoning": "Direct predicate application using abstract predicate P"
-        }
-        
-        with patch('services.agents.agent_gpt_formalize') as mock_gpt:
-            mock_gpt.call.return_value = json.dumps(mock_response)
-            
-            # Test data
-            agent_data = AgentData(
-                assumptions=[],
-                argument=[
-                    Step(symbol="A", proposition="Socrates is mortal", justifiers=[], truth="1.0", valid="1.0")
-                ],
-                latest_results=[],
-                target_type="proposition",
-                target_content="Socrates is mortal"
-            )
-            agent_input = AgentInput(
-                conversation_id="test_conversation",
-                snapshot_id="test_snapshot_123",
-                
-                file_ids=[],
-                agent_data=agent_data
-            )
-            
-            # Call the formalization agent
-            result = agent.formalize_proposition(agent_input)
-            
-            # Verify the result does NOT contain descriptive predicate names
-            ascii_formalization = result.result_content["ascii"]
-            assert "Socrates" not in ascii_formalization
-            assert "mortal" not in ascii_formalization
-            assert "is" not in ascii_formalization
-            assert "P(a)" in ascii_formalization
-    
-    def test_formalization_maintains_consistency(self):
-        """Test that formalization maintains consistency with existing formalizations"""
-        agent = FormalizationAgent(coordinator)
-        
-        # Mock the coordinator to return existing formalizations
-        mock_existing_results = [
-            {
-                'agent_type': 'formalizer',
-                'result_content': {
-                    'proposition': 'All mice are small',
-                    'ascii': 'forall x. (P(x) -> Q(x))',
-                    'reasoning': 'Universal quantification using P for mouse and Q for small'
+            "formalizations": [
+                {
+                    "symbol": "A",
+                    "ascii": "P(a)",
+                    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
+                },
+                {
+                    "symbol": "B",
+                    "ascii": "forall x. (P(x) -> Q(x))",
+                    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+                },
+                {
+                    "symbol": "C",
+                    "ascii": "Q(a)",
+                    "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
                 }
-            }
-        ]
-        
-        # Mock the GPT response to simulate consistent formalization
-        mock_response = {
-            "formalization": {
-                "ascii": "P(a)"
-            },
-            "confidence": 0.95,
-            "reasoning": "Consistent with existing formalization: using P for mouse as established"
+            ],
+            "confidence": 0.9,
+            "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
         }
         
-        with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
-             patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results):
-            
+        with patch('services.agents.agent_gpt_formalize') as mock_gpt:
             mock_gpt.call.return_value = json.dumps(mock_response)
             
             # Test data
             agent_data = AgentData(
                 assumptions=[],
                 argument=[
-                    Step(symbol="A", proposition="This mouse is small", justifiers=[], truth="1.0", valid="1.0")
+                    Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
+                    Step(symbol="B", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0"),
+                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0")
                 ],
                 latest_results=[],
-                target_type="proposition",
-                target_content="This mouse is small"
+                target_type="argument",
+                target_content=None
             )
             agent_input = AgentInput(
                 conversation_id="test_conversation",
                 snapshot_id="test_snapshot_123",
-                
                 file_ids=[],
                 agent_data=agent_data
             )
             
+            # Create FilteredAgentInput for formalization
+            filtered_input = FilteredAgentInput.for_formalization(agent_input)
+            
             # Call the formalization agent
-            result = agent.formalize_proposition(agent_input)
-            
-            # Verify that the formalizer was called with existing formalizations
-            call_args = mock_gpt.call.call_args[0][0]
-            call_data = json.loads(call_args)
-            
-            # Should include existing formalizations in the call
-            assert 'existing_formalizations' in call_data
-            assert len(call_data['existing_formalizations']) == 1
+            result = agent.formalize_proposition(filtered_input)
             
             # Verify the result
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
-            assert result.result_content["ascii"] == "P(a)"
+            assert result.result_content["formalization_mode"] == "proposition_to_logic"
+            assert len(result.result_content["formalizations"]) == 3
+            assert result.result_content["formalizations"][0]["symbol"] == "A"
+            assert result.result_content["formalizations"][0]["ascii"] == "P(a)"
+            assert result.result_content["confidence"] == 0.9
+            assert "Consistent formalization" in result.result_content["reasoning"]
+            assert result.target_metadata["target_type"] == "argument"
+            assert result.target_metadata["target_content"] is None
 
 
 if __name__ == "__main__":

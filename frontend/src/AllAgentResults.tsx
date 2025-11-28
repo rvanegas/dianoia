@@ -343,37 +343,36 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                 {result.confidence.toFixed(2)} confidence
               </span>
             </div>
-            <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
-              💭 {result.reasoning}
-            </div>
-            {result.result_content?.proposition && (
+            {result.result_content?.formalizations && result.result_content.formalizations.length > 0 && (
               <div className="mt-3 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">
-                  📝 Original Proposition:
+                  📐 Formalizations:
                 </div>
-                <div className="text-sm text-gray-700 p-2 bg-blue-50 rounded border border-blue-200">
-                  {result.result_content.proposition}
+                <div className="space-y-2">
+                  {result.result_content.formalizations.map((formalization: any, fIndex: number) => (
+                    <div key={fIndex} className="p-2 bg-green-50 rounded border border-green-200">
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm font-medium text-gray-700">
+                          Step {formalization.symbol}:
+                        </span>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          ASCII
+                        </span>
+                      </div>
+                      <div className="text-sm font-mono text-gray-800 mt-1">
+                        {formalization.ascii}
+                      </div>
+                      {formalization.json && Object.keys(formalization.json).length > 0 && (
+                        <div className="mt-2">
+                          <div className="text-xs text-gray-500 mb-1">JSON Structure:</div>
+                          <div className="text-xs font-mono text-gray-700 bg-white p-2 rounded border overflow-x-auto">
+                            <pre className="whitespace-pre-wrap">{JSON.stringify(formalization.json, null, 2)}</pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                {result.result_content.ascii && (
-                  <div className="mt-3">
-                    <div className="text-sm font-medium text-gray-700 mb-2">
-                      🔤 ASCII Formalization:
-                    </div>
-                    <div className="text-sm font-mono text-gray-800 p-2 bg-green-50 rounded border border-green-200">
-                      {result.result_content.ascii}
-                    </div>
-                  </div>
-                )}
-                {result.result_content.json && Object.keys(result.result_content.json).length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-sm font-medium text-gray-700 mb-2">
-                      🏗️ JSON Structure:
-                    </div>
-                    <div className="text-sm font-mono text-gray-800 p-2 bg-purple-50 rounded border border-purple-200 overflow-x-auto">
-                      <pre className="whitespace-pre-wrap">{JSON.stringify(result.result_content.json, null, 2)}</pre>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
