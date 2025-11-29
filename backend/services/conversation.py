@@ -139,36 +139,36 @@ gpt_gen_name = Gpt(
     }
 )
 
-gpt_justify = Gpt(
-    instructions=justify_system_prompt,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "propositions": {
-                "type": "array",
-                "items": {"type": "string"}
-            }
-        },
-        "required": ["propositions"],
-        "additionalProperties": False
-    }
-)
+# gpt_justify = Gpt(
+#     instructions=justify_system_prompt,
+#     response_format_base={
+#         "type": "object",
+#         "properties": {
+#             "propositions": {
+#                 "type": "array",
+#                 "items": {"type": "string"}
+#             }
+#         },
+#         "required": ["propositions"],
+#         "additionalProperties": False
+#     }
+# )
 
-gpt_evaluate = Gpt(
-    instructions=evaluate_system_prompt,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "truth": {
-                "type": "array",
-                "items": {"type": "string"}
-            },
-            "valid": {"type": "string"}
-        },
-        "required": ["truth", "valid"],
-        "additionalProperties": False
-    }
-)
+# gpt_evaluate = Gpt(
+#     instructions=evaluate_system_prompt,
+#     response_format_base={
+#         "type": "object",
+#         "properties": {
+#             "truth": {
+#                 "type": "array",
+#                 "items": {"type": "string"}
+#             },
+#             "valid": {"type": "string"}
+#         },
+#         "required": ["truth", "valid"],
+#         "additionalProperties": False
+#     }
+# )
 
 gpt_explain = Gpt(
     instructions=explain_system_prompt,

@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any, List
 from dataclasses import dataclass
 
-from services.conversation import gpt_justify, gpt_evaluate
+# from services.conversation import gpt_justify, gpt_evaluate  # DISABLED: Old GPT instances - replaced by new agent system
 from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_content, agent_gpt_evaluate_form, agent_gpt_formalize
 from schemas.agent_input import AgentInput, FilteredAgentInput
 

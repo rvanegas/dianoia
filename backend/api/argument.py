@@ -69,13 +69,14 @@ async def remove(args: ArgumentsWithStep,
     result = service.remove()
     return {"reply": result}
 
-@router.post("/ai-justify")
-async def ai_justify(args: ArgumentsWithStep,
-        handler = Depends(get_conversation_handler("AI justify"))):
-    args, snapshot_id = handler(args)
-    service = ArgumentStepService(args, snapshot_id)
-    result = service.ai_justify()
-    return {"reply": result}
+# DISABLED: Old AI justify endpoint - replaced by new agent system
+# @router.post("/ai-justify")
+# async def ai_justify(args: ArgumentsWithStep,
+#         handler = Depends(get_conversation_handler("AI justify"))):
+#     args, snapshot_id = handler(args)
+#     service = ArgumentStepService(args, snapshot_id)
+#     result = service.ai_justify()
+#     return {"reply": result}
 
 @router.post("/user-justify")
 async def user_justify(args: ArgumentsWithStepAndProposition,
@@ -93,13 +94,14 @@ async def explain(args: ArgumentsWithStep,
     result = service.explain()
     return {"reply": result}
 
-@router.post("/evaluate")
-async def evaluate(args: Arguments,
-        handler = Depends(get_conversation_handler("Evaluate"))):
-    args, snapshot_id = handler(args)
-    service = ArgumentService(args, snapshot_id)
-    result = service.evaluate()
-    return {"reply": result}
+# DISABLED: Old evaluate endpoint - replaced by new agent system
+# @router.post("/evaluate")
+# async def evaluate(args: Arguments,
+#         handler = Depends(get_conversation_handler("Evaluate"))):
+#     args, snapshot_id = handler(args)
+#     service = ArgumentService(args, snapshot_id)
+#     result = service.evaluate()
+#     return {"reply": result}
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):

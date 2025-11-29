@@ -9,7 +9,6 @@ interface PropositionActionsProps {
   loc: string
   argumentLength: number
   userMode: UserMode
-  onAIJustify: (loc: string, stepIndex: number) => Promise<void>
   onUserJustify: (loc: string, stepIndex: number) => void
   onAssume: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   onRemove: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
@@ -26,7 +25,6 @@ export default function PropositionActions({
   loc,
   argumentLength,
   userMode,
-  onAIJustify,
   onAssume,
   onRemove,
   onDispute,
@@ -39,13 +37,14 @@ export default function PropositionActions({
   const hasJustifiers = step.justifiers.length > 0
 
   const actionItems = [
-    {
-      label: 'AI Justify',
-      onClick: async () => {
-        await onAIJustify(loc, stepIndex)
-      },
-      show: loc !== 'assumptions'
-    },
+    // DISABLED: AI Justify action - replaced by new agent system
+    // {
+    //   label: 'AI Justify',
+    //   onClick: async () => {
+    //     await onAIJustify(loc, stepIndex)
+    //   },
+    //   show: loc !== 'assumptions'
+    // },
     {
       label: 'User Justify',
       onClick: () => {
