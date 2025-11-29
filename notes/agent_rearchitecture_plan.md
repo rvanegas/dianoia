@@ -21,6 +21,23 @@ This document outlines a comprehensive rearchitecture of the agent system in Dia
 - **Results**: Stored in `AgentResultManager` with basic cleanup
 - **Frontend**: `AllAgentResults` component displays results by conversation
 
+### Critical Architectural Gap: Loop Closure
+**Problem**: The system has a fundamental disconnect between data sources and agent dependencies:
+
+1. **Frontend is source of truth for argument data** - Users edit arguments in the frontend
+2. **Backend is source of truth for agent results** - Agents produce results stored in backend
+3. **Later agents depend on earlier agent results** - Formal evaluator needs formalization results, improvement agent needs content evaluation results
+4. **Loop closure happens through argument data** - Frontend copies agent results into argument steps, then serializes to backend
+
+**Current Flow**:
+- **Agents produce results** → **Frontend copies into argument steps** → **Frontend serializes to backend** → **Backend processes updated argument**
+
+**Specific Issues**:
+- **Content Evaluator → Improvement Agent**: Improvement agent can't access content evaluation results (truth/validity values)
+- **Formalizer → Formal Evaluator**: Formal evaluator can't access formalization results (formalization strings)
+- **Formalizer → User Review**: Users can't review/accept/reject formalizations before they're embedded in argument
+- **Agent Results → Argument Steps**: Frontend copies agent results into argument steps, but this is manual and not systematic
+
 ### Current Issues
 1. **Input Inconsistency**: Different agents receive data in different formats
 2. **Agent Overlap**: Some agents have overlapping responsibilities
@@ -28,6 +45,7 @@ This document outlines a comprehensive rearchitecture of the agent system in Dia
 4. **No Snapshot Awareness**: Agents don't understand conversation history/context
 5. **No Result Expiration**: Results persist indefinitely
 6. **Limited Frontend Integration**: Basic result display without rich interaction
+7. **❌ CRITICAL: No Loop Closure**: Agent results not available to dependent agents or users
 
 ## 1. Input Normalization
 
@@ -509,7 +527,154 @@ interface ExtensionCondition {
 3. **Graceful Degradation**: Expired results marked as stale but not immediately deleted
 4. **User Control**: Users can manually extend or expire results
 
-## 6. Frontend Integration
+## 6. Loop Closure: Agent Results Integration
+
+### Problem
+The current system has a critical gap where agent results are not properly integrated back into the system:
+
+1. **Agent results are isolated** - Results from earlier agents aren't available to later agents
+2. **No user review mechanism** - Users can't review/accept/reject agent results before they're used
+3. **Frontend-backend disconnect** - Agent results don't update the frontend argument state
+4. **Dependency chain broken** - Later agents can't access results from earlier agents
+
+### Solution: Systematic Agent Results Integration
+
+#### **Agent Results Integration Flow**
+```typescript
+interface AgentResultsIntegration {
+  // Current flow: Agent Results → Argument Steps → Backend
+  // Need to make this systematic and bidirectional
+  
+  // Agent results available to dependent agents
+  agent_results: {
+    content_evaluation: ContentEvaluationResult[]  // truth/validity values
+    formalization: FormalizationResult[]           // formalization strings
+    formal_evaluation: FormalEvaluationResult[]    // formal validity values
+    improvement: ImprovementResult[]               // improvement suggestions
+  }
+  
+  // Integration status tracking
+  integration_status: {
+    content_evaluation_in_argument: boolean  // truth/valid copied to argument steps
+    formalizations_in_argument: boolean      // formalization copied to argument steps
+    formal_evaluation_in_argument: boolean   // formal validity copied to argument steps
+  }
+  
+  // User review/approval workflow
+  user_reviews: {
+    [result_id: string]: {
+      status: 'pending' | 'approved' | 'rejected' | 'user_modified'
+      user_notes?: string
+      reviewed_at: number
+      applied_to_argument: boolean
+    }
+  }
+}
+```
+
+#### **User Review Interface**
+```typescript
+interface UserReviewInterface {
+  // Review formalization results
+  reviewFormalizations(formalizations: FormalizationResult[]): Promise<ReviewDecision[]>
+  
+  // Review content evaluation results  
+  reviewContentEvaluation(evaluation: ContentEvaluationResult[]): Promise<ReviewDecision[]>
+  
+  // Review improvement suggestions
+  reviewImprovements(improvements: ImprovementResult[]): Promise<ReviewDecision[]>
+  
+  // Apply approved results to argument
+  applyApprovedResults(approved_results: AgentResult[]): Promise<void>
+}
+
+interface ReviewDecision {
+  result_id: string
+  decision: 'approve' | 'reject' | 'modify'
+  modifications?: any
+  notes?: string
+}
+```
+
+#### **Agent Results Propagation**
+```typescript
+interface AgentResultsPropagation {
+  // Make results available to dependent agents
+  propagateResultsToAgents(
+    source_agent: string,
+    results: AgentResult[],
+    target_agents: string[]
+  ): Promise<void>
+  
+  // Update argument state with approved results
+  updateArgumentWithResults(
+    conversation_id: string,
+    snapshot_id: string,
+    approved_results: AgentResult[]
+  ): Promise<void>
+  
+  // Notify frontend of result updates
+  notifyFrontendOfResults(
+    conversation_id: string,
+    results: AgentResult[]
+  ): Promise<void>
+}
+```
+
+#### **Frontend Integration Points**
+```typescript
+interface FrontendAgentIntegration {
+  // Display pending reviews
+  showPendingReviews(): void
+  
+  // Apply approved results to argument
+  applyResultsToArgument(results: AgentResult[]): void
+  
+  // Update argument display with agent insights
+  updateArgumentWithAgentInsights(insights: AgentInsight[]): void
+  
+  // Show agent result history
+  showAgentResultHistory(): void
+}
+
+interface AgentInsight {
+  type: 'truth_score' | 'validity_score' | 'formalization' | 'improvement'
+  target_step: string
+  value: any
+  confidence: number
+  reasoning: string
+}
+```
+
+#### **Implementation Strategy**
+
+**Phase 1: Agent Results Access (Immediate)**
+- Modify agent input to include previous agent results from argument steps
+- Update `AgentCoordinator` to extract truth/validity values and formalizations from argument steps
+- Implement result filtering per agent type (content evaluator gets truth/validity, formal evaluator gets formalizations)
+- Update agent prompts to handle and use previous results from argument data
+
+**Phase 2: User Review System (Week 2)**
+- Create review interface for formalization results before they're copied to argument steps
+- Implement approval/rejection workflow for formalizations
+- Add user notes and modification capabilities
+- Only copy approved formalizations to argument steps
+- Allow users to manually edit formalizations in argument steps
+
+**Phase 3: Systematic Integration (Week 3)**
+- Make the copying of agent results to argument steps systematic and tracked
+- Show which agent results have been integrated into argument steps
+- Provide clear indication of pending vs applied results
+- Add ability to revert agent result integration
+
+**Phase 4: Advanced Integration (Week 4)**
+- Implement result versioning and comparison
+- Add result confidence scoring and filtering
+- Create result impact analysis (what changes when results are applied)
+- Add bulk review and application capabilities
+- Support user manual formalization entry
+
+## 7. Frontend Integration
 
 ### Problem
 Frontend has limited integration with the agent system, showing only basic results.
@@ -623,11 +788,51 @@ interface AgentRealTimeUpdates {
 3. ✅ Set up minimal TTL functionality in `AgentResultManager` with cleanup on `/argue` endpoint
 4. ✅ Implement `StaleResultsPropagation` system
 
+### Phase 1.5: Critical Loop Closure (Immediate Priority)
+**Objective**: Close the critical gap where agent results aren't available to dependent agents or users
+
+**Implementation Steps**:
+
+1. **Agent Results Access from Argument Steps (Week 1)**
+   - Modify `AgentCoordinator` to extract truth/validity values and formalizations from argument steps
+   - Update `create_agent_input()` to include previous agent results from argument data
+   - Implement result filtering: content evaluator gets truth/validity values, formal evaluator gets formalization strings
+   - Update agent prompts to handle and use previous results from argument steps
+
+2. **User Review System for Formalizations (Week 1)**
+   - Create review interface for formalization results before they're copied to argument steps
+   - Implement approval/rejection workflow in frontend
+   - Add user notes and modification capabilities
+   - Only copy approved formalizations to argument steps
+   - Allow users to manually edit formalizations in argument steps
+
+3. **Systematic Integration Tracking (Week 2)**
+   - Track which agent results have been copied to argument steps
+   - Show clear indication of pending vs applied results in frontend
+   - Provide ability to revert agent result integration
+   - Make the copying process systematic and visible to users
+
+**Success Criteria**:
+- Content evaluator results available to improvement agent
+- Formalization results require user review before use
+- Formal evaluator only uses approved formalizations
+- Frontend clearly shows pending vs applied results
+- No agent runs without access to required previous results
+
+**Files to Modify**:
+- `backend/services/agent_coordinator.py` (modify `create_agent_input`)
+- `backend/services/agent_prompts.py` (update prompts to handle previous results)
+- `frontend/src/AllAgentResults.tsx` (add review interface)
+- `frontend/src/ArgumentEditor.tsx` (integrate approved results)
+- `backend/api/agents.py` (add review endpoints)
+
 ### Phase 2: Agent Reorganization (Weeks 3-4)
 
 #### Phase 2.1: New Agent Taxonomy Implementation (Week 3)
 
 **Objective**: Implement the four core agent types with proper input/output schemas and filtering
+
+**Prerequisite**: Phase 1.5 (Loop Closure) must be completed first to ensure agents can access required previous results.
 
 **Implementation Steps**:
 
@@ -643,6 +848,7 @@ interface AgentRealTimeUpdates {
    - Updated prompts for truth, validity, coherence evaluation
    - Standardized result schema
    - Added weak inference identification prompts
+   - **TODO**: Update to use previous agent results from loop closure system
 
 3. ✅ **Update Existing FormalizationAgent**
    - Enhanced existing `FormalizationAgent` in `agents.py`
@@ -650,6 +856,7 @@ interface AgentRealTimeUpdates {
    - Enhanced prompts to work with new `AgentInput` structure
    - Standardized result schema with proper JSON structure
    - Added support for existing formalizations for consistency checking
+   - **TODO**: Update to use previous content evaluation results
 
 4. **Update Existing FormEvaluationAgent**
    - Enhance existing `FormEvaluationAgent` in `agents.py`
@@ -657,6 +864,7 @@ interface AgentRealTimeUpdates {
    - Update prompts for formal logic validation
    - Standardize result schema
    - Add prompts for weakest formal inference identification
+   - **TODO**: Update to use approved formalization results from user review system
 
 5. **Implement Improvement Agent (combining RewriterAgent and ArgumentBuilderAgent)**
    - Complete the existing `RewriterAgent` stub in `agents.py`
@@ -667,16 +875,19 @@ interface AgentRealTimeUpdates {
    - Create prompts for argument building and enhancement
    - Standardize result schema
    - Add prompts for missing premise identification
+   - **TODO**: Update to use content evaluation results from loop closure system
 
 6. ✅ **Update Agent Coordinator**
    - Modified `AgentCoordinator` to support enhanced ContentEvaluationAgent
    - Updated task queueing for new agent hierarchy
    - Implemented proper input filtering per agent type
    - Added agent type-specific result handling
+   - **TODO**: Update to include previous agent results in input creation
 
 7. **Update API Endpoints**
    - Update existing `/api/agents` endpoints to work with enhanced agents
    - Update agent status tracking
+   - **TODO**: Add review endpoints for user approval workflow
 
 **Success Criteria**:
 - All four agent types implemented and functional
