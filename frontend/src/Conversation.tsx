@@ -71,8 +71,6 @@ function Conversation({
     setInputText,
     copied,
     setCopied,
-    evaluatingMode,
-    setEvaluatingMode,
     inputRef,
     saveSnapshot,
     sessionId
@@ -96,7 +94,6 @@ function Conversation({
     targetIndex,
     saveSnapshot,
     createConversationFromProposition,
-    setEvaluatingMode,
     conversation.id,
     sessionId,
     snapshotIndex
@@ -153,7 +150,7 @@ function Conversation({
   //   }
   // }, [currentSnapshot.evaluationsPending])
 
-  const loadingIndicator = userMode != 'waiting' && !evaluatingMode ? undefined : (
+  const loadingIndicator = userMode == 'waiting' && (
     <div className="mt-2 flex items-center space-x-4">
       <span className="text-sm text-zinc-400 italic">
         {userMode == 'waiting' ? 'Dianoia is thinking' : 'Dianoia is evaluating scores'}
@@ -231,7 +228,6 @@ function Conversation({
       //   return <span>[{justifier}; {valueSpan}]</span>
       // }
 
-      const isEvaluated = argument.length > 1 || step.justifiers.length > 0
       return (
         <FlexRow 
           key={step_index}
