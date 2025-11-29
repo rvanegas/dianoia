@@ -1,6 +1,6 @@
 import './App.css'
 
-import {useEffect, useRef} from 'react'
+import {useEffect, useRef, useState} from 'react'
 
 import type {StepType, ConversationType, FileType} from './types'
 import {exportMarkdown} from './markdown'
@@ -73,6 +73,7 @@ function Conversation({
     setCopied,
     inputRef,
     saveSnapshot,
+    saveSnapshotInPlace,
     sessionId
   } = useConversationState(conversation, setConversation)
 
@@ -228,22 +229,108 @@ function Conversation({
       //   return <span>[{justifier}; {valueSpan}]</span>
       // }
 
+      // Display agent result values
+      const agentValuesDisplay = () => {
+        const hasTruth = step.truth && step.truth !== ""
+        const hasValidity = step.valid && step.valid !== "" && step.justifiers.length > 0
+        const hasFormalization = step.formalization
+
+        if (!hasTruth && !hasValidity && !hasFormalization) {
+          return null
+        }
+        return (
+          <div className="mt-2 ml-4 space-y-1">
+            {/* Truth and Validity Values */}
+            {(hasTruth || hasValidity) && (
+              <div className="flex gap-2 text-xs">
+                {hasTruth && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                    Truth: {(parseFloat(step.truth) * 100).toFixed(0)}%
+                  </span>
+                )}
+                {hasValidity && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                    Validity: {(parseFloat(step.valid) * 100).toFixed(0)}%
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {/* Formalization */}
+            {hasFormalization && step.formalization && (
+              <div className="text-xs">
+                <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-mono">
+                  {step.formalization.ascii}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      }
+
       return (
-        <FlexRow 
-          key={step_index}
-          chevron={actions}
-        >
-          ({step.symbol}) {step.proposition}
-          {/* DISABLED: Old truth/valid evaluations display - replaced by new agent system */}
-          {/* {isEvaluated && scoreSpan()} */}
-        </FlexRow>
+        <div key={step_index}>
+          <FlexRow chevron={actions}>
+            ({step.symbol}) {step.proposition}
+          </FlexRow>
+          {agentValuesDisplay()}
+        </div>
       )
     })
     return <div>{argumentSteps}</div>
   }
 
+  // Get formalization definitions from snapshot
+  const getFormalizationDefinitions = () => {
+    if (!currentSnapshot.formalization_definitions) {
+      return null
+    }
+
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-sm font-medium text-gray-700 mb-2">
+          📚 Formal Logic Definitions:
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {currentSnapshot.formalization_definitions.predicates && currentSnapshot.formalization_definitions.predicates.length > 0 && (
+            <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="text-sm font-medium text-blue-700 mb-2">Predicates:</div>
+              <div className="space-y-1">
+                {currentSnapshot.formalization_definitions.predicates.map((pred: any) => (
+                  <div key={pred.symbol} className="text-sm">
+                    <span className="font-mono text-blue-800">{pred.symbol}</span>
+                    <span className="text-gray-600"> = </span>
+                    <span className="text-gray-700">{pred.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {currentSnapshot.formalization_definitions.constants && currentSnapshot.formalization_definitions.constants.length > 0 && (
+            <div className="p-2 bg-purple-50 rounded border border-purple-200">
+              <div className="text-sm font-medium text-purple-700 mb-2">Constants:</div>
+              <div className="space-y-1">
+                {currentSnapshot.formalization_definitions.constants.map((constDef: any) => (
+                  <div key={constDef.symbol} className="text-sm">
+                    <span className="font-mono text-purple-800">{constDef.symbol}</span>
+                    <span className="text-gray-600"> = </span>
+                    <span className="text-gray-700">{constDef.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const argumentDiv = () => (
-    <div>{argumentNode('argument', currentSnapshot.argument)}</div>
+    <div>
+      {argumentNode('argument', currentSnapshot.argument)}
+      {/* Display formalization definitions after the last step */}
+      {getFormalizationDefinitions()}
+    </div>
   )
 
   const assumptionsDiv = (
@@ -272,13 +359,54 @@ function Conversation({
           />
         )
 
+        // Display agent result values for assumptions
+        const agentValuesDisplay = () => {
+          // Assumptions always have truth=1.0 and are never evaluated by agents
+          const hasTruth = step.truth && step.truth !== ""
+          const hasValidity = step.valid && step.valid !== "" && step.justifiers.length > 0
+          const hasFormalization = step.formalization
+
+          if (!hasTruth && !hasValidity && !hasFormalization) {
+            return null
+          }
+
+          return (
+            <div className="mt-2 ml-4 space-y-1">
+              {/* Truth and Validity Values */}
+              {(hasTruth || hasValidity) && (
+                <div className="flex gap-2 text-xs">
+                  {hasTruth && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                      Truth: {(parseFloat(step.truth) * 100).toFixed(0)}% (Assumed)
+                    </span>
+                  )}
+                  {hasValidity && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                      Validity: {(parseFloat(step.valid) * 100).toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {/* Formalization */}
+              {hasFormalization && step.formalization && (
+                <div className="text-xs">
+                  <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-mono">
+                    {step.formalization.ascii}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        }
+
         return (
-          <FlexRow 
-            key={step_index}
-            chevron={actions}
-          >
-            ({step.symbol}) {step.proposition}
-          </FlexRow>
+          <div key={step_index}>
+            <FlexRow chevron={actions}>
+              ({step.symbol}) {step.proposition}
+            </FlexRow>
+            {agentValuesDisplay()}
+          </div>
         )
       })}
     </div>
@@ -345,7 +473,8 @@ function Conversation({
         )}
       </FlexTable>
       <AllAgentResults conversationId={conversation.id} sessionId={sessionId}
-        snapshotVersion={snapshotRenderCount.current} snapshotIndex={snapshotIndex} />
+        snapshotVersion={snapshotRenderCount.current} snapshotIndex={snapshotIndex}
+        currentSnapshot={currentSnapshot} saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
       {retryButton}
     </div>

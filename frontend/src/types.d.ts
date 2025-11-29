@@ -7,6 +7,15 @@ export type StepType = {
   justifiers: string[]
   truth: string
   valid: string
+  formalization?: {
+    ascii: string
+    json: any
+  }
+  // Track if this step has been evaluated by agents
+  evaluated_by_agents?: {
+    content_evaluation?: boolean
+    formalization?: boolean
+  }
 }
 
 type ConversationSnapshot = {
@@ -16,6 +25,10 @@ type ConversationSnapshot = {
   // evaluationsPending: boolean // DISABLED: Old evaluation system
   explanation: string | undefined
   file_ids: string[]
+  formalization_definitions?: {
+    predicates: Array<{symbol: string, value: string}>
+    constants: Array<{symbol: string, value: string}>
+  }
 }
 
 type ConversationType = {

@@ -53,9 +53,9 @@ class TestFormalizationAgent:
             agent_data = AgentData(
                 assumptions=[],
                 argument=[
-                    Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0"),
-                    Step(symbol="B", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0"),
-                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0")
+                    Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth="", valid=""),
+                    Step(symbol="B", proposition="All men are mortal", justifiers=[], truth="", valid=""),
+                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="", valid="")
                 ],
                 latest_results=[],
                 target_type="argument",

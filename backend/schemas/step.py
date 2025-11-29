@@ -6,6 +6,12 @@ This defines the data structure for individual steps in arguments and assumption
 from pydantic import BaseModel
 
 
+class Formalization(BaseModel):
+    """Formal logic representation of a proposition"""
+    ascii: str
+    json: dict | None = None
+
+
 class Step(BaseModel):
     """Steps in arguments or assumptions"""
     symbol: str
@@ -16,4 +22,4 @@ class Step(BaseModel):
     # New attributes for rearchitecture
     valid_content: str | None = None  # Validity from content evaluation
     valid_formal: str | None = None   # Validity from formal evaluation  
-    formalization: str | None = None  # Formal logic representation
+    formalization: Formalization | None = None  # Formal logic representation
