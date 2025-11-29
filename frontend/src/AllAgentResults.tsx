@@ -343,6 +343,43 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
                 {result.confidence.toFixed(2)} confidence
               </span>
             </div>
+            {result.result_content?.definitions && (
+              <div className="mt-3 space-y-2">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  📚 Definitions:
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {result.result_content.definitions.predicates.length > 0 && (
+                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                      <div className="text-sm font-medium text-blue-700 mb-2">Predicates:</div>
+                      <div className="space-y-1">
+                        {result.result_content.definitions.predicates.map((pred: any) => (
+                          <div key={pred.symbol} className="text-sm">
+                            <span className="font-mono text-blue-800">{pred.symbol}</span>
+                            <span className="text-gray-600"> = </span>
+                            <span className="text-gray-700">{pred.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {result.result_content.definitions.constants.length > 0 && (
+                    <div className="p-2 bg-purple-50 rounded border border-purple-200">
+                      <div className="text-sm font-medium text-purple-700 mb-2">Constants:</div>
+                      <div className="space-y-1">
+                        {result.result_content.definitions.constants.map((constDef: any) => (
+                          <div key={constDef.symbol} className="text-sm">
+                            <span className="font-mono text-purple-800">{constDef.symbol}</span>
+                            <span className="text-gray-600"> = </span>
+                            <span className="text-gray-700">{constDef.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {result.result_content?.formalizations && result.result_content.formalizations.length > 0 && (
               <div className="mt-3 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">
