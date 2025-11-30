@@ -430,19 +430,30 @@ You are an AI agent working on logical argumentation. Your task is to evaluate O
 For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
 
 ### Input Format
-- formalizations: List of formal logical representations of the propositions
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects in the main argument
+- agent_data.assumptions: List of Step objects for background assumptions  
+- agent_data.target_type: Type of content being evaluated (e.g., "argument")
+- agent_data.target_content: Specific content being targeted (if applicable)
+
+Each Step object contains:
+- symbol: String identifier (e.g., "A", "B", "C")
+- proposition: The natural language proposition (ignored for formal evaluation)
+- justifiers: List of symbols that justify this step
+- formalization: Formal logic representation object with 'ascii' field
+- endorsed: Boolean indicating if the formalization is endorsed by the user
 
 ### Task
 
-You will receive formalizations of logical propositions. You will evaluate ONLY the logical validity of the formal logical structure, completely ignoring any semantic content.
+You will receive argument data with Step objects containing formal logic representations. You will evaluate ONLY the logical validity of the formal logical structure, completely ignoring any semantic content.
 
-For each formalization, set truth_value to 0.5 (neither true nor false by form alone) and focus entirely on whether the logical structure is valid.
+For each formalization, focus entirely on whether the logical structure is valid. Do not evaluate truth values.
 
 The argument_validity should reflect the formal logical validity of the argument structure, not the truth of the premises or conclusion.
 
 ### Considerations
 
-- Set all proposition truth_values to 0.5 (neither true nor false by form alone)
+- Do not evaluate truth values - focus only on logical validity
 - Focus entirely on the logical structure and validity of the argument
 - Evaluate whether the conclusion follows logically from the premises
 - Ignore the semantic content and truth of individual propositions
@@ -458,64 +469,83 @@ The argument_validity should reflect the formal logical validity of the argument
 # Valid deductive argument
 
 Input:
-formalizations: ["P(a)", "forall x. (P(x) -> Q(x))", "Q(a)"]
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "Socrates is a man",
+        "justifiers": [],
+        "formalization": {"ascii": "P(a)", "endorsed": true}
+      },
+      {
+        "symbol": "B",
+        "proposition": "All men are mortal",
+        "justifiers": [],
+        "formalization": {"ascii": "forall x. (P(x) -> Q(x))", "endorsed": true}
+      },
+      {
+        "symbol": "C",
+        "proposition": "Socrates is mortal",
+        "justifiers": ["A", "B"],
+        "formalization": {"ascii": "Q(a)", "endorsed": true}
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
 
 Output:
 {
   "proposition_evaluations": [
-    {"proposition": "P(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "Q(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+    {"symbol": "A", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "B", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "C", "validity": 1.0, "reasoning": "Valid conclusion from premises A and B"}
   ],
   "argument_validity": 1.0,
   "logical_issues": [],
   "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
 }
 
-# Valid deductive argument with transitivity
-
-Input:
-formalizations: ["forall y. (Q(y) -> R(y))", "forall x. (P(x) -> Q(x))", "forall x. (P(x) -> R(x))"]
-
-Output:
-{
-  "proposition_evaluations": [
-    {"proposition": "forall y. (Q(y) -> R(y))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "forall x. (P(x) -> R(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
-  ],
-  "argument_validity": 1.0,
-  "logical_issues": [],
-  "recommendations": ["Argument is deductively valid: forall y. (Q(y) -> R(y)) and forall x. (P(x) -> Q(x)) logically entail forall x. (P(x) -> R(x)) via transitivity of implication"]
-}
-
-# Valid deductive argument with transitivity (2 premises)
-
-Input:
-formalizations: ["forall x. (Q(x) -> P(x))", "forall x. (P(x) -> R(x))"]
-
-Output:
-{
-  "proposition_evaluations": [
-    {"proposition": "forall x. (Q(x) -> P(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "forall x. (P(x) -> R(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
-  ],
-  "argument_validity": 1.0,
-  "logical_issues": [],
-  "recommendations": ["Argument is deductively valid: forall x. (Q(x) -> P(x)) and forall x. (P(x) -> R(x)) logically entail forall x. (Q(x) -> R(x)) via transitivity of implication"]
-}
-
 # Invalid deductive argument
 
 Input:
-formalizations: ["Q(a)", "forall x. (P(x) -> Q(x))", "P(a)"]
+{
+  "agent_data": {
+    "argument": [
+      {
+        "symbol": "A",
+        "proposition": "Something follows",
+        "justifiers": [],
+        "formalization": {"ascii": "Q(a)", "endorsed": true}
+      },
+      {
+        "symbol": "B",
+        "proposition": "All P implies Q",
+        "justifiers": [],
+        "formalization": {"ascii": "forall x. (P(x) -> Q(x))", "endorsed": true}
+      },
+      {
+        "symbol": "C",
+        "proposition": "Something is P",
+        "justifiers": ["A", "B"],
+        "formalization": {"ascii": "P(a)", "endorsed": true}
+      }
+    ],
+    "assumptions": [],
+    "target_type": "argument",
+    "target_content": null
+  }
+}
 
 Output:
 {
   "proposition_evaluations": [
-    {"proposition": "Q(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "forall x. (P(x) -> Q(x))", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-    {"proposition": "P(a)", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+    {"symbol": "A", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "B", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "C", "validity": 0.0, "reasoning": "Invalid conclusion - premises do not support this conclusion"}
   ],
   "argument_validity": 0.0,
   "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) -> Q(x)) do not logically entail P(a)"],
@@ -524,7 +554,7 @@ Output:
 
 ### Output Format
 Provide evaluations for:
-- Individual proposition assessments (truth values set to 0.5)
+- Individual proposition validity assessments
 - Overall argument validity based on logical structure
 - Identified logical issues
 - Recommendations for improvement
@@ -541,11 +571,11 @@ agent_gpt_evaluate_form = Gpt(
                 "items": {
                     "type": "object",
                     "properties": {
-                        "proposition": {"type": "string"},
-                        "truth_value": {"type": "number"},
+                        "symbol": {"type": "string"},
+                        "validity": {"type": "number"},
                         "reasoning": {"type": "string"}
                     },
-                    "required": ["proposition", "truth_value", "reasoning"],
+                    "required": ["symbol", "validity", "reasoning"],
                     "additionalProperties": False
                 }
             },
@@ -670,8 +700,8 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-      "ascii": "P(a)",
-      "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
+    "ascii": "P(a)",
+    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
     },
     {
       "symbol": "B",
@@ -724,9 +754,9 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
-    },
+    "ascii": "forall x. (P(x) -> Q(x))",
+    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+  },
     {
       "symbol": "B",
       "ascii": "forall x. (P(x) -> Q(x))",
@@ -758,8 +788,8 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-      "ascii": "<>P(a)",
-      "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
+    "ascii": "<>P(a)",
+    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
     }
   ],
   "definitions": {
@@ -801,8 +831,8 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+    "ascii": "forall x. (P(x) -> Q(x))",
+    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
     },
     {
       "symbol": "B",

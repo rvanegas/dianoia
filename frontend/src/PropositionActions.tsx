@@ -1,6 +1,6 @@
 import ActionMenu from './ActionMenu'
 
-type ActionType = 'remove' | 'assume' | 'explain'
+type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
 type UserMode = 'waiting' | 'ready' | 'input'
 
 interface PropositionActionsProps {
@@ -14,6 +14,7 @@ interface PropositionActionsProps {
   onRemove: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   onDispute: (step: any) => Promise<void>
   onExplain: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
+  onEndorseFormalization: (loc: string, stepIndex: number, endorsed: boolean) => Promise<void>
   setUserMode: (mode: UserMode) => void
   setTargetLoc: (loc: string) => void
   setTargetIndex: (index: number) => void
@@ -29,6 +30,7 @@ export default function PropositionActions({
   onRemove,
   onDispute,
   onExplain,
+  onEndorseFormalization,
   setUserMode,
   setTargetLoc,
   setTargetIndex
@@ -81,6 +83,14 @@ export default function PropositionActions({
         await onExplain('explain', loc, stepIndex, `Explain inference to proposition (${step.symbol})`)
       },
       show: loc !== 'assumptions' && hasJustifiers
+    },
+    {
+      label: step.formalization?.endorsed ? 'Unendorse Formalization' : 'Endorse Formalization',
+      onClick: async () => {
+        const newEndorsed = !step.formalization?.endorsed
+        await onEndorseFormalization(loc, stepIndex, newEndorsed)
+      },
+      show: step.formalization !== undefined
     }
   ]
 

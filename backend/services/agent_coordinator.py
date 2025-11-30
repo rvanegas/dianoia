@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from core.utils import logger
-from services.agents import ArgumentBuilderAgent, ContentEvaluationAgent, FormEvaluationAgent, FormalizationAgent, RewriterAgent
+from services.agents import ArgumentBuilderAgent, ContentEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, RewriterAgent
 from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 from schemas.arguments import ArgumentData
 
@@ -220,6 +220,80 @@ class AgentResultManager:
             logger.info(f"Cleaned up {len(expired_conversations)} expired conversations")
         
         return len(expired_conversations)
+    
+    def get_formatted_results(self, conversation_id: str, snapshot_id: str) -> Dict[str, Any]:
+        """Get formatted agent results for API response"""
+        from services.agent_coordinator import coordinator
+        
+        # Get latest results
+        all_results = self.get_latest_results(conversation_id, snapshot_id)
+        
+        # Group results by agent type
+        results_by_agent = self._group_results_by_agent(all_results)
+        
+        # Check if all tasks for this conversation are complete
+        tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id)
+        
+        return {
+            "conversation_id": conversation_id,
+            "snapshot_id": snapshot_id,
+            "results_by_agent": results_by_agent,
+            "total_count": len(all_results),
+            "agent_types": list(results_by_agent.keys()),
+            "tasks_complete": tasks_complete
+        }
+    
+    def _group_results_by_agent(self, all_results: List[StoredAgentResult]) -> Dict[str, List[Dict[str, Any]]]:
+        """Group agent results by agent type and convert to API format"""
+        results_by_agent = {}
+        
+        for result in all_results:
+            agent_type = result.agent_type
+            if agent_type not in results_by_agent:
+                results_by_agent[agent_type] = []
+            
+            # Convert StoredAgentResult to dict for API response
+            result_dict = {
+                'agent_type': result.agent_type,
+                'operation': result.operation,
+                'result_content': result.result_content,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning,
+                'target_metadata': {
+                    'target_type': result.target_metadata.target_type,
+                    'target_content': result.target_metadata.target_content
+                },
+                'snapshot_id': result.snapshot_id,
+                'processed_at': result.processed_at
+            }
+            results_by_agent[agent_type].append(result_dict)
+        
+        return results_by_agent
+    
+    def get_active_tasks_formatted(self, conversation_id: str) -> Dict[str, Any]:
+        """Get active tasks for the conversation in formatted API response"""
+        from services.agent_coordinator import coordinator
+        
+        active_tasks = coordinator.get_active_tasks()
+        
+        # Filter tasks by conversation_id
+        filtered_tasks = [
+            task for task in active_tasks 
+            if task.agent_input.conversation_id == conversation_id
+        ]
+        
+        return {
+            "active_tasks": [
+                {
+                    "task_id": task.id,
+                    "agent_type": task.agent_type,
+                    "status": task.status,
+                    "conversation_id": task.agent_input.conversation_id
+                }
+                for task in filtered_tasks
+            ],
+            "count": len(filtered_tasks)
+        }
 
 
 class AgentCoordinator:
@@ -236,7 +310,7 @@ class AgentCoordinator:
         self.agents = {
             'builder': ArgumentBuilderAgent(self),
             'content_evaluator': ContentEvaluationAgent(self),
-            'form_evaluator': FormEvaluationAgent(self),
+            'form_evaluator': FormalEvaluatorAgent(self),
             'formalizer': FormalizationAgent(self),
             'rewriter': RewriterAgent(self)
         }

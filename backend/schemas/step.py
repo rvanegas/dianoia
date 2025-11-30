@@ -9,7 +9,8 @@ from pydantic import BaseModel
 class Formalization(BaseModel):
     """Formal logic representation of a proposition"""
     ascii: str
-    json: dict | None = None
+    json_structure: dict | None = None
+    endorsed: bool = False
 
 
 class Step(BaseModel):
@@ -23,3 +24,4 @@ class Step(BaseModel):
     valid_content: str | None = None  # Validity from content evaluation
     valid_formal: str | None = None   # Validity from formal evaluation  
     formalization: Formalization | None = None  # Formal logic representation
+

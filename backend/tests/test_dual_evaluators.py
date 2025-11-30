@@ -1,9 +1,9 @@
 import pytest
 import json
 from unittest.mock import patch
-from services.agents import ContentEvaluationAgent, FormEvaluationAgent
+from services.agents import ContentEvaluationAgent, FormalEvaluatorAgent
 from services.agent_coordinator import coordinator
-from schemas.step import Step
+from schemas.step import Step, Formalization
 from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 
 
@@ -64,16 +64,16 @@ class TestDualEvaluators:
     
     def test_form_evaluator(self):
         """Test that form evaluator works correctly"""
-        agent = FormEvaluationAgent(coordinator)
+        agent = FormalEvaluatorAgent(coordinator)
         
 
         
         # Mock the GPT response for form evaluation
         mock_response = {
             "proposition_evaluations": [
-                {"proposition": "Socrates is a man", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-                {"proposition": "All men are mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"},
-                {"proposition": "Socrates is mortal", "truth_value": 0.5, "reasoning": "Neither true nor false by form alone"}
+                {"symbol": "A", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+                {"symbol": "B", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+                {"symbol": "C", "validity": 1.0, "reasoning": "Valid conclusion from premises A and B"}
             ],
             "argument_validity": 1.0,
             "logical_issues": [],
@@ -88,9 +88,12 @@ class TestDualEvaluators:
             agent_data = AgentData(
                 assumptions=[],
                 argument=[
-                    Step(symbol="A", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0", formalization="forall x. (P(x) -> Q(x))"),
-                    Step(symbol="B", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0", formalization="P(a)"),
-                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0", formalization="Q(a)")
+                    Step(symbol="A", proposition="All men are mortal", justifiers=[], truth="1.0", valid="1.0", 
+                         formalization=Formalization(ascii="forall x. (P(x) -> Q(x))", endorsed=True)),
+                    Step(symbol="B", proposition="Socrates is a man", justifiers=[], truth="1.0", valid="1.0", 
+                         formalization=Formalization(ascii="P(a)", endorsed=True)),
+                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth="1.0", valid="1.0", 
+                         formalization=Formalization(ascii="Q(a)", endorsed=True))
                 ],
                 latest_results=[],
                 target_type="argument",
@@ -113,7 +116,6 @@ class TestDualEvaluators:
             assert result.operation == "evaluate_propositions"
             assert result.result_content["evaluation_mode"] == "formal_validity"
             assert result.result_content["argument_validity"] == 1.0
-            assert result.result_content["proposition_count"] == 3
             assert len(result.result_content["logical_issues"]) == 0
             assert len(result.result_content["recommendations"]) > 0
 
