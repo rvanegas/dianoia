@@ -231,8 +231,8 @@ class AgentResultManager:
         # Group results by agent type
         results_by_agent = self._group_results_by_agent(all_results)
         
-        # Check if all tasks for this conversation are complete
-        tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id)
+        # Check if all tasks for this conversation/snapshot are complete
+        tasks_complete = coordinator.are_conversation_tasks_complete(conversation_id, snapshot_id)
         
         return {
             "conversation_id": conversation_id,
@@ -543,13 +543,20 @@ class AgentCoordinator:
             processed_at=time.time()
         )
     
-    def are_conversation_tasks_complete(self, conversation_id: str) -> bool:
-        """Check if all tasks for a conversation are complete"""
+    def are_conversation_tasks_complete(self, conversation_id: str, snapshot_id: str = None) -> bool:
+        """Check if all tasks for a conversation/snapshot are complete"""
         # Get all tasks for this conversation from history
         conversation_tasks = [
             task for task in self.task_history.values() 
             if task.agent_input.conversation_id == conversation_id
         ]
+        
+        # If snapshot_id is provided, filter by snapshot_id as well
+        if snapshot_id is not None:
+            conversation_tasks = [
+                task for task in conversation_tasks
+                if task.agent_input.snapshot_id == snapshot_id
+            ]
         
         if not conversation_tasks:
             return True  # No tasks means complete

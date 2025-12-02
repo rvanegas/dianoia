@@ -30,7 +30,11 @@ type ResultsByAgent = {
 export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex, getCurrentConversationState, saveSnapshotInPlace }: AgentResultsProps) {
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
+  const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
   const tasksCompleteRef = useRef<boolean>(false)
+  const currentPollingSnapshotRef = useRef<number>(-1)
+  const intervalRef = useRef<number | null>(null)
+  const currentFetchRef = useRef<Promise<void> | null>(null)
 
   // Helper function to get current snapshot
   const getCurrentSnapshot = () => {
@@ -76,7 +80,10 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       
       // Reset polling state to start fetching results again
       tasksCompleteRef.current = false
+      currentPollingSnapshotRef.current = -1 // Force restart of polling
       setResultsByAgent({})
+      setError(null)
+      setPollingKey(prev => prev + 1) // Force useEffect to re-run
     } catch (error: any) {
       if (error.response?.status === 400) {
         // Validation error - show specific message
@@ -186,49 +193,131 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   }
 
   const fetchResults = async () => {
-    try {
-      const url = new URL(`${VITE_API_BASE_URL}/api/agents/results`)
-      url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
-      url.searchParams.set('snapshot_id', String(snapshotIndex))
-      
-      const response = await axios.get(url.toString())
-      
-      const newResultsByAgent = response.data.results_by_agent || {}
-      const newTasksComplete = response.data.tasks_complete || false
-      
-      // Only update if we have new results
-      if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
-        setResultsByAgent(newResultsByAgent)
-        // Apply results to snapshot
-        applyAgentResultsToSnapshot(newResultsByAgent)
-      }
-      
-      // Update tasks complete status
-      tasksCompleteRef.current = newTasksComplete
-      setError(null)
-    } catch (err: any) {
-      console.error('Error fetching agent results:', err)
-      setError(err.message)
+    // Prevent concurrent fetches
+    if (currentFetchRef.current) {
+      console.log('⏭️ Skipping fetch - already in progress')
+      return
     }
+    
+    console.log('🚀 Starting fetch - creating promise')
+    
+    // Clear the flag synchronously to prevent race conditions
+    currentFetchRef.current = (async () => {
+      try {
+        const response = await axios.get(`${VITE_API_BASE_URL}/api/agents/results`, {
+          params: {
+            conversation_id: `${sessionId}:${conversationId}`,
+            snapshot_id: String(snapshotIndex)
+          },
+          timeout: 5000 // 5 second timeout
+        })
+        
+        console.log('📡 Response received:', response.status)
+        const newResultsByAgent = response.data.results_by_agent || {}
+        const newTasksComplete = response.data.tasks_complete || false
+        
+        console.log('📊 Agent results received:', {
+          resultsByAgent: newResultsByAgent,
+          tasksComplete: newTasksComplete,
+          currentTasksComplete: tasksCompleteRef.current
+        })
+        
+        // Only update if we have new results
+        if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
+          console.log('🔄 Updating results - new data detected')
+          setResultsByAgent(newResultsByAgent)
+          // Apply results to snapshot
+          applyAgentResultsToSnapshot(newResultsByAgent)
+        } else {
+          console.log('⏭️ Skipping update - no new data')
+        }
+        
+        // Update tasks complete status
+        if (newTasksComplete !== tasksCompleteRef.current) {
+          console.log('✅ Tasks complete status changed:', { 
+            from: tasksCompleteRef.current, 
+            to: newTasksComplete 
+          })
+          tasksCompleteRef.current = newTasksComplete
+          
+          // Clear interval if tasks are complete
+          if (newTasksComplete && intervalRef.current) {
+            console.log('🛑 Clearing interval - tasks complete')
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Error fetching agent results:', error)
+        setError('Error loading results')
+      }
+    })()
+    
+    // Wait for the promise to complete and then clear the flag
+    await currentFetchRef.current
+    console.log('🏁 Fetch completed - clearing promise reference')
+    currentFetchRef.current = null
   }
 
   useEffect(() => {
+    // Skip fetching if snapshotIndex is less than 1 (no snapshot history yet)
+    if (snapshotIndex < 1) {
+      console.log('⏭️ Skipping agent results fetch - no snapshot history yet:', { snapshotIndex })
+      return
+    }
+    
+    // Skip if we're already polling for this snapshot
+    if (currentPollingSnapshotRef.current === snapshotIndex) {
+      console.log('⏭️ Already polling for snapshot:', { snapshotIndex })
+      return
+    }
+    
+    console.log('🔄 useEffect triggered with dependencies:', { 
+      conversationId, 
+      sessionId, 
+      snapshotVersion, 
+      snapshotIndex
+    })
+    
     // Reset state when conversation or snapshot changes
+    console.log('🔄 Resetting agent results state for new snapshot:', { snapshotIndex, snapshotVersion })
     setResultsByAgent({})
     setError(null)
     tasksCompleteRef.current = false
+    currentPollingSnapshotRef.current = snapshotIndex
     
     // Set up polling every 1 second, but only if tasks are not complete
     const interval = setInterval(() => {
+      console.log('⏰ Polling interval triggered - checking state:', { 
+        tasksComplete: tasksCompleteRef.current, 
+        isFetching: !!currentFetchRef.current, // Check if a fetch is in progress
+        pollingSnapshot: snapshotIndex
+      })
+      
       if (!tasksCompleteRef.current) {
-        fetchResults()
+        if (!currentFetchRef.current) {
+          console.log('⏰ Polling interval triggered - tasks not complete, starting fetch')
+          fetchResults()
+        } else {
+          console.log('⏰ Polling interval triggered - tasks not complete, but fetch already in progress')
+        }
+      } else {
+        console.log('⏹️ Polling interval triggered - tasks complete, skipping fetch')
       }
     }, 1000)
     
+    // Store interval reference
+    intervalRef.current = interval
+    
+    console.log('🚀 Started polling for agent results')
+    
     return () => {
+      console.log('🛑 Stopped polling for agent results')
       clearInterval(interval)
+      intervalRef.current = null
     }
-  }, [conversationId, sessionId, snapshotVersion, snapshotIndex]) // Added snapshotIndex to dependencies
+  }, [conversationId, sessionId, snapshotIndex, pollingKey]) // Added pollingKey to dependencies
 
 
 
