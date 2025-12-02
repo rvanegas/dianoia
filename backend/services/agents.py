@@ -332,6 +332,38 @@ class FormalizationAgent:
             if not agent_input.agent_data.argument:
                 raise ValueError("No argument provided for formalization")
             
+            # Check if there are any steps that need formalization
+            steps_needing_formalization = []
+            for step in agent_input.agent_data.argument:
+                if not step.formalization or not step.formalization.endorsed:
+                    steps_needing_formalization.append(step)
+            
+            # If all steps have endorsed formalizations, return early
+            if not steps_needing_formalization:
+                result = AgentResult(
+                    agent_type=self.name,
+                    operation="formalize_proposition",
+                    result_content={
+                        "formalizations": [],
+                        "definitions": {},
+                        "confidence": 1.0,
+                        "reasoning": "All steps already have endorsed formalizations - no new formalizations needed",
+                        "formalization_mode": "proposition_to_logic",
+                        "argument": arg_for_result,
+                        "assumptions": assumptions_for_result
+                    },
+                    confidence=1.0,
+                    reasoning="All steps have endorsed formalizations",
+                    target_metadata={
+                        'target_type': 'argument',
+                        'target_content': agent_input.agent_data.target_content
+                    }
+                )
+                return result
+            
+            # Keep all steps in the payload so the agent can see endorsed formalizations for consistency
+            # The agent will only generate new formalizations for steps that need them
+            
             # logger.debug(f"FormalizationAgent sending data: {payload}")
             
             # Pass the data directly to the agent

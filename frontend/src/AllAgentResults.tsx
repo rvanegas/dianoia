@@ -19,7 +19,7 @@ type AgentResultsProps = {
   sessionId: string
   snapshotVersion: number  // Required prop to track snapshot changes
   snapshotIndex: number  // Required prop for API calls
-  currentSnapshot: ConversationSnapshot  // Current snapshot to apply results to
+  getCurrentConversationState: () => { conversation: any, snapshotIndex: number }  // Function to get current conversation state
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
 }
 
@@ -27,10 +27,17 @@ type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex, currentSnapshot, saveSnapshotInPlace }: AgentResultsProps) {
+export default function AllAgentResults({ conversationId, sessionId, snapshotVersion, snapshotIndex, getCurrentConversationState, saveSnapshotInPlace }: AgentResultsProps) {
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const tasksCompleteRef = useRef<boolean>(false)
+
+  // Helper function to get current snapshot
+  const getCurrentSnapshot = () => {
+    const { conversation, snapshotIndex: currentSnapshotIndex } = getCurrentConversationState()
+    const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
+    return lastSnapshot || { assumptions: [], argument: [], explanation: '', file_ids: [] }
+  }
 
   // Note: This component resets its state when snapshotIndex changes to ensure
   // proper behavior with undo/redo operations. Each snapshot will fetch its own
@@ -38,12 +45,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
 
   // Check if all formalizations are endorsed (for UI display purposes)
   const areAllFormalizationsEndorsed = () => {
+    const currentSnapshot = getCurrentSnapshot()
     const allSteps = [...currentSnapshot.argument, ...currentSnapshot.assumptions]
-    const stepsWithFormalizations = allSteps.filter(step => step.formalization)
+    const stepsWithFormalizations = allSteps.filter((step: any) => step.formalization)
     
     if (stepsWithFormalizations.length === 0) return false
     
-    return stepsWithFormalizations.every(step => step.formalization?.endorsed)
+    return stepsWithFormalizations.every((step: any) => step.formalization?.endorsed)
   }
 
   // Trigger formal evaluator when user is ready
@@ -55,6 +63,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
       url.searchParams.set('snapshot_id', snapshotIndex.toString())
       
+      const currentSnapshot = getCurrentSnapshot()
       const payload = {
         assumptions: currentSnapshot.assumptions,
         argument: currentSnapshot.argument,
@@ -81,6 +90,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   // Apply agent results to argument steps
   const applyAgentResultsToSnapshot = (newResultsByAgent: ResultsByAgent) => {
     // Get the current conversation state to ensure we have the latest snapshot
+    const currentSnapshot = getCurrentSnapshot()
     const updatedSnapshot = { 
       ...currentSnapshot,
       argument: [...currentSnapshot.argument], // Create new array
@@ -97,7 +107,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       // Apply truth evaluations (only to argument steps, not assumptions)
       if (resultContent.truth_evaluations) {
         resultContent.truth_evaluations.forEach((evaluation: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === evaluation.symbol)
+          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             // Create new step object to avoid read-only property error
@@ -114,7 +124,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       // Apply validity evaluations (only to argument steps, not assumptions)
       if (resultContent.validity_evaluations) {
         resultContent.validity_evaluations.forEach((evaluation: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === evaluation.symbol)
+          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             // Create new step object to avoid read-only property error
@@ -138,7 +148,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
       // Apply formalizations (but don't replace endorsed ones)
       if (resultContent.formalizations) {
         resultContent.formalizations.forEach((formalization: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex(s => s.symbol === formalization.symbol)
+          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === formalization.symbol)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             

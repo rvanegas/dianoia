@@ -10,7 +10,7 @@ type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
 type ApiOperationInfo = {
   url: string;
   data: any;
-  onSuccess: (responseObject: any) => void;
+  onSuccess: (responseObject: any, getCurrentConversationState: () => { conversation: ConversationType, snapshotIndex: number }) => void;
   onFinally?: () => void;
   operationName: string;
 }
@@ -116,7 +116,6 @@ export function useConversationActions(
   currentSnapshot: ConversationSnapshot,
   userMode: UserMode,
   setUserMode: (mode: UserMode) => void,
-
   setInputText: (text: string) => void,
   targetLoc: string,
   targetIndex: number,
@@ -125,7 +124,8 @@ export function useConversationActions(
   createConversationFromProposition: (proposition: string) => void,
   conversationId: number,
   sessionId: string,
-  snapshotIndex: number
+  snapshotIndex: number,
+  conversation: ConversationType
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
@@ -149,7 +149,7 @@ export function useConversationActions(
   }
 
   // Reusable API call wrapper
-  const makeApiCall = async (operationInfo: ApiOperationInfo) => {
+  const makeApiCall = async (operationInfo: ApiOperationInfo, conversation: ConversationType, snapshotIndex: number) => {
     try {
       // Add conversation_id as query parameter (format: session_id:conversation_id)
       const url = new URL(operationInfo.url)
@@ -176,7 +176,12 @@ export function useConversationActions(
         throw new Error('Empty response object')
       }
       
-      operationInfo.onSuccess(responseObject)
+      // Create a getter function that returns the current conversation state
+      const getCurrentConversationState = () => {
+        return { conversation, snapshotIndex }
+      }
+      
+      operationInfo.onSuccess(responseObject, getCurrentConversationState)
       // Clear any previous failed operation on success
       setLastFailedOperation(null)
       return responseObject
@@ -192,7 +197,7 @@ export function useConversationActions(
     if (!lastFailedOperation) return
     
     setUserMode('waiting')
-    await makeApiCall(lastFailedOperation)
+    await makeApiCall(lastFailedOperation, conversation, snapshotIndex)
   }
 
   const handleThesis = async (content?: string) => {
@@ -206,21 +211,22 @@ export function useConversationActions(
       proposition: content,
     }
     let url = VITE_API_BASE_URL + '/api/argument/argue'
-    let newSnapshot = currentSnapshot
     const argMode: ArgMode = 'development'
     
     // First API call to create thesis
     const thesisResponseObject = await makeApiCall(
       {
-        url, data: apiPrompt, onSuccess: (responseObject) => {
-          newSnapshot = {
+        url, data: apiPrompt, onSuccess: (responseObject, getCurrentConversationState) => {
+          const { conversation, snapshotIndex } = getCurrentConversationState()
+          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
+          const newSnapshot = {
             ...currentSnapshot,
             ...responseObject,
             argMode,
           }
           saveSnapshot(newSnapshot)
         }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis'
-      }
+      }, conversation, snapshotIndex
     )
 
     url = VITE_API_BASE_URL + '/api/argument/gen-name'
@@ -232,7 +238,9 @@ export function useConversationActions(
 
     await makeApiCall(
       {
-        url, data: apiPrompt, onSuccess: (responseObject) => {
+        url, data: apiPrompt, onSuccess: (responseObject, getCurrentConversationState) => {
+          const { conversation, snapshotIndex } = getCurrentConversationState()
+          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
           const finalSnapshot = {
             ...currentSnapshot,
             ...thesisResponseObject,
@@ -240,7 +248,7 @@ export function useConversationActions(
           }
           saveSnapshot(finalSnapshot, responseObject.name)
         }, onFinally: () => {}, operationName: 'Generate Name'
-      }
+      }, conversation, snapshotIndex
     )
   }
 
@@ -279,14 +287,17 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      { url, data: apiPrompt, onSuccess: (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject, getCurrentConversationState) => {
+        const { conversation, snapshotIndex } = getCurrentConversationState()
+        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
           // evaluationsPending: true, // DISABLED: Old evaluation system
         }
         saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' }
+      }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' },
+      conversation, snapshotIndex
     )
   }
 
@@ -336,7 +347,9 @@ export function useConversationActions(
     }
     
     await makeApiCall(
-      { url, data: apiPrompt, onSuccess: (responseObject) => {
+      { url, data: apiPrompt, onSuccess: (responseObject, getCurrentConversationState) => {
+        const { conversation, snapshotIndex } = getCurrentConversationState()
+        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
         const newSnapshot = {
           ...currentSnapshot,
           ...responseObject,
@@ -346,7 +359,8 @@ export function useConversationActions(
         //   newSnapshot.evaluationsPending = true
         // }
         saveSnapshot(newSnapshot)
-      }, onFinally: () => setUserMode('ready'), operationName: errorLabel }
+      }, onFinally: () => setUserMode('ready'), operationName: errorLabel },
+      conversation, snapshotIndex
     )
   }
 

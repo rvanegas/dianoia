@@ -662,7 +662,13 @@ The formalization must follow these exact constraints from the logic system:
     - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
     - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
 
-11. **DEFINITIONS**: Provide clear definitions for all abstract names used:
+11. **ENDORSED FORMALIZATIONS**: **CRITICAL RULE**: Do NOT generate new formalizations for steps that already have endorsed formalizations:
+    - If a step has a formalization with `endorsed: true`, skip that step entirely
+    - Only formalize steps that either have no formalization or have `endorsed: false`
+    - This ensures that user-endorsed formalizations are never overwritten
+    - If all steps have endorsed formalizations, return an empty formalizations array
+
+12. **DEFINITIONS**: Provide clear definitions for all abstract names used:
     - **predicates**: Map each abstract predicate name to its semantic meaning (e.g., "P": "is a man", "Q": "is mortal")
     - **constants**: Map each abstract constant name to its semantic meaning (e.g., "a": "Socrates", "b": "Plato")
     - These definitions apply to the entire argument and help users understand the formalization
