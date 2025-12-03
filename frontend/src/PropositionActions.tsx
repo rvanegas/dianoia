@@ -15,6 +15,7 @@ interface PropositionActionsProps {
   onDispute: (step: any) => Promise<void>
   onExplain: (action: ActionType, loc: string, stepIndex: number, errorLabel: string) => Promise<void>
   onEndorseFormalization: (loc: string, stepIndex: number, endorsed: boolean) => Promise<void>
+  onRejectFormalization: (loc: string, stepIndex: number) => Promise<void>
   setUserMode: (mode: UserMode) => void
   setTargetLoc: (loc: string) => void
   setTargetIndex: (index: number) => void
@@ -31,6 +32,7 @@ export default function PropositionActions({
   onDispute,
   onExplain,
   onEndorseFormalization,
+  onRejectFormalization,
   setUserMode,
   setTargetLoc,
   setTargetIndex
@@ -89,6 +91,13 @@ export default function PropositionActions({
       onClick: async () => {
         const newEndorsed = !step.formalization?.endorsed
         await onEndorseFormalization(loc, stepIndex, newEndorsed)
+      },
+      show: step.formalization !== undefined
+    },
+    {
+      label: 'Reject Formalization',
+      onClick: async () => {
+        await onRejectFormalization(loc, stepIndex)
       },
       show: step.formalization !== undefined
     }

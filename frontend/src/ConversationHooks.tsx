@@ -397,6 +397,55 @@ export function useConversationActions(
     saveSnapshotInPlace(newSnapshot)
   }
 
+  const handleRejectFormalization = async (
+    loc: string, index: number
+  ) => {
+    // Remove formalization and trigger re-formalization
+    const newSnapshot = { ...currentSnapshot }
+    
+    if (loc === 'argument' && newSnapshot.argument[index]?.formalization) {
+      // Create new array and remove formalization
+      newSnapshot.argument = [...newSnapshot.argument]
+      const { formalization, ...stepWithoutFormalization } = newSnapshot.argument[index]
+      newSnapshot.argument[index] = stepWithoutFormalization
+    } else if (loc === 'assumptions' && newSnapshot.assumptions[index]?.formalization) {
+      // Create new array and remove formalization
+      newSnapshot.assumptions = [...newSnapshot.assumptions]
+      const { formalization, ...stepWithoutFormalization } = newSnapshot.assumptions[index]
+      newSnapshot.assumptions[index] = stepWithoutFormalization
+    }
+    
+    saveSnapshotInPlace(newSnapshot)
+    
+    // Trigger formalization agent to generate new formalization
+    const url = `${import.meta.env.VITE_API_BASE_URL}/api/agents/formalize`
+    const apiPrompt = {
+      assumptions: newSnapshot.assumptions,
+      argument: newSnapshot.argument,
+      explanation: newSnapshot.explanation,
+      file_ids: newSnapshot.file_ids
+    }
+    
+    await makeApiCall(
+      { 
+        url, 
+        data: apiPrompt, 
+        onSuccess: (responseObject, getCurrentConversationState) => {
+          const { conversation, snapshotIndex } = getCurrentConversationState()
+          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
+          const newSnapshot = {
+            ...currentSnapshot,
+            ...responseObject,
+          }
+          saveSnapshot(newSnapshot)
+        }, 
+        onFinally: () => setUserMode('ready'), 
+        operationName: 'Reject and re-formalize' 
+      },
+      conversation, snapshotIndex
+    )
+  }
+
   const handleDispute = async (step: StepType) => {
     createConversationFromProposition(step.proposition)
   }
@@ -408,6 +457,7 @@ export function useConversationActions(
     // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleEndorseFormalization,
+    handleRejectFormalization,
     handleDispute,
     retryLastOperation,
     lastFailedOperation
