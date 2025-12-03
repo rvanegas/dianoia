@@ -618,7 +618,7 @@ class AgentCoordinator:
                 break
         
         if needs_formalization:
-            logger.info(f"Queueing formalizer task for argument in conversation {conversation_id}")
+            # logger.info(f"Queueing formalizer task for argument in conversation {conversation_id}")
             formalizer_agent_input = AgentInput(
                 conversation_id=conversation_id,
                 snapshot_id=snapshot_id,
@@ -639,7 +639,8 @@ class AgentCoordinator:
                 agent_input=formalizer_agent_input
             )
         else:
-            logger.info(f"No formalization needed for conversation {conversation_id}")
+            # logger.info(f"No formalization needed for conversation {conversation_id}")
+            pass
         
         # Queue content evaluator for argument analysis
         content_evaluator_agent_input = AgentInput(

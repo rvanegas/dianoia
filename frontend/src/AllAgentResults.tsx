@@ -148,24 +148,24 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
 
     // Apply FormalizationAgent results
     const formalizationResults = newResultsByAgent['formalizer']
-    console.log('🔍 Formalization results:', formalizationResults)
+    // console.log('🔍 Formalization results:', formalizationResults)
     if (formalizationResults && formalizationResults.length > 0) {
       const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
       const resultContent = latestFormalizationResult.result_content
-      console.log('🔍 Latest formalization result content:', resultContent)
+      // console.log('🔍 Latest formalization result content:', resultContent)
 
       // Apply formalizations (but don't replace endorsed ones)
       if (resultContent.formalizations) {
-        console.log('🔍 Applying formalizations:', resultContent.formalizations)
+        // console.log('🔍 Applying formalizations:', resultContent.formalizations)
         resultContent.formalizations.forEach((formalization: any) => {
           const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === formalization.symbol)
-          console.log('🔍 Looking for step with symbol:', formalization.symbol, 'found at index:', stepIndex)
+          // console.log('🔍 Looking for step with symbol:', formalization.symbol, 'found at index:', stepIndex)
           if (stepIndex !== -1) {
             const oldStep = updatedSnapshot.argument[stepIndex]
             
             // Skip if this step already has an endorsed formalization
             if (oldStep.formalization?.endorsed) {
-              console.log('🔍 Skipping step with endorsed formalization:', formalization.symbol)
+              // console.log('🔍 Skipping step with endorsed formalization:', formalization.symbol)
               return
             }
             
@@ -182,13 +182,13 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             }
             updatedSnapshot.argument[stepIndex] = newStep
             hasChanges = true
-            console.log('🔍 Applied formalization to step:', formalization.symbol)
+            // console.log('🔍 Applied formalization to step:', formalization.symbol)
           } else {
-            console.log('🔍 Could not find step with symbol:', formalization.symbol)
+            // console.log('🔍 Could not find step with symbol:', formalization.symbol)
           }
         })
       } else {
-        console.log('🔍 No formalizations in result content')
+        // console.log('🔍 No formalizations in result content')
       }
 
       // Save formalization definitions to snapshot
@@ -207,11 +207,11 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
   const fetchResults = async () => {
     // Prevent concurrent fetches
     if (currentFetchRef.current) {
-      console.log('⏭️ Skipping fetch - already in progress')
+      // console.log('⏭️ Skipping fetch - already in progress')
       return
     }
     
-    console.log('🚀 Starting fetch - creating promise')
+    // console.log('🚀 Starting fetch - creating promise')
     
     // Clear the flag synchronously to prevent race conditions
     currentFetchRef.current = (async () => {
@@ -221,40 +221,40 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
             conversation_id: `${sessionId}:${conversationId}`,
             snapshot_id: String(snapshotIndex)
           },
-          timeout: 5000 // 5 second timeout
+          timeout: 15000 // 15 second timeout
         })
         
-        console.log('📡 Response received:', response.status)
+        // console.log('📡 Response received:', response.status)
         const newResultsByAgent = response.data.results_by_agent || {}
         const newTasksComplete = response.data.tasks_complete || false
         
-        console.log('📊 Agent results received:', {
-          resultsByAgent: newResultsByAgent,
-          tasksComplete: newTasksComplete,
-          currentTasksComplete: tasksCompleteRef.current
-        })
+        // console.log('📊 Agent results received:', {
+        //   resultsByAgent: newResultsByAgent,
+        //   tasksComplete: newTasksComplete,
+        //   currentTasksComplete: tasksCompleteRef.current
+        // })
         
         // Only update if we have new results
         if (JSON.stringify(newResultsByAgent) !== JSON.stringify(resultsByAgent)) {
-          console.log('🔄 Updating results - new data detected')
+          // console.log('🔄 Updating results - new data detected')
           setResultsByAgent(newResultsByAgent)
           // Apply results to snapshot
           applyAgentResultsToSnapshot(newResultsByAgent)
         } else {
-          console.log('⏭️ Skipping update - no new data')
+          // console.log('⏭️ Skipping update - no new data')
         }
         
         // Update tasks complete status
         if (newTasksComplete !== tasksCompleteRef.current) {
-          console.log('✅ Tasks complete status changed:', { 
-            from: tasksCompleteRef.current, 
-            to: newTasksComplete 
-          })
+          // console.log('✅ Tasks complete status changed:', { 
+          //   from: tasksCompleteRef.current, 
+          //   to: newTasksComplete 
+          // })
           tasksCompleteRef.current = newTasksComplete
           
           // Clear interval if tasks are complete
           if (newTasksComplete && intervalRef.current) {
-            console.log('🛑 Clearing interval - tasks complete')
+            // console.log('🛑 Clearing interval - tasks complete')
             clearInterval(intervalRef.current)
             intervalRef.current = null
           }
@@ -268,32 +268,32 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     
     // Wait for the promise to complete and then clear the flag
     await currentFetchRef.current
-    console.log('🏁 Fetch completed - clearing promise reference')
+    // console.log('🏁 Fetch completed - clearing promise reference')
     currentFetchRef.current = null
   }
 
   useEffect(() => {
     // Skip fetching if snapshotIndex is less than 1 (no snapshot history yet)
     if (snapshotIndex < 1) {
-      console.log('⏭️ Skipping agent results fetch - no snapshot history yet:', { snapshotIndex })
+      // console.log('⏭️ Skipping agent results fetch - no snapshot history yet:', { snapshotIndex })
       return
     }
     
     // Skip if we're already polling for this snapshot
     if (currentPollingSnapshotRef.current === snapshotIndex) {
-      console.log('⏭️ Already polling for snapshot:', { snapshotIndex })
+      // console.log('⏭️ Already polling for snapshot:', { snapshotIndex })
       return
     }
     
-    console.log('🔄 useEffect triggered with dependencies:', { 
-      conversationId, 
-      sessionId, 
-      snapshotVersion, 
-      snapshotIndex
-    })
+      // console.log('🔄 useEffect triggered with dependencies:', { 
+      //   conversationId, 
+      //   sessionId, 
+      //   snapshotVersion, 
+      //   snapshotIndex
+      // })
     
     // Reset state when conversation or snapshot changes
-    console.log('🔄 Resetting agent results state for new snapshot:', { snapshotIndex, snapshotVersion })
+    // console.log('🔄 Resetting agent results state for new snapshot:', { snapshotIndex, snapshotVersion })
     setResultsByAgent({})
     setError(null)
     tasksCompleteRef.current = false
@@ -301,31 +301,31 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotVer
     
     // Set up polling every 1 second, but only if tasks are not complete
     const interval = setInterval(() => {
-      console.log('⏰ Polling interval triggered - checking state:', { 
-        tasksComplete: tasksCompleteRef.current, 
-        isFetching: !!currentFetchRef.current, // Check if a fetch is in progress
-        pollingSnapshot: snapshotIndex
-      })
+      // console.log('⏰ Polling interval triggered - checking state:', { 
+      //   tasksComplete: tasksCompleteRef.current, 
+      //   isFetching: !!currentFetchRef.current, // Check if a fetch is in progress
+      //   pollingSnapshot: snapshotIndex
+      // })
       
       if (!tasksCompleteRef.current) {
         if (!currentFetchRef.current) {
-          console.log('⏰ Polling interval triggered - tasks not complete, starting fetch')
+          // console.log('⏰ Polling interval triggered - tasks not complete, starting fetch')
           fetchResults()
         } else {
-          console.log('⏰ Polling interval triggered - tasks not complete, but fetch already in progress')
+          // console.log('⏰ Polling interval triggered - tasks not complete, but fetch already in progress')
         }
       } else {
-        console.log('⏹️ Polling interval triggered - tasks complete, skipping fetch')
+        // console.log('⏹️ Polling interval triggered - tasks complete, skipping fetch')
       }
     }, 1000)
     
     // Store interval reference
     intervalRef.current = interval
     
-    console.log('🚀 Started polling for agent results')
+    // console.log('🚀 Started polling for agent results')
     
     return () => {
-      console.log('🛑 Stopped polling for agent results')
+      // console.log('🛑 Stopped polling for agent results')
       clearInterval(interval)
       intervalRef.current = null
     }
