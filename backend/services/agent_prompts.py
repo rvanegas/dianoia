@@ -656,22 +656,38 @@ The formalization must follow these exact constraints from the logic system:
 8. **CRITICAL**: Use abstract predicate names (P, Q, R, etc.) to avoid semantic content that could distract the evaluator from focusing purely on logical structure. The evaluator should be able to assess validity without being influenced by the meaning of predicate names.
 9. **CONSISTENCY**: Within a single argument, use the same abstract predicate name (P, Q, R, etc.) to represent the same semantic concept across different propositions. For example, if "is_mouse" is formalized as P in one proposition, use P for "is_mouse" in all other propositions in the same argument.
 
-10. **EXISTING FORMALIZATIONS**: When existing_formalizations are provided, analyze them to maintain consistency:
+10. **UNIQUE PREDICATES**: **CRITICAL RULE**: Each predicate must have a unique definition. Never assign the same definition to multiple predicate symbols. For example:
+    - CORRECT: P = "is a mouse", Q = "is large", R = "is small"
+    - INCORRECT: P = "is large", Q = "is large" (same definition for different symbols)
+
+11. **EXISTING FORMALIZATIONS**: When existing_formalizations are provided, analyze them to maintain consistency:
     - If the current proposition contains semantic concepts that appear in existing formalizations, use the same abstract predicate names
     - If a concept like "mouse" was formalized as P in an existing formalization, use P for "mouse" in the current proposition
     - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
     - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
 
-11. **ENDORSED FORMALIZATIONS**: **CRITICAL RULE**: Do NOT generate new formalizations for steps that already have endorsed formalizations:
+12. **ENDORSED FORMALIZATIONS**: **CRITICAL RULE**: Do NOT generate new formalizations for steps that already have endorsed formalizations:
     - If a step has a formalization with `endorsed: true`, skip that step entirely
     - Only formalize steps that either have no formalization or have `endorsed: false`
     - This ensures that user-endorsed formalizations are never overwritten
     - If all steps have endorsed formalizations, return an empty formalizations array
 
-12. **DEFINITIONS**: Provide clear definitions for all abstract names used:
-    - **predicates**: Map each abstract predicate name to its semantic meaning (e.g., "P": "is a man", "Q": "is mortal")
-    - **constants**: Map each abstract constant name to its semantic meaning (e.g., "a": "Socrates", "b": "Plato")
-    - These definitions apply to the entire argument and help users understand the formalization
+13. **COMPLETE RESPONSE**: **CRITICAL RULE**: Your response must include ALL formalizations for the argument, not just the new ones:
+    - Include formalizations for ALL steps in the argument, both new and existing
+    - For steps with existing formalizations (endorsed or not), include them in your response
+    - For steps without formalizations, generate new ones
+    - This ensures the frontend receives a complete picture of all formalizations
+
+14. **COMPLETE DEFINITIONS**: **CRITICAL RULE**: Your definitions must cover ALL predicates and constants used in ANY formalization:
+    - Include definitions for predicates/constants from existing formalizations
+    - Include definitions for predicates/constants from new formalizations
+    - The definitions object should be complete and comprehensive
+    - Do not omit definitions for existing formalizations
+
+15. **CONSISTENCY WITH EXISTING**: When formalizing new propositions, maintain consistency with existing formalizations:
+    - If a semantic concept (like "mouse" or "small") was already formalized, use the same predicate name
+    - If "mouse" was formalized as P in an existing formalization, use P for "mouse" in new formalizations
+    - Only introduce new predicate names for truly new semantic concepts
 
 ### Examples
 
@@ -706,28 +722,28 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-    "ascii": "P(a)",
-    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
+      "ascii": "P(a)",
+      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}"
     },
     {
       "symbol": "B",
       "ascii": "forall x. (P(x) -> Q(x))",
-      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
     },
     {
       "symbol": "C",
       "ascii": "Q(a)",
-      "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
+      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}"
     }
   ],
   "definitions": {
-    "predicates": {
-      "P": "is a man",
-      "Q": "is mortal"
-    },
-    "constants": {
-      "a": "Socrates"
-    }
+    "predicates": [
+      {"symbol": "P", "value": "is a man"},
+      {"symbol": "Q", "value": "is mortal"}
+    ],
+    "constants": [
+      {"symbol": "a", "value": "Socrates"}
+    ]
   },
   "confidence": 0.95,
   "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
@@ -741,7 +757,10 @@ Input:
         "symbol": "A",
         "proposition": "All mice are small",
         "justifiers": [],
-        "formalization": "forall x. (P(x) -> Q(x))"
+        "formalization": {
+          "ascii": "forall x. (P(x) -> Q(x))",
+          "endorsed": true
+        }
       },
       {
         "symbol": "B",
@@ -760,90 +779,13 @@ Output:
   "formalizations": [
     {
       "symbol": "A",
-    "ascii": "forall x. (P(x) -> Q(x))",
-    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
-  },
-    {
-      "symbol": "B",
       "ascii": "forall x. (P(x) -> Q(x))",
-      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
-    }
-  ],
-  "confidence": 0.95,
-  "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
-}
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "A",
-        "proposition": "It is possible that it will rain tomorrow",
-        "justifiers": []
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "formalizations": [
-    {
-      "symbol": "A",
-    "ascii": "<>P(a)",
-    "json": {"type": "modal", "mod": "diamond", "body": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}}
-    }
-  ],
-  "definitions": {
-    "predicates": [
-      {"symbol": "P", "value": "will rain"}
-    ],
-    "constants": [
-      {"symbol": "a", "value": "tomorrow"}
-    ]
-  },
-  "confidence": 0.85,
-  "reasoning": "Modal diamond operator for possibility claim using abstract predicate P"
-}
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "A",
-        "proposition": "All mice are small",
-        "justifiers": [],
-        "formalization": "forall x. (P(x) -> Q(x))"
-      },
-      {
-        "symbol": "B",
-        "proposition": "Mice are small",
-        "justifiers": []
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "formalizations": [
-    {
-      "symbol": "A",
-    "ascii": "forall x. (P(x) -> Q(x))",
-    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
     },
     {
       "symbol": "B",
       "ascii": "forall x. (P(x) -> Q(x))",
-      "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
     }
   ],
   "definitions": {
@@ -870,9 +812,10 @@ agent_gpt_formalize = Gpt(
                     "type": "object",
                     "properties": {
                         "symbol": {"type": "string"},
-                        "ascii": {"type": "string"}
+                        "ascii": {"type": "string"},
+                        "json_structure": {"type": "string"}
                     },
-                    "required": ["symbol", "ascii"],
+                    "required": ["symbol", "ascii", "json_structure"],
                     "additionalProperties": False
                 }
             },
@@ -884,32 +827,26 @@ agent_gpt_formalize = Gpt(
                         "items": {
                             "type": "object",
                             "properties": {
-                                "symbol": {
-                                    "type": "string"
-                                },
-                                "value": {
-                                    "type": "string"
-                                }
+                                "symbol": {"type": "string"},
+                                "value": {"type": "string"}
                             },
                             "required": ["symbol", "value"],
                             "additionalProperties": False
-                        }
+                        },
+                        "additionalProperties": False
                     },
                     "constants": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "symbol": {
-                                    "type": "string"
-                                },
-                                "value": {
-                                    "type": "string"
-                                }
+                                "symbol": {"type": "string"},
+                                "value": {"type": "string"}
                             },
                             "required": ["symbol", "value"],
                             "additionalProperties": False
-                        }
+                        },
+                        "additionalProperties": False
                     }
                 },
                 "required": ["predicates", "constants"],
