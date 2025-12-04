@@ -218,23 +218,10 @@ function Conversation({
         />
       )
 
-      // DISABLED: Old truth/valid evaluations display - replaced by new agent system
-      // const scoreSpan = () => {
-      //   let justifier = ''
-      //   let value = `${step.truth}t`
-      //   if (step.justifiers.length == 0) {
-      //     justifier = 'premise'
-      //   }
-      //   else {
-      //     justifier = 'from ' + step.justifiers.join(', ')
-      //     value += `, ${step.valid}v`
-      //   }
-      //   const valueSpan =
-      //     <span className={currentSnapshot.evaluationsPending ? 'line-through' : ''}>
-      //       {value}
-      //     </span>
-      //   return <span>[{justifier}; {valueSpan}]</span>
-      // }
+      const justifierSpan = () => {
+        let justifier = step.justifiers.length == 0 ? 'premise' : step.justifiers.join(', ')
+        return <span>[{justifier}]</span>
+      }
 
       // Display agent result values
       const agentValuesDisplay = () => {
@@ -285,7 +272,7 @@ function Conversation({
       return (
         <div key={step_index}>
           <FlexRow chevron={actions}>
-            ({step.symbol}) {step.proposition}
+            ({step.symbol}) {step.proposition} {justifierSpan()}
           </FlexRow>
           {agentValuesDisplay()}
         </div>
@@ -439,9 +426,7 @@ function Conversation({
 
   const explanationDiv = () => {
     return (
-      <>
-        <FlexRow>{currentSnapshot.explanation}</FlexRow>
-      </>
+      <FlexRow>{currentSnapshot.explanation}</FlexRow>
     )
   }
 
