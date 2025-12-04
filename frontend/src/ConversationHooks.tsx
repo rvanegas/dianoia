@@ -403,8 +403,10 @@ export function useConversationActions(
     setUserMode('waiting')
     
     const url = VITE_API_BASE_URL + '/api/argument/reject-formalization'
+    // Omit formalization_definitions to avoid biasing the formalizer
+    const { formalization_definitions, ...snapshotWithoutDefinitions } = currentSnapshot
     const apiPrompt = {
-      ...currentSnapshot,
+      ...snapshotWithoutDefinitions,
       loc, index
     }
     
