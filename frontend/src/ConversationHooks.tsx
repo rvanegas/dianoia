@@ -415,35 +415,10 @@ export function useConversationActions(
       newSnapshot.assumptions[index] = stepWithoutFormalization
     }
     
-    saveSnapshotInPlace(newSnapshot)
-    
-    // Trigger formalization agent to generate new formalization
-    const url = `${import.meta.env.VITE_API_BASE_URL}/api/agents/formalize`
-    const apiPrompt = {
-      assumptions: newSnapshot.assumptions,
-      argument: newSnapshot.argument,
-      explanation: newSnapshot.explanation,
-      file_ids: newSnapshot.file_ids
-    }
-    
-    await makeApiCall(
-      { 
-        url, 
-        data: apiPrompt, 
-        onSuccess: (responseObject, getCurrentConversationState) => {
-          const { conversation, snapshotIndex } = getCurrentConversationState()
-          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-          const newSnapshot = {
-            ...currentSnapshot,
-            ...responseObject,
-          }
-          saveSnapshot(newSnapshot)
-        }, 
-        onFinally: () => setUserMode('ready'), 
-        operationName: 'Reject and re-formalize' 
-      },
-      conversation, snapshotIndex
-    )
+    // Save the snapshot with formalization removed
+    // This will automatically trigger the agent coordination system
+    // to queue the formalizer agent for re-formalization
+    saveSnapshot(newSnapshot)
   }
 
   const handleDispute = async (step: StepType) => {
