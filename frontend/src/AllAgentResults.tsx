@@ -75,7 +75,7 @@ export default function AllAgentResults({ conversationId, sessionId, snapshotInd
         file_ids: currentSnapshot.file_ids
       }
       
-      const response = await axios.post(url.toString(), payload)
+      await axios.post(url.toString(), payload)
       // console.log('Formal evaluator agent triggered successfully:', response.data)
       
       // Reset polling state to start fetching results again
