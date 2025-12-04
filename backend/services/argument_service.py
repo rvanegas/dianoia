@@ -201,6 +201,19 @@ class ArgumentStepService(ArgumentService):
         self.arguments_with_step.explanation = content["explanation"]
         return self.gptjson()
 
+    def reject_formalization(self) -> str:
+        """Remove formalization from a step and trigger re-formalization"""
+        # Remove the formalization from the specified step
+        step = self.arguments_with_step.arg[self.arguments_with_step.index]
+        # Set formalization to None instead of deleting the attribute
+        step.formalization = None
+        
+        # Queue analysis and discovery for the argument state change
+        # This will automatically trigger the formalization agent
+        self.queue_argument_state_change()
+        
+        return self.gptjson()
+
 
 class ArgumentPropositionService(ArgumentService):
     """Service for argument operations involving propositions"""

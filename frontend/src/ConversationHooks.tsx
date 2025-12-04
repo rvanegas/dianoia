@@ -400,25 +400,32 @@ export function useConversationActions(
   const handleRejectFormalization = async (
     loc: string, index: number
   ) => {
-    // Remove formalization and trigger re-formalization
-    const newSnapshot = { ...currentSnapshot }
+    setUserMode('waiting')
     
-    if (loc === 'argument' && newSnapshot.argument[index]?.formalization) {
-      // Create new array and remove formalization
-      newSnapshot.argument = [...newSnapshot.argument]
-      const { formalization, ...stepWithoutFormalization } = newSnapshot.argument[index]
-      newSnapshot.argument[index] = stepWithoutFormalization
-    } else if (loc === 'assumptions' && newSnapshot.assumptions[index]?.formalization) {
-      // Create new array and remove formalization
-      newSnapshot.assumptions = [...newSnapshot.assumptions]
-      const { formalization, ...stepWithoutFormalization } = newSnapshot.assumptions[index]
-      newSnapshot.assumptions[index] = stepWithoutFormalization
+    const url = VITE_API_BASE_URL + '/api/argument/reject-formalization'
+    const apiPrompt = {
+      ...currentSnapshot,
+      loc, index
     }
     
-    // Save the snapshot with formalization removed
-    // This will automatically trigger the agent coordination system
-    // to queue the formalizer agent for re-formalization
-    saveSnapshot(newSnapshot)
+    await makeApiCall(
+      { 
+        url, 
+        data: apiPrompt, 
+        onSuccess: (responseObject, getCurrentConversationState) => {
+          const { conversation, snapshotIndex } = getCurrentConversationState()
+          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
+          const newSnapshot = {
+            ...currentSnapshot,
+            ...responseObject,
+          }
+          saveSnapshot(newSnapshot)
+        }, 
+        onFinally: () => setUserMode('ready'), 
+        operationName: 'Reject formalization' 
+      },
+      conversation, snapshotIndex
+    )
   }
 
   const handleDispute = async (step: StepType) => {
