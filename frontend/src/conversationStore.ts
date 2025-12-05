@@ -8,6 +8,8 @@ interface ConversationState {
   nextConversationId: number
   
   updateCurrentConversation: (conversation: ConversationType) => void
+  addConversation: (conversation: ConversationType) => void
+  saveConversationName: (conversationId: number, name: string) => void
   setCurrentConversationIndex: (index: number) => void
   setNextConversationId: (id: number) => void
 }
@@ -20,6 +22,23 @@ export const useConversationStore = create<ConversationState>((set) => ({
   updateCurrentConversation: (conversation) => {
     set(produce((state) => {
       state.conversations[state.currentConversationIndex] = conversation
+    }))
+  },
+
+  addConversation: (conversation) => {
+    set(produce((state) => {
+      state.conversations.push(conversation)
+      state.currentConversationIndex = state.conversations.length - 1
+      state.nextConversationId = conversation.id + 1
+    }))
+  },
+
+  saveConversationName: (conversationId, name) => {
+    set(produce((state) => {
+      const conversation = state.conversations.find((c: ConversationType) => c.id === conversationId)
+      if (conversation) {
+        conversation.name = name
+      }
     }))
   },
 
