@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import type { ConversationSnapshot } from './types'
 import { useConversationStore } from './conversationStore'
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -16,23 +15,15 @@ type AgentResult = {
   snapshot_id: string
 }
 
-type AgentResultsProps = {
-  // No props needed - everything comes from the store
-}
-
 type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({}: AgentResultsProps) {
-  const { sessionId, getCurrentConversationState, getCurrentConversationId, currentSnapshotIndex, saveSnapshotInPlace } = useConversationStore()
+export default function AllAgentResults() {
+  const { sessionId, getCurrentConversationState, getCurrentConversationId, currentSnapshotIndex, 
+    saveSnapshotInPlace } = useConversationStore()
   const conversationId = getCurrentConversationId()
-  const snapshotIndex = currentSnapshotIndex
   
-  // Wrapper function to match the expected signature
-  const saveSnapshotInPlaceWrapper = (snapshot: ConversationSnapshot) => {
-    saveSnapshotInPlace(conversationId, snapshotIndex, snapshot)
-  }
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run
@@ -84,7 +75,7 @@ export default function AllAgentResults({}: AgentResultsProps) {
     try {
       const url = new URL(`${VITE_API_BASE_URL}/api/agents/evaluate-form`)
       url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
-      url.searchParams.set('snapshot_id', snapshotIndex.toString())
+      url.searchParams.set('snapshot_id', currentSnapshotIndex.toString())
       
       const currentSnapshot = getCurrentSnapshot()
       const payload = {
@@ -219,7 +210,7 @@ export default function AllAgentResults({}: AgentResultsProps) {
 
     // Save updated snapshot if there were changes
     if (hasChanges) {
-      saveSnapshotInPlaceWrapper(updatedSnapshot)
+      saveSnapshotInPlace(updatedSnapshot)
     }
   }
 
@@ -238,7 +229,7 @@ export default function AllAgentResults({}: AgentResultsProps) {
         const response = await axios.get(`${VITE_API_BASE_URL}/api/agents/results`, {
           params: {
             conversation_id: `${sessionId}:${conversationId}`,
-            snapshot_id: String(snapshotIndex)
+            snapshot_id: String(currentSnapshotIndex)
           },
           timeout: 15000 // 15 second timeout
         })
@@ -299,13 +290,13 @@ export default function AllAgentResults({}: AgentResultsProps) {
 
   useEffect(() => {
     // Skip fetching if snapshotIndex is less than 1 (no snapshot history yet)
-    if (snapshotIndex < 1) {
+    if (currentSnapshotIndex < 1) {
       // console.log('⏭️ Skipping agent results fetch - no snapshot history yet:', { snapshotIndex })
       return
     }
     
     // Skip if we're already polling for this snapshot
-    if (currentPollingSnapshotRef.current === snapshotIndex) {
+    if (currentPollingSnapshotRef.current === currentSnapshotIndex) {
       // console.log('⏭️ Already polling for snapshot:', { snapshotIndex })
       return
     }
@@ -322,7 +313,7 @@ export default function AllAgentResults({}: AgentResultsProps) {
     setResultsByAgent({})
     setError(null)
     tasksCompleteRef.current = false
-    currentPollingSnapshotRef.current = snapshotIndex
+    currentPollingSnapshotRef.current = currentSnapshotIndex
     
     // Set up polling every 1 second, but only if tasks are not complete
     const interval = setInterval(() => {
@@ -354,7 +345,7 @@ export default function AllAgentResults({}: AgentResultsProps) {
       clearInterval(interval)
       intervalRef.current = null
     }
-  }, [conversationId, sessionId, snapshotIndex, pollingKey]) // Added pollingKey to dependencies
+  }, [conversationId, sessionId, currentSnapshotIndex, pollingKey]) // Added pollingKey to dependencies
 
 
 

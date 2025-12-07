@@ -33,8 +33,8 @@ interface ConversationState {
   updateCurrentConversation: (conversation: ConversationType) => void
   // addConversation: (conversation: ConversationType) => void
   saveConversationName: (conversationId: number, name: string) => void
-  saveSnapshot: (conversationId: number, snapshotIndex: number, snapshot: ConversationSnapshot) => void
-  saveSnapshotInPlace: (conversationId: number, snapshotIndex: number, snapshot: ConversationSnapshot) => void
+  saveSnapshot: (snapshot: ConversationSnapshot) => void
+  saveSnapshotInPlace: (snapshot: ConversationSnapshot) => void
   saveAgentResults: (conversationId: number, snapshotIndex: number, agentResults: any) => void
   setCurrentConversationIndex: (index: number) => void
   setCurrentSnapshotIndex: (index: number) => void
@@ -86,31 +86,27 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }))
   },
 
-  saveSnapshot: (conversationId, snapshotIndex, snapshot) => {
-    // console.log('🔄 Store saveSnapshot called:', { conversationId, snapshotIndex, snapshot })
+  saveSnapshot: (snapshot) => {
     set(produce((state) => {
-      const conversation = state.conversations.find((c: ConversationType) => c.id === conversationId)
+      const conversation = state.conversations[state.currentConversationIndex]
       if (conversation) {
         // Remove snapshots after the current index and add the new one
-        conversation.snapshots.splice(snapshotIndex + 1)
+        conversation.snapshots.splice(state.currentSnapshotIndex + 1)
         conversation.snapshots.push(snapshot)
         // Update the current snapshot index to point to the new snapshot
         state.currentSnapshotIndex = conversation.snapshots.length - 1
         // Increment render count
         state.snapshotRenderCount += 1
-        // console.log('✅ Store saveSnapshot completed. New snapshots length:', conversation.snapshots.length)
-      } else {
-        // console.log('❌ Store saveSnapshot: conversation not found for id:', conversationId)
       }
     }))
   },
 
-  saveSnapshotInPlace: (conversationId, snapshotIndex, snapshot) => {
+  saveSnapshotInPlace: (snapshot) => {
     set(produce((state) => {
-      const conversation = state.conversations.find((c: ConversationType) => c.id === conversationId)
+      const conversation = state.conversations[state.currentConversationIndex]
       if (conversation) {
-        // Replace the snapshot at the specified index
-        conversation.snapshots[snapshotIndex] = snapshot
+        // Replace the snapshot at the current index
+        conversation.snapshots[state.currentSnapshotIndex] = snapshot
       }
     }))
   },
