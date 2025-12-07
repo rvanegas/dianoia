@@ -671,6 +671,17 @@ class AgentCoordinator:
             agent_input=content_evaluator_agent_input
         )
         
+        # logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
+
+        self.queue_formal_evaluator_if_ready(conversation_id, snapshot_id, argument_data)
+
+    
+    def queue_formal_evaluator_if_ready(self, conversation_id: str, snapshot_id: str, argument_data: ArgumentData):
+        """
+        Queue a formal_evaluator task if all formalizations are in place and existing formal_evaluator is outdated.
+        Checks that no formal_evaluator is already 'pending' or 'running'.
+        """
+        # logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
         logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
 
         # Check if there's already a pending or running formal_evaluator task
