@@ -31,9 +31,7 @@ function App() {
     addConversation(newConversation)
   }
 
-  const createConversationFromProposition = (proposition: string) => {
-    createConversation(proposition)
-  }
+
 
   const selectConversation = (index: number) => {
     setCurrentConversationIndex(index)
@@ -139,7 +137,6 @@ function App() {
         {paneButton}
         <Conversation
           key={currentConversationIndex}
-          createConversationFromProposition={createConversationFromProposition}
           files={files}
         />
       </div>

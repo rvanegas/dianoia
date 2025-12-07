@@ -96,12 +96,12 @@ export function useConversationActions(
   targetIndex: number,
   saveSnapshot: (newSnap: ConversationSnapshot, convName?: string) => void,
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
-  createConversationFromProposition: (proposition: string) => void,
   conversation: ConversationType
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
-  const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex, getCurrentConversationId } = useConversationStore()
+  const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex,
+    getCurrentConversationId, createConversationFromProposition } = useConversationStore()
   const conversationId = getCurrentConversationId()
 
   // Reusable error handler
@@ -347,14 +347,13 @@ export function useConversationActions(
   }
 
   const handleDispute = async (step: StepType) => {
+    // console.log('handleDispute', step)
     createConversationFromProposition(step.proposition)
   }
 
   return {
     handleThesis,
-    // handleAIJustify, // DISABLED: Old AI Justify handler - replaced by new agent system
     handleUserJustify,
-    // evaluateSteps, // DISABLED: Old evaluate steps function - replaced by new agent system
     handleAction,
     handleEndorseFormalization,
     handleRejectFormalization,
