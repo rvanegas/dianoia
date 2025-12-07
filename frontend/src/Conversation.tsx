@@ -55,7 +55,6 @@ function Conversation({
   files: FileType[]
 }) {
   const {
-    snapshotRenderCount,
     snapshotIndex,
     setSnapshotIndex,
     currentSnapshot,
@@ -105,8 +104,7 @@ function Conversation({
     snapshotIndex,
     conversation,
     setSnapshotIndex,
-    setUserMode,
-    snapshotRenderCount
+    setUserMode
   )
 
   const handleCopy = async () => {
