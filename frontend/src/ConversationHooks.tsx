@@ -24,12 +24,11 @@ export function useConversationState(
   conversation: ConversationType,
   setConversation: (newConversation: ConversationType) => void
 ) {
-  // Get the session UUID and userMode from the store
-  const { sessionId, userMode, setUserMode } = useConversationStore()
+  // Get the session UUID, userMode, and currentSnapshotIndex from the store
+  const { sessionId, userMode, setUserMode, currentSnapshotIndex, setCurrentSnapshotIndex } = useConversationStore()
 
   const snapshotRenderCount = useRef(0)
-  const [snapshotIndex, setSnapshotIndex] = useState<number>(conversation.snapshots.length - 1)
-  const lastSnapshot = conversation.snapshots[snapshotIndex]
+  const lastSnapshot = conversation.snapshots[currentSnapshotIndex]
   const currentSnapshot: ConversationSnapshot = lastSnapshot ?
     lastSnapshot : initialSnapshot()
 
@@ -51,10 +50,10 @@ export function useConversationState(
   // this saves new versions of argument
   const saveSnapshot = (newSnap: ConversationSnapshot, convName: string = '') => {
     const oldSnaps = conversation.snapshots
-    const newSnaps = [...oldSnaps.slice(0, snapshotIndex + 1), newSnap]
+    const newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex + 1), newSnap]
     snapshotRenderCount.current += 1
-    const newSnapshotIndex = snapshotIndex + 1
-    setSnapshotIndex(newSnapshotIndex)
+    const newSnapshotIndex = currentSnapshotIndex + 1
+    setCurrentSnapshotIndex(newSnapshotIndex)
     const newConversation = {...conversation, snapshots: newSnaps}
     if (convName) newConversation.name = convName
     setConversation(newConversation)
@@ -63,16 +62,16 @@ export function useConversationState(
   const saveSnapshotInPlace = (newSnap: ConversationSnapshot) => {
     const oldSnaps = conversation.snapshots
     let newSnaps
-    newSnaps = [...oldSnaps.slice(0, snapshotIndex), newSnap,
-      ...oldSnaps.slice(snapshotIndex + 1)]
+    newSnaps = [...oldSnaps.slice(0, currentSnapshotIndex), newSnap,
+      ...oldSnaps.slice(currentSnapshotIndex + 1)]
     const newConversation = {...conversation, snapshots: newSnaps}
     setConversation(newConversation)
   }
 
   return {
     snapshotRenderCount,
-    snapshotIndex,
-    setSnapshotIndex,
+    snapshotIndex: currentSnapshotIndex,
+    setSnapshotIndex: setCurrentSnapshotIndex,
     currentSnapshot,
     userMode,
     setUserMode,
@@ -100,12 +99,11 @@ export function useConversationActions(
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
   createConversationFromProposition: (proposition: string) => void,
   conversationId: number,
-  snapshotIndex: number,
   conversation: ConversationType
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
-  const { saveConversationName, sessionId, userMode, setUserMode } = useConversationStore()
+  const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex } = useConversationStore()
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
@@ -126,12 +124,12 @@ export function useConversationActions(
   }
 
   // Reusable API call wrapper
-  const makeApiCall = async (operationInfo: ApiOperationInfo, conversation: ConversationType, snapshotIndex: number) => {
+  const makeApiCall = async (operationInfo: ApiOperationInfo, conversation: ConversationType) => {
     try {
       // Add conversation_id as query parameter (format: session_id:conversation_id)
       const url = new URL(operationInfo.url)
       url.searchParams.set('conversation_id', `${sessionId}:${conversationId}`)
-      url.searchParams.set('snapshot_id', String(snapshotIndex + 1))
+      url.searchParams.set('snapshot_id', String(currentSnapshotIndex + 1))
       
       const response = await axios.post(url.toString(), operationInfo.data)
       
@@ -155,7 +153,7 @@ export function useConversationActions(
       
       // Create a getter function that returns the current conversation state
       const getCurrentConversationState = () => {
-        return { conversation, snapshotIndex }
+        return { conversation, snapshotIndex: currentSnapshotIndex }
       }
       
       operationInfo.onSuccess(responseObject, getCurrentConversationState)
@@ -174,7 +172,7 @@ export function useConversationActions(
     if (!lastFailedOperation) return
     
     setUserMode('waiting')
-    await makeApiCall(lastFailedOperation, conversation, snapshotIndex)
+    await makeApiCall(lastFailedOperation, conversation)
   }
 
   const handleThesis = async (content?: string) => {
@@ -194,16 +192,16 @@ export function useConversationActions(
     const thesisResponseObject = await makeApiCall(
       {
         url, data: apiPrompt, onSuccess: (responseObject, getCurrentConversationState) => {
-          const { conversation, snapshotIndex } = getCurrentConversationState()
-          const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
-          const newSnapshot = {
-            ...currentSnapshot,
-            ...responseObject,
-            argMode,
-          }
-          saveSnapshot(newSnapshot)
+        const { conversation, snapshotIndex } = getCurrentConversationState()
+        const currentSnapshot = conversation.snapshots[snapshotIndex] || initialSnapshot()
+        const newSnapshot = {
+          ...currentSnapshot,
+          ...responseObject,
+          argMode,
+        }
+        saveSnapshot(newSnapshot)
         }, onFinally: () => setUserMode('ready'), operationName: 'Create Thesis'
-      }, conversation, snapshotIndex
+      }, conversation
     )
 
     url = VITE_API_BASE_URL + '/api/argument/gen-name'
@@ -226,33 +224,9 @@ export function useConversationActions(
           saveSnapshot(finalSnapshot)
           saveConversationName(conversation.id, responseObject.name)
         }, onFinally: () => {}, operationName: 'Generate Name'
-      }, conversation, snapshotIndex
+      }, conversation
     )
   }
-
-  // DISABLED: Old AI Justify handler - replaced by new agent system
-  // const handleAIJustify = async (loc: string, index: number) => {
-  //   setUserMode('waiting')
-  //   
-  //   const url = VITE_API_BASE_URL + '/api/argument/ai-justify'
-  //   const apiPrompt = {
-  //     ...currentSnapshot,
-  //     loc, index
-  //   }
-  //   
-  //   await makeApiCall(
-  //     { url, data: apiPrompt, onSuccess: (responseObject) => {
-  //       const newSnapshot = {
-  //         ...currentSnapshot,
-  //         ...responseObject,
-  //         evaluationsPending: true,
-  //       }
-  //       saveSnapshot(newSnapshot)
-  //     }, onFinally: () => setUserMode('ready'), operationName: 'AI Justify' }
-  //   )
-  // }
-
-
 
   const handleUserJustify = async (proposition: string) => {
     setUserMode('waiting')
@@ -275,44 +249,9 @@ export function useConversationActions(
         }
         saveSnapshot(newSnapshot)
       }, onFinally: () => setUserMode('ready'), operationName: 'User Justify' },
-      conversation, snapshotIndex
+      conversation
     )
   }
-
-  // DISABLED: Old evaluate steps function - replaced by new agent system
-  // verify that user hasn't moved away and potentially replaced 
-  // contents of this snapshot. saveSnapshot() is then called 
-  // with inPlace = true
-  // const evaluateSteps = async (snapshotRenderCount: React.MutableRefObject<number>) => {
-  //   const url = VITE_API_BASE_URL + '/api/argument/evaluate'
-  //   
-  //   try {
-  //     setEvaluatingMode(true)
-  //     const currentSnapshotRenderCount = snapshotRenderCount.current
-  //     
-  //     await makeApiCall({
-  //       url,
-  //       data: currentSnapshot,
-  //       onSuccess: (responseObject) => {
-  //         if (currentSnapshotRenderCount != snapshotRenderCount.current) return
-  //         if (!responseObject) {
-  //           throw new Error('empty responseObject')
-  //         }
-  //         const newSnapshot = {
-  //           ...currentSnapshot,
-  //           ...responseObject,
-  //           evaluationsPending: false,
-  //         }
-  //         saveSnapshot(newSnapshot, true)
-  //       },
-  //       onFinally: () => setEvaluatingMode(false),
-  //       operationName: 'Evaluate'
-  //     })
-  //   } catch (error: any) {
-  //     // Error handling is already done in makeApiCall
-  //     setEvaluatingMode(false)
-  //   }
-  // }
 
   const handleAction = async (
     action: ActionType, loc: string, index: number, errorLabel: string
@@ -338,7 +277,7 @@ export function useConversationActions(
         // }
         saveSnapshot(newSnapshot)
       }, onFinally: () => setUserMode('ready'), operationName: errorLabel },
-      conversation, snapshotIndex
+      conversation
     )
   }
 
@@ -404,7 +343,7 @@ export function useConversationActions(
         onFinally: () => setUserMode('ready'), 
         operationName: 'Reject formalization' 
       },
-      conversation, snapshotIndex
+      conversation
     )
   }
 
