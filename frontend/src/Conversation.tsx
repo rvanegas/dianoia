@@ -88,8 +88,6 @@ function Conversation({
     lastFailedOperation
   } = useConversationActions(
     currentSnapshot,
-    userMode,
-    setUserMode,
     setInputText,
     targetLoc,
     targetIndex,
