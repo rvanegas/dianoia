@@ -17,7 +17,6 @@ type AgentResult = {
 }
 
 type AgentResultsProps = {
-  conversationId: number
   snapshotIndex: number  // Required prop for API calls
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void
 }
@@ -26,8 +25,9 @@ type ResultsByAgent = {
   [agentType: string]: AgentResult[]
 }
 
-export default function AllAgentResults({ conversationId, snapshotIndex, saveSnapshotInPlace }: AgentResultsProps) {
-  const { sessionId, getCurrentConversationState } = useConversationStore()
+export default function AllAgentResults({ snapshotIndex, saveSnapshotInPlace }: AgentResultsProps) {
+  const { sessionId, getCurrentConversationState, getCurrentConversationId } = useConversationStore()
+  const conversationId = getCurrentConversationId()
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
   const [error, setError] = useState<string | null>(null)
   const [pollingKey, setPollingKey] = useState<number>(0) // Force useEffect re-run

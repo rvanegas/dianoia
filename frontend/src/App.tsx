@@ -21,10 +21,6 @@ function App() {
   const [files, setFiles] = useState<FileType[]>([])
   const [paneOpened, setPaneOpened] = useState<boolean>(false)
 
-  const setConversation = (newConversation: any) => {
-    updateCurrentConversation(newConversation)
-  }
-
   const createConversation = (initPrompt?: string) => {
     const newConversation = {
       id: nextConversationId,
@@ -143,8 +139,6 @@ function App() {
         {paneButton}
         <Conversation
           key={currentConversationIndex}
-          conversation={conversations[currentConversationIndex]}
-          setConversation={setConversation}
           createConversationFromProposition={createConversationFromProposition}
           files={files}
         />

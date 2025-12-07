@@ -97,12 +97,12 @@ export function useConversationActions(
   saveSnapshot: (newSnap: ConversationSnapshot, convName?: string) => void,
   saveSnapshotInPlace: (newSnap: ConversationSnapshot) => void,
   createConversationFromProposition: (proposition: string) => void,
-  conversationId: number,
   conversation: ConversationType
 ) {
   // State for tracking retry information
   const [lastFailedOperation, setLastFailedOperation] = useState<ApiOperationInfo | null>(null);
-  const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex } = useConversationStore()
+  const { saveConversationName, sessionId, userMode, setUserMode, currentSnapshotIndex, getCurrentConversationId } = useConversationStore()
+  const conversationId = getCurrentConversationId()
 
   // Reusable error handler
   const handleApiError = (error: any, operationInfo?: ApiOperationInfo) => {
