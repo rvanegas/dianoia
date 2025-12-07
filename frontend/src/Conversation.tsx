@@ -458,7 +458,7 @@ function Conversation({
       </FlexTable>
       <AllAgentResults conversationId={conversation.id}
         snapshotIndex={snapshotIndex}
-        getCurrentConversationState={() => ({ conversation, snapshotIndex })} saveSnapshotInPlace={saveSnapshotInPlace} />
+        saveSnapshotInPlace={saveSnapshotInPlace} />
       {loadingIndicator}
       {retryButton}
     </div>
