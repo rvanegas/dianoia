@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime
 
+from schemas import agent_input
 from core.utils import logger
 from services.agents import ArgumentBuilderAgent, ContentEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, RewriterAgent
 from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
@@ -445,17 +446,6 @@ class AgentCoordinator:
                 'processed_at': time.time()
             }
                         
-            # If this was a formalizer task, trigger argument state change reaction
-            if task.agent_type == 'formalizer':
-                # Use the agent_input directly from the task
-                argument_data = ArgumentData(
-                    argument=agent_input.agent_data.argument,
-                    assumptions=agent_input.agent_data.assumptions,
-                    file_ids=agent_input.file_ids
-                )
-                # Trigger reactive agent queueing based on the new formalization
-                self.queue_formal_evaluator_if_ready(agent_input.conversation_id, agent_input.snapshot_id, argument_data)
-
             # Debug logging
             # logger.info(f"Stored result for {task.agent_type} agent in conversation {task.conversation_id}")
             # logger.debug(f"Current results for conversation {task.conversation_id}: {self.result_manager.get_results(task.conversation_id)}")
@@ -681,23 +671,16 @@ class AgentCoordinator:
             agent_input=content_evaluator_agent_input
         )
         
-        # logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
-    
-    def queue_formal_evaluator_if_ready(self, conversation_id: str, snapshot_id: str, argument_data: ArgumentData):
-        """
-        Queue a formal_evaluator task if all formalizations are in place and existing formal_evaluator is outdated.
-        Checks that no formal_evaluator is already 'pending' or 'running'.
-        """
-        # logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
+        logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
 
         # Check if there's already a pending or running formal_evaluator task
         active_tasks = self.get_active_tasks()
         for task in active_tasks:
-            if task.agent_type == 'form_evaluator' and task.agent_input.conversation_id == conversation_id:
+            if task.agent_type == 'form_evaluator' and task.agent_input.conversation_id == conversation_id and task.agent_input.snapshot_id == snapshot_id:
                 logger.info(f"Form evaluator task already active for conversation {conversation_id}")
                 return
         
-        # logger.debug(f"Checking if formal evaluator is ready for conversation {conversation_id}")
+        logger.debug(f"Checking if formal evaluator is ready for conversation {conversation_id}")
         # Extract proposition texts from the argument for form evaluator check
         form_eval_argument_propositions = []
         
@@ -709,7 +692,7 @@ class AgentCoordinator:
             if proposition:
                 form_eval_argument_propositions.append(proposition)
 
-        # logger.debug(f"Form evaluator argument propositions: {form_eval_argument_propositions}")
+        logger.debug(f"Form evaluator argument propositions: {form_eval_argument_propositions}")
 
         # Check if all propositions in the argument AND assumptions have endorsed formalizations
         # The formal evaluator now gets formalizations directly from Step objects
@@ -733,7 +716,7 @@ class AgentCoordinator:
                     all_propositions_formalized = False
                     break
         
-        # logger.debug(f"All propositions formalized: {all_propositions_formalized}")
+        logger.debug(f"All propositions formalized: {all_propositions_formalized}")
         
         if all_propositions_formalized:
             # Queue form evaluator task
@@ -756,10 +739,9 @@ class AgentCoordinator:
                 agent_type='form_evaluator',
                 agent_input=form_evaluator_agent_input
             )
-            # logger.info(f"Queued form evaluator task for conversation {conversation_id}")
+            logger.info(f"Queued form evaluator task for conversation {conversation_id}")
         else:
-            pass
-            # logger.info(f"Not all propositions formalized yet for conversation {conversation_id}")
+            logger.info(f"Not all propositions formalized yet for conversation {conversation_id}")
     
     def stop(self):
         """Stop all workers"""

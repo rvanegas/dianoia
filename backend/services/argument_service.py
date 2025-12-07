@@ -114,6 +114,8 @@ class ArgumentService:
             assumptions=self.arguments.assumptions,
             file_ids=self.arguments.file_ids
         )
+
+        logger.debug(f"Queueing argument state change for conversation {argument_data}")
         
         # Use the reactive coordinator method
         coordinator.react_to_user_argument_change(
@@ -210,6 +212,19 @@ class ArgumentStepService(ArgumentService):
         
         # Queue analysis and discovery for the argument state change
         # This will automatically trigger the formalization agent
+        self.queue_argument_state_change()
+        
+        return self.gptjson()
+
+    def endorse_formalization(self) -> str:
+        """Endorse a formalization and potentially trigger formal evaluator"""
+        # Update the endorsement status of the formalization
+        step = self.arguments_with_step.arg[self.arguments_with_step.index]
+        if step.formalization:
+            step.formalization.endorsed = True
+        
+        # Queue analysis and discovery for the argument state change
+        # This will automatically trigger the formal evaluator if all formalizations are endorsed
         self.queue_argument_state_change()
         
         return self.gptjson()
