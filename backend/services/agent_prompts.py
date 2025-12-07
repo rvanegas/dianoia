@@ -438,14 +438,15 @@ The input will be a JSON object with the following structure:
 
 Each Step object contains:
 - symbol: String identifier (e.g., "A", "B", "C")
-- proposition: The natural language proposition (ignored for formal evaluation)
 - justifiers: List of symbols that justify this step
-- formalization: Formal logic representation object with 'ascii' field
+- formalization: Formal logic representation object with 'ascii' and 'json_structure' fields
 - endorsed: Boolean indicating if the formalization is endorsed by the user
 
 ### Task
 
 You will receive argument data with Step objects containing formal logic representations. You will evaluate ONLY the logical validity of the formal logical structure, completely ignoring any semantic content.
+
+**IMPORTANT**: The assumptions are additional premises in the argument. Treat assumptions as regular premises for the purposes of formal logical evaluation.
 
 For each formalization, focus entirely on whether the logical structure is valid. Do not evaluate truth values.
 
@@ -460,38 +461,48 @@ The argument_validity should reflect the formal logical validity of the argument
 - Consider only the formal logical relationships between propositions
 - Use the formalizations to assess logical validity
 - **IMPORTANT**: Pay attention to variable renaming and the transitivity of implication
-- When premises use different variable names (e.g., ∀y (Q(y) → R(y)) and ∀x (P(x) → Q(x))), the argument can still be valid if the logical structure supports the conclusion
+- When premises use different variable names (e.g., ∀y (P(y) → Q(y)) and ∀x (P(x) → Q(x))), the argument can still be valid if the logical structure supports the conclusion
 - The transitivity of implication means: if ∀x (P(x) → Q(x)) and ∀y (Q(y) → R(y)), then ∀x (P(x) → R(x)) is valid
 - Variable names can be renamed consistently without affecting validity
 
 ### Examples
 
-# Valid deductive argument
+# Valid deductive argument with assumptions
 
 Input:
 {
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
-        "proposition": "Socrates is a man",
-        "justifiers": [],
-        "formalization": {"ascii": "P(a)", "endorsed": true}
-      },
-      {
-        "symbol": "B",
-        "proposition": "All men are mortal",
-        "justifiers": [],
-        "formalization": {"ascii": "forall x. (P(x) -> Q(x))", "endorsed": true}
-      },
-      {
         "symbol": "C",
-        "proposition": "Socrates is mortal",
         "justifiers": ["A", "B"],
-        "formalization": {"ascii": "Q(a)", "endorsed": true}
+        "formalization": {
+          "ascii": "Q(a)", 
+          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "endorsed": true
+        }
+      },
+      {
+        "symbol": "A",
+        "justifiers": [],
+        "formalization": {
+          "ascii": "P(a)", 
+          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "endorsed": true
+        }
       }
     ],
-    "assumptions": [],
+    "assumptions": [
+      {
+        "symbol": "B",
+        "justifiers": [],
+        "formalization": {
+          "ascii": "forall x. (P(x) -> Q(x))", 
+          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "endorsed": true
+        }
+      }
+    ],
     "target_type": "argument",
     "target_content": null
   }
@@ -500,9 +511,9 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-    {"symbol": "A", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
     {"symbol": "B", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
-    {"symbol": "C", "validity": 1.0, "reasoning": "Valid conclusion from premises A and B"}
+    {"symbol": "C", "validity": 1.0, "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "A", "validity": 1.0, "reasoning": "Valid conclusion from premises B and C"}
   ],
   "argument_validity": 1.0,
   "logical_issues": [],
@@ -516,22 +527,31 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
-        "proposition": "Something follows",
-        "justifiers": [],
-        "formalization": {"ascii": "Q(a)", "endorsed": true}
-      },
-      {
         "symbol": "B",
-        "proposition": "All P implies Q",
         "justifiers": [],
-        "formalization": {"ascii": "forall x. (P(x) -> Q(x))", "endorsed": true}
+        "formalization": {
+          "ascii": "forall x. (P(x) -> Q(x))", 
+          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "endorsed": true
+        }
       },
       {
         "symbol": "C",
-        "proposition": "Something is P",
-        "justifiers": ["A", "B"],
-        "formalization": {"ascii": "P(a)", "endorsed": true}
+        "justifiers": [],
+        "formalization": {
+          "ascii": "P(a)", 
+          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "endorsed": true
+        }
+      },
+      {
+        "symbol": "A",
+        "justifiers": ["B", "C"],
+        "formalization": {
+          "ascii": "Q(a)", 
+          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "endorsed": true
+        }
       }
     ],
     "assumptions": [],
