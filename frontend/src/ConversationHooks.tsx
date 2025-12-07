@@ -4,7 +4,6 @@ import axios from 'axios'
 import type {StepType, ArgMode, ConversationSnapshot, ConversationType} from './types'
 import { useConversationStore, initialSnapshot } from './conversationStore'
 
-type UserMode = 'waiting' | 'ready' | 'input'
 type ActionType = 'remove' | 'assume' | 'explain' | 'endorse-formalization'
 
 // Type for API operation information
@@ -366,10 +365,9 @@ export function useConversationActions(
 }
 
 export function useConversationNavigation(
-  conversation: ConversationType,
-  setUserMode: (mode: UserMode) => void
+  conversation: ConversationType
 ) {
-  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex } = useConversationStore()
+  const { snapshotRenderCount, setSnapshotRenderCount, currentSnapshotIndex, setCurrentSnapshotIndex, setUserMode } = useConversationStore()
 
   const handleUndo = () => {
     if (currentSnapshotIndex <= 0) return
