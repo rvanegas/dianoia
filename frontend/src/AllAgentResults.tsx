@@ -159,6 +159,42 @@ export default function AllAgentResults() {
       }
     }
 
+    // Apply FormalEvaluatorAgent results
+    const formalEvaluatorResults = newResultsByAgent['form_evaluator']
+    if (formalEvaluatorResults && formalEvaluatorResults.length > 0) {
+      const latestFormalEvaluatorResult = formalEvaluatorResults[formalEvaluatorResults.length - 1]
+      const resultContent = latestFormalEvaluatorResult.result_content
+
+      // Apply formal validity evaluations to all steps (argument and assumptions)
+      if (resultContent.proposition_evaluations) {
+        resultContent.proposition_evaluations.forEach((evaluation: any) => {
+          // Check argument steps
+          const argStepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
+          if (argStepIndex !== -1) {
+            const oldStep = updatedSnapshot.argument[argStepIndex]
+            const newStep = {
+              ...oldStep,
+              valid_formal: evaluation.validity.toString()
+            }
+            updatedSnapshot.argument[argStepIndex] = newStep
+            hasChanges = true
+          }
+          
+          // Check assumption steps
+          const assumptionStepIndex = updatedSnapshot.assumptions.findIndex((s: any) => s.symbol === evaluation.symbol)
+          if (assumptionStepIndex !== -1) {
+            const oldStep = updatedSnapshot.assumptions[assumptionStepIndex]
+            const newStep = {
+              ...oldStep,
+              valid_formal: evaluation.validity.toString()
+            }
+            updatedSnapshot.assumptions[assumptionStepIndex] = newStep
+            hasChanges = true
+          }
+        })
+      }
+    }
+
     // Save updated snapshot if there were changes
     if (hasChanges) {
       saveSnapshotInPlace(updatedSnapshot)

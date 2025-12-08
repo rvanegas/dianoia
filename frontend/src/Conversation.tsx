@@ -184,15 +184,16 @@ function Conversation({
       const agentValuesDisplay = () => {
         const hasTruth = step.truth && step.truth !== ""
         const hasValidity = step.valid && step.valid !== "" && step.justifiers.length > 0
+        const hasFormalValidity = step.valid_formal && step.valid_formal !== "" && step.justifiers.length > 0
         const hasFormalization = step.formalization
 
-        if (!hasTruth && !hasValidity && !hasFormalization) {
+        if (!hasTruth && !hasValidity && !hasFormalValidity && !hasFormalization) {
           return null
         }
         return (
           <div className="mt-2 ml-4 space-y-1">
             {/* Truth and Validity Values */}
-            {(hasTruth || hasValidity) && (
+            {(hasTruth || hasValidity || hasFormalValidity) && (
               <div className="flex gap-2 text-xs">
                 {hasTruth && (
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -201,7 +202,12 @@ function Conversation({
                 )}
                 {hasValidity && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                    Validity: {(parseFloat(step.valid) * 100).toFixed(0)}%
+                    Content Validity: {(parseFloat(step.valid) * 100).toFixed(0)}%
+                  </span>
+                )}
+                {hasFormalValidity && (
+                  <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">
+                    Formal Validity: {(parseFloat(step.valid_formal!) * 100).toFixed(0)}%
                   </span>
                 )}
               </div>

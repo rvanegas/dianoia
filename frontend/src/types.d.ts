@@ -7,6 +7,7 @@ export type StepType = {
   justifiers: string[]
   truth: string
   valid: string
+  valid_formal?: string
   formalization?: {
     ascii: string
     json_structure: any

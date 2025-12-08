@@ -80,32 +80,6 @@ class ArgumentService:
         }
         return props, new_arg
 
-    # DISABLED: Old evaluation system - replaced by new agent system
-    # def add_evaluations(self, arg: List[Step], conclusion: Step):
-    #     """
-    #     For a given list of steps as premises, and a step as conclusion,
-    #     use gpt to set "truth" and "valid" values according to evaluate_system_prompt
-    #     """
-    #     props, new_arg = self.subargument(arg, conclusion)
-    #     content = gpt_evaluate.call(json.dumps(props), self.arguments.file_ids)
-    #     evaluations = json.loads(content)
-    #     for new_arg_index, step in enumerate(new_arg):
-    #         arg_index = find_index(arg, lambda x, step=step: x.symbol == step.symbol)
-    #         arg[arg_index].truth = evaluations["truth"][new_arg_index]
-    #         if new_arg_index == len(new_arg) - 1:
-    #         arg[arg_index].valid = evaluations["valid"]
-    #         else:
-    #         arg[arg_index].valid = "1.0"
-
-    # DISABLED: Old evaluation system - replaced by new agent system
-    # def evaluate(self) -> str:
-    #     """Find all the subarguments and evaluate their numbers using add_evaluations()"""
-    #     for step in self.arguments.argument:
-    #         if len(step.justifiers) != 0:
-    #             self.add_evaluations(self.arguments.argument + self.arguments.assumptions, step)
-    #     return self.arguments.model_dump_json(include={
-    #         "assumptions", "argument", "explanation"})
-
     def queue_argument_state_change(self):
         """Reactively queue agents for argument state changes"""
         # Prepare argument data for the reactive coordinator
@@ -150,18 +124,6 @@ class ArgumentStepService(ArgumentService):
         # Queue analysis and discovery for the argument state change
         self.queue_argument_state_change()
         return conclusion
-
-    # DISABLED: Old AI justify system - replaced by new agent system
-    # def ai_justify(self) -> str:
-    #     """Use gpt to add steps to justify indicated conclusion"""
-    #     response = gpt_justify.call(self.arguments_with_step.model_dump_json(), self.arguments_with_step.file_ids)
-    #     new_propositions = json.loads(response)["propositions"]
-    #     for p in new_propositions:
-    #         # Clean citations from the proposition
-    #         cleaned_proposition = clean_citations(p)
-    #         self.insert_proposition(cleaned_proposition)
-    #         self.arguments_with_step.index += 1
-    #     return self.gptjson()
 
     def remove(self) -> str:
         """Remove step and adjust justifiers and evaluations accordingly"""
