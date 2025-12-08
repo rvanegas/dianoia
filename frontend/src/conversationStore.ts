@@ -47,6 +47,13 @@ interface ConversationState {
   createConversationFromProposition: (proposition: string) => void
   createConversation: (initPrompt?: string) => void
   applyNewArgument: (responseData: any) => void
+  applyAgentResults: (changes: {
+    truthUpdates?: { symbol: string, value: string }[]
+    validityUpdates?: { symbol: string, value: string }[]
+    formalizationUpdates?: { symbol: string, formalization: any }[]
+    formalValidityUpdates?: { symbol: string, value: string }[]
+    formalizationDefinitions?: any
+  }) => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -217,6 +224,83 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         
         // Increment render count to trigger re-renders
         state.snapshotRenderCount += 1
+      }
+    }))
+  },
+
+  applyAgentResults: (changes) => {
+    set(produce((state) => {
+      const conversation = state.conversations[state.currentConversationIndex]
+      if (conversation && conversation.snapshots[state.currentSnapshotIndex]) {
+        const currentSnapshot = conversation.snapshots[state.currentSnapshotIndex]
+        let hasChanges = false
+
+        // Apply truth updates
+        if (changes.truthUpdates) {
+          changes.truthUpdates.forEach(({ symbol, value }) => {
+            const stepIndex = currentSnapshot.argument.findIndex((s: any) => s.symbol === symbol)
+            if (stepIndex !== -1) {
+              currentSnapshot.argument[stepIndex].truth = value
+              hasChanges = true
+            }
+          })
+        }
+
+        // Apply validity updates
+        if (changes.validityUpdates) {
+          changes.validityUpdates.forEach(({ symbol, value }) => {
+            const stepIndex = currentSnapshot.argument.findIndex((s: any) => s.symbol === symbol)
+            if (stepIndex !== -1) {
+              currentSnapshot.argument[stepIndex].valid = value
+              hasChanges = true
+            }
+          })
+        }
+
+        // Apply formalization updates
+        if (changes.formalizationUpdates) {
+          changes.formalizationUpdates.forEach(({ symbol, formalization }) => {
+            const stepIndex = currentSnapshot.argument.findIndex((s: any) => s.symbol === symbol)
+            if (stepIndex !== -1) {
+              // Skip if this step already has an endorsed formalization
+              if (currentSnapshot.argument[stepIndex].formalization?.endorsed) {
+                return
+              }
+              currentSnapshot.argument[stepIndex].formalization = formalization
+              hasChanges = true
+            }
+          })
+        }
+
+        // Apply formal validity updates (to both argument and assumption steps)
+        if (changes.formalValidityUpdates) {
+          changes.formalValidityUpdates.forEach(({ symbol, value }) => {
+            // Check argument steps
+            const argStepIndex = currentSnapshot.argument.findIndex((s: any) => s.symbol === symbol)
+            if (argStepIndex !== -1) {
+              currentSnapshot.argument[argStepIndex].valid_formal = value
+              hasChanges = true
+            }
+            
+            // Check assumption steps
+            const assumptionStepIndex = currentSnapshot.assumptions.findIndex((s: any) => s.symbol === symbol)
+            if (assumptionStepIndex !== -1) {
+              currentSnapshot.assumptions[assumptionStepIndex].valid_formal = value
+              hasChanges = true
+            }
+          })
+        }
+
+        // Apply formalization definitions
+        if (changes.formalizationDefinitions) {
+          currentSnapshot.formalization_definitions = changes.formalizationDefinitions
+          hasChanges = true
+        }
+
+        // Increment render count if there were changes
+        if (hasChanges) {
+          state.snapshotRenderCount += 1
+        }
       }
     }))
   }

@@ -21,7 +21,7 @@ type ResultsByAgent = {
 
 export default function AllAgentResults() {
   const { sessionId, getCurrentConversationState, getCurrentConversationId, currentSnapshotIndex, 
-    saveSnapshotInPlace } = useConversationStore()
+    applyAgentResults } = useConversationStore()
   const conversationId = getCurrentConversationId()
   
   const [resultsByAgent, setResultsByAgent] = useState<ResultsByAgent>({})
@@ -67,137 +67,73 @@ export default function AllAgentResults() {
 
   // Apply agent results to argument steps
   const applyAgentResultsToSnapshot = (newResultsByAgent: ResultsByAgent) => {
-    // Get the current conversation state to ensure we have the latest snapshot
-    const currentSnapshot = getCurrentSnapshot()
-    const updatedSnapshot = { 
-      ...currentSnapshot,
-      argument: [...currentSnapshot.argument], // Create new array
-      assumptions: [...currentSnapshot.assumptions] // Create new array
-    }
-    let hasChanges = false
+    const changes: any = {}
 
-    // Apply ContentEvaluationAgent results
+    // Parse ContentEvaluationAgent results
     const contentResults = newResultsByAgent['content_evaluator']
     if (contentResults && contentResults.length > 0) {
       const latestContentResult = contentResults[contentResults.length - 1]
       const resultContent = latestContentResult.result_content
 
-      // Apply truth evaluations (only to argument steps, not assumptions)
+      // Parse truth evaluations
       if (resultContent.truth_evaluations) {
-        resultContent.truth_evaluations.forEach((evaluation: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
-          if (stepIndex !== -1) {
-            const oldStep = updatedSnapshot.argument[stepIndex]
-            // Create new step object to avoid read-only property error
-            const newStep = {
-              ...oldStep,
-              truth: evaluation.truth_value.toString()
-            }
-            updatedSnapshot.argument[stepIndex] = newStep
-            hasChanges = true
-          }
-        })
+        changes.truthUpdates = resultContent.truth_evaluations.map((evaluation: any) => ({
+          symbol: evaluation.symbol,
+          value: evaluation.truth_value.toString()
+        }))
       }
 
-      // Apply validity evaluations (only to argument steps, not assumptions)
+      // Parse validity evaluations
       if (resultContent.validity_evaluations) {
-        resultContent.validity_evaluations.forEach((evaluation: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
-          if (stepIndex !== -1) {
-            const oldStep = updatedSnapshot.argument[stepIndex]
-            // Create new step object to avoid read-only property error
-            const newStep = {
-              ...oldStep,
-              valid: evaluation.validity_value.toString()
-            }
-            updatedSnapshot.argument[stepIndex] = newStep
-            hasChanges = true
-          }
-        })
+        changes.validityUpdates = resultContent.validity_evaluations.map((evaluation: any) => ({
+          symbol: evaluation.symbol,
+          value: evaluation.validity_value.toString()
+        }))
       }
     }
 
-    // Apply FormalizationAgent results
+    // Parse FormalizationAgent results
     const formalizationResults = newResultsByAgent['formalizer']
     if (formalizationResults && formalizationResults.length > 0) {
       const latestFormalizationResult = formalizationResults[formalizationResults.length - 1]
       const resultContent = latestFormalizationResult.result_content
 
-      // Apply formalizations (but don't replace endorsed ones)
+      // Parse formalizations
       if (resultContent.formalizations) {
-        resultContent.formalizations.forEach((formalization: any) => {
-          const stepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === formalization.symbol)
-          if (stepIndex !== -1) {
-            const oldStep = updatedSnapshot.argument[stepIndex]
-            
-            // Skip if this step already has an endorsed formalization
-            if (oldStep.formalization?.endorsed) {
-              return
-            }
-            
-            // Create new step object to avoid read-only property error
-            const newStep = {
-              ...oldStep,
-              formalization: {
-                ascii: formalization.ascii,
-                json_structure: typeof formalization.json_structure === 'string' 
-                  ? JSON.parse(formalization.json_structure) 
-                  : formalization.json_structure,
-                endorsed: false
-              }
-            }
-            updatedSnapshot.argument[stepIndex] = newStep
-            hasChanges = true
+        changes.formalizationUpdates = resultContent.formalizations.map((formalization: any) => ({
+          symbol: formalization.symbol,
+          formalization: {
+            ascii: formalization.ascii,
+            json_structure: formalization.json_structure,
+            endorsed: false
           }
-        })
+        }))
       }
 
-      // Save formalization definitions to snapshot
+      // Parse formalization definitions
       if (resultContent.definitions) {
-        updatedSnapshot.formalization_definitions = resultContent.definitions
-        hasChanges = true
+        changes.formalizationDefinitions = resultContent.definitions
       }
     }
 
-    // Apply FormalEvaluatorAgent results
+    // Parse FormalEvaluatorAgent results
     const formalEvaluatorResults = newResultsByAgent['form_evaluator']
     if (formalEvaluatorResults && formalEvaluatorResults.length > 0) {
       const latestFormalEvaluatorResult = formalEvaluatorResults[formalEvaluatorResults.length - 1]
       const resultContent = latestFormalEvaluatorResult.result_content
 
-      // Apply formal validity evaluations to all steps (argument and assumptions)
+      // Parse formal validity evaluations
       if (resultContent.proposition_evaluations) {
-        resultContent.proposition_evaluations.forEach((evaluation: any) => {
-          // Check argument steps
-          const argStepIndex = updatedSnapshot.argument.findIndex((s: any) => s.symbol === evaluation.symbol)
-          if (argStepIndex !== -1) {
-            const oldStep = updatedSnapshot.argument[argStepIndex]
-            const newStep = {
-              ...oldStep,
-              valid_formal: evaluation.validity.toString()
-            }
-            updatedSnapshot.argument[argStepIndex] = newStep
-            hasChanges = true
-          }
-          
-          // Check assumption steps
-          const assumptionStepIndex = updatedSnapshot.assumptions.findIndex((s: any) => s.symbol === evaluation.symbol)
-          if (assumptionStepIndex !== -1) {
-            const oldStep = updatedSnapshot.assumptions[assumptionStepIndex]
-            const newStep = {
-              ...oldStep,
-              valid_formal: evaluation.validity.toString()
-            }
-            updatedSnapshot.assumptions[assumptionStepIndex] = newStep
-            hasChanges = true
-          }
-        })
+        changes.formalValidityUpdates = resultContent.proposition_evaluations.map((evaluation: any) => ({
+          symbol: evaluation.symbol,
+          value: evaluation.validity.toString()
+        }))
       }
     }
 
-    // Save updated snapshot if there were changes
-    if (hasChanges) {
-      saveSnapshotInPlace(updatedSnapshot)
+    // Apply changes to the store if there are any
+    if (Object.keys(changes).length > 0) {
+      applyAgentResults(changes)
     }
   }
 
