@@ -31,10 +31,7 @@ interface ConversationState {
   lastFailedOperation: ApiOperationInfo | null
   
   updateCurrentConversation: (conversation: ConversationType) => void
-  // addConversation: (conversation: ConversationType) => void
   saveConversationName: (conversationId: number, name: string) => void
-  saveSnapshot: (snapshot: ConversationSnapshot) => void
-  saveSnapshotInPlace: (snapshot: ConversationSnapshot) => void
   saveAgentResults: (conversationId: number, snapshotIndex: number, agentResults: any) => void
   setCurrentConversationIndex: (index: number) => void
   setCurrentSnapshotIndex: (index: number) => void
@@ -72,49 +69,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }))
   },
 
-  // addConversation: (conversation) => {
-  //   set(produce((state) => {
-  //     // Ensure conversation has at least one snapshot
-  //     if (conversation.snapshots.length === 0) {
-  //       conversation.snapshots = [initialSnapshot()]
-  //     }
-  //     state.conversations.push(conversation)
-  //     state.currentConversationIndex = state.conversations.length - 1
-  //     state.nextConversationId = conversation.id + 1
-  //   }))
-  //   set({ currentSnapshotIndex: 0 })
-  // },
-
   saveConversationName: (conversationId, name) => {
     set(produce((state) => {
       const conversation = state.conversations.find((c: ConversationType) => c.id === conversationId)
       if (conversation) {
         conversation.name = name
-      }
-    }))
-  },
-
-  saveSnapshot: (snapshot) => {
-    set(produce((state) => {
-      const conversation = state.conversations[state.currentConversationIndex]
-      if (conversation) {
-        // Remove snapshots after the current index and add the new one
-        conversation.snapshots.splice(state.currentSnapshotIndex + 1)
-        conversation.snapshots.push(snapshot)
-        // Update the current snapshot index to point to the new snapshot
-        state.currentSnapshotIndex = conversation.snapshots.length - 1
-        // Increment render count
-        state.snapshotRenderCount += 1
-      }
-    }))
-  },
-
-  saveSnapshotInPlace: (snapshot) => {
-    set(produce((state) => {
-      const conversation = state.conversations[state.currentConversationIndex]
-      if (conversation) {
-        // Replace the snapshot at the current index
-        conversation.snapshots[state.currentSnapshotIndex] = snapshot
       }
     }))
   },
