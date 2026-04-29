@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Backend (run from `backend/`)
+### Backend
 
 ```bash
 # Dev server
