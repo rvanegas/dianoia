@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Dianoia** is an AI-powered argumentation platform. Users build structured logical arguments (thesis + assumptions → conclusion) and receive AI-generated evaluations and improvement recommendations via background agents.
+**Dianoia** is the server for an AI-powered argumentation platform. Users build structured logical arguments (thesis + assumptions → conclusion) and receive AI-generated evaluations and improvement recommendations via background agents. The companion UI is **Noesis** (`~/src/noesis`).
 
 ## Commands
 
@@ -27,23 +27,10 @@ pylint backend/
 black --check .
 ```
 
-### Frontend (run from `frontend/`)
+### Full stack (with Docker)
 
 ```bash
-npm run dev          # dev server
-npm run typecheck    # TypeScript check
-npm run lint         # ESLint
-npm run build        # production build
-
-# or use scripts:
-./bin/frontend-dev
-./bin/frontend-type-check
-```
-
-### Full stack
-
-```bash
-./bin/dev-docker     # Docker Compose (backend + frontend + PostgreSQL)
+./bin/dev-docker     # Docker Compose (backend + PostgreSQL)
 docker-compose up --build
 ```
 
@@ -52,13 +39,13 @@ docker-compose up --build
 ### Request Flow
 
 ```
-Frontend (React/Zustand) → FastAPI routes (api/) → Service layer (services/) → LLM (OpenAI)
+Client (Noesis or other) → FastAPI routes (api/) → Service layer (services/) → Anthropic Claude
                                                          ↓
                                                Agent Coordinator (background threads)
                                                          ↓
                                                AgentResultManager (in-memory, TTL 3 days)
                                                          ↑
-Frontend polls GET /api/agents/results ────────────────────────────────────────
+Client polls GET /api/agents/results ────────────────────────────────────────
 ```
 
 ### Backend Structure
@@ -69,7 +56,8 @@ Frontend polls GET /api/agents/results ─────────────�
 - `services/agent_coordinator.py` — Thread-based task queue; `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
 - `services/agent_prompts.py` — All LLM prompt templates
 - `services/argument_service.py` — Core argument manipulation (`next_symbol()`, `new_step()`, `clean_citations()`)
-- `services/conversation.py` — `Gpt` wrapper class for name generation and explanations
+- `services/conversation.py` — `Gpt` wrapper class for name generation and explanations; uses `client.messages.create()` with `output_config` for structured JSON
+- `services/openaiclient.py` — Anthropic client instance (named for historical reasons)
 - `core/logic.py` — Mathematical logic formalization: `Term` (Variable, Constant), `Formula` (Predicate, PropVar, Equality, Quantifier, BinaryOp, Modal), each with `to_dict()` / `to_unicode()` / `to_ascii()`
 - `schemas/` — Pydantic request/response schemas
 - `startup_init.py` — Background thread that pre-warms GPT instances at server startup to avoid first-request delays
@@ -80,16 +68,9 @@ Agents run in background threads after each user action. The **ImprovementAgent*
 
 **Agent filtering:** `FilteredAgentInput` (in `schemas/agent_input.py`) strips irrelevant data before passing to each agent — the `ContentEvaluationAgent` never sees formalization data, the `FormalEvaluatorAgent` never sees natural-language proposition text. Use the class methods `for_content_evaluation()`, `for_formal_evaluation()`, `for_formalization()` when constructing agent inputs.
 
-**Conversation ID format:** Composite key `"session_id:conversation_id"` — enables multi-conversation sessions from a single browser session.
+**Conversation ID format:** Composite key `"session_id:conversation_id"` — enables multi-conversation sessions from a single client session.
 
 Agent trigger logic and cooldown periods live in `agent_coordinator.py`.
-
-### Frontend Structure
-
-- `conversationStore.ts` — Zustand store (with Immer); single source of truth for conversation state, snapshots, agent results, endorsements. `sessionId` is a `crypto.randomUUID()` generated once per browser session.
-- `ConversationHooks.tsx` — Custom hooks wrapping Axios calls; `makeApiCall()` and `handleApiError()` handle 422 `AssistantResponseError` responses
-- `AllAgentResults.tsx` — Renders improvement recommendations from agents
-- State is snapshot-based: each argument modification creates a new snapshot, enabling isolated agent results per state
 
 ### Key Concepts
 
@@ -99,18 +80,15 @@ Agent trigger logic and cooldown periods live in `agent_coordinator.py`.
 
 ### Test Patterns
 
-Tests use FastAPI `TestClient`, mock `coordinator.queue_task()`, and patch GPT calls. Key test files: `test_api_argument.py` (route integration), `test_improvement_agent*.py` (trigger logic), `test_api_agents_stale_results.py` (snapshot filtering), `test_result_manager.py` (TTL/cleanup), `test_dual_evaluators.py` (content + formal interaction).
+Tests use FastAPI `TestClient`, mock `coordinator.queue_task()`, and patch LLM calls. Key test files: `test_api_argument.py` (route integration), `test_improvement_agent*.py` (trigger logic), `test_api_agents_stale_results.py` (snapshot filtering), `test_result_manager.py` (TTL/cleanup), `test_dual_evaluators.py` (content + formal interaction).
 
-## Environment Variables
+## Configuration
 
-Backend (`.env` in `backend/`):
-```
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-4o
-OPENAI_ASSISTANT_ID=...   # optional
+Config is read from `~/.config/dianoia/config.toml` with environment variable fallbacks:
+
+```toml
+anthropic_api_key = "..."
+model = "claude-sonnet-4-6"
 ```
 
-Frontend (`.env` in `frontend/`):
-```
-VITE_API_BASE_URL=http://localhost:8000
-```
+Or via environment variables: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`.
