@@ -38,7 +38,6 @@ class Gpt:
             output_config={
                 "format": {
                     "type": "json_schema",
-                    "name": "response",
                     "schema": self.response_format_base
                 }
             }
