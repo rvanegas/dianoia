@@ -651,7 +651,7 @@ The formalization must follow these exact constraints from the logic system:
    - **Not**: `not φ` (negation)
    - **BinaryOp**: `(φ and ψ)`, `(φ or ψ)`, `(φ -> ψ)` (and, or, implies)
    - **Quantifier**: `forall x. (φ)`, `exists x. (φ)` (forall, exists)
-   - **Modal**: `[]φ`, `<>φ` (box, diamond)
+   - **Modal**: `nec φ`, `pos φ` (necessarily, possibly)
 
 3. **Naming Conventions**:
    - **Predicate names**: Use abstract, non-descriptive names like "P", "Q", "R" to avoid semantic content that could distract from logical structure
@@ -662,7 +662,7 @@ The formalization must follow these exact constraints from the logic system:
 4. **ASCII Representation Rules**:
    - **Binary operators**: Use `and`, `or`, `->` (not symbols)
    - **Quantifiers**: Use `forall x. (φ)`, `exists x. (φ)` format
-   - **Modals**: Use `[]φ` for box, `<>φ` for diamond
+   - **Modals**: Use `nec φ` for necessarily, `pos φ` for possibly
    - **Negation**: Use `not φ` format
 
 ### Guidelines

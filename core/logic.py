@@ -196,8 +196,8 @@ class Modal(Formula):
         return f"{sym}{self.body.to_unicode()}"
 
     def to_ascii(self) -> str:
-        sym = {"box": "[]", "diamond": "<>"}[self.mod.value]
-        return f"{sym}{self.body.to_ascii()}"
+        sym = {"box": "nec", "diamond": "pos"}[self.mod.value]
+        return f"{sym} {self.body.to_ascii()}"
 
 
 # --- Helpers for terms and args ---

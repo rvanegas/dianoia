@@ -72,11 +72,8 @@ class AgentResultManager:
         # Clean up outdated results before adding the new one
         self._cleanup_outdated_results(conversation_id, result)
         
-        # Check if this form evaluator result should be added
-        if result.agent_type == 'form_evaluator':
-            if not self._should_add_form_evaluator_result(conversation_id, result):
-                # Don't add the result if formalization is incomplete
-                return
+        # form_evaluator is only queued when all formalizations are in place,
+        # so its result is always valid to store.
         
         # Add the new result and update conversation timestamp
         self.results_by_conversation[conversation_id].append(result)
@@ -133,14 +130,26 @@ class AgentResultManager:
     
     def _should_add_form_evaluator_result(self, conversation_id: str, result: StoredAgentResult) -> bool:
         """Check if a form evaluator result should be added"""
-        # Get all formalizations for this conversation
-        formalizations = []
+        # Accept if formalizer ran in this session
         for existing_result in self.results_by_conversation.get(conversation_id, []):
             if existing_result.agent_type == 'formalizer':
-                formalizations.append(existing_result)
-        
-        # Only add form evaluator result if we have formalizations
-        return len(formalizations) > 0
+                return True
+
+        # Also accept if the argument steps themselves carry endorsed formalizations
+        # (second-run CLI flow: formalizer not re-queued because all steps are already endorsed)
+        argument = result.result_content.get("argument", [])
+        for step in argument:
+            form = getattr(step, "formalization", None) if hasattr(step, "formalization") else (
+                step.get("formalization") if isinstance(step, dict) else None
+            )
+            if form:
+                endorsed = getattr(form, "endorsed", None) if hasattr(form, "endorsed") else (
+                    form.get("endorsed") if isinstance(form, dict) else None
+                )
+                if endorsed:
+                    return True
+
+        return False
     
     def get_results(self, conversation_id: str) -> List[StoredAgentResult]:
         """Get all results for a conversation"""
