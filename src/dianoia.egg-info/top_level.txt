@@ -1,6 +1,5 @@
 api
 cli
-config
 core
 schemas
 services

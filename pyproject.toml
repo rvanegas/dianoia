@@ -4,31 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dianoia"
-version = "0.1.0"
+version = "0.1.5"
 description = "AI-powered argumentation server and CLI."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["platformdirs"]
 
 [project.scripts]
 dianoia = "cli.argue:main"
 
 [tool.setuptools]
-package-dir = {"" = "."}
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["api*", "cli*", "core*", "schemas*", "services*"]
+where = ["src"]
+include = ["api*", "cli*", "config*", "core*", "schemas*", "services*"]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
+pythonpath = ["src"]
+testpaths = ["src/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-filterwarnings = [
-    "ignore::DeprecationWarning:openai.*",
-    "ignore::DeprecationWarning:openai.resources.beta.threads.*",
-    "ignore::DeprecationWarning:openai._legacy_response.*",
-    "ignore::DeprecationWarning:openai._utils._utils.*",
-    "ignore:The Assistants API is deprecated in favor of the Responses API"
-]
+filterwarnings = []

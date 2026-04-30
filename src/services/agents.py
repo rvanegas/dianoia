@@ -196,7 +196,7 @@ class FormalizationAgent:
             
             # Check if there are any steps that need formalization
             steps_needing_formalization = []
-            for step in agent_input.agent_data.argument:
+            for step in agent_input.agent_data.argument + agent_input.agent_data.assumptions:
                 if not step.formalization or not step.formalization.endorsed:
                     steps_needing_formalization.append(step)
             

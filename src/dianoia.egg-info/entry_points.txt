@@ -1,0 +1,2 @@
+[console_scripts]
+dianoia = cli.argue:main
