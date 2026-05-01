@@ -67,17 +67,19 @@ _STEP_SCHEMA = {
     "additionalProperties": False,
 }
 
+_RESPONSE_FORMAT = {
+    "type": "object",
+    "properties": {
+        "assumptions": {"type": "array", "items": _STEP_SCHEMA},
+        "argument":    {"type": "array", "items": _STEP_SCHEMA},
+    },
+    "required": ["assumptions", "argument"],
+    "additionalProperties": False,
+}
+
 _gpt_extract = ModelAgent(
     instructions=_EXTRACTION_SYSTEM_PROMPT,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "assumptions": {"type": "array", "items": _STEP_SCHEMA},
-            "argument":    {"type": "array", "items": _STEP_SCHEMA},
-        },
-        "required": ["assumptions", "argument"],
-        "additionalProperties": False,
-    },
+    response_format_base=_RESPONSE_FORMAT,
 )
 
 
