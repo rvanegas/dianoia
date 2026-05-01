@@ -83,7 +83,7 @@ _gpt_extract = ModelAgent(
 )
 
 
-def extract_argument(text: str) -> dict:
+def extract_argument(text: str, max_props: int | None = None) -> dict:
     """Extract a structured argument from plain text.
 
     Returns an Arguments-compatible dict with 'assumptions' and 'argument' keys.
@@ -91,7 +91,19 @@ def extract_argument(text: str) -> dict:
     """
     import json
 
-    raw = _gpt_extract.call(text, file_ids=None)
+    if max_props is not None:
+        extra = (
+            f"\n- Use at most {max_props} propositions in total across assumptions and"
+            " argument steps; merge or drop minor claims to stay within this limit"
+        )
+        agent = ModelAgent(
+            instructions=_EXTRACTION_SYSTEM_PROMPT + extra,
+            response_format_base=_RESPONSE_FORMAT,
+        )
+    else:
+        agent = _gpt_extract
+
+    raw = agent.call(text, file_ids=None)
     result = json.loads(raw)
 
     if not result.get("argument"):

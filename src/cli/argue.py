@@ -23,9 +23,10 @@ def cmd_extract(args: argparse.Namespace) -> int:
         print(f"Error: '{path}' does not exist.", file=sys.stderr)
         return 1
     text = path.read_text(encoding="utf-8")
+    max_props = getattr(args, "max_props", None)
     try:
         from services.extraction import extract_argument
-        result = extract_argument(text)
+        result = extract_argument(text, max_props=max_props)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -101,6 +102,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_extract = sub.add_parser("extract", help="Extract argument from a text file, print JSON")
     p_extract.add_argument("file", help="Plain text or markdown file to extract from")
+    p_extract.add_argument("-m", "--max-props", type=int, default=None, metavar="N",
+                           help="Maximum total number of propositions (assumptions + argument steps)")
 
     p_evaluate = sub.add_parser("evaluate", help="Evaluate an argument JSON file with AI agents")
     p_evaluate.add_argument("file", help="JSON file containing arguments dict")
