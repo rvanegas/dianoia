@@ -13,10 +13,11 @@ class AssistantResponseError(Exception):
     pass
 
 
-class Gpt:
-    def __init__(self, instructions: str, response_format_base: dict):
+class ModelAgent:
+    def __init__(self, instructions: str, response_format_base: dict, max_tokens: int = 4096):
         self.instructions = instructions
         self.response_format_base = response_format_base
+        self.max_tokens = max_tokens
 
     def call(self, prompt: str, file_ids: list[str] | None) -> str:
         user_content: list = []
@@ -32,7 +33,7 @@ class Gpt:
 
         kwargs = dict(
             model=ANTHROPIC_MODEL,
-            max_tokens=4096,
+            max_tokens=self.max_tokens,
             system=self.instructions,
             messages=[{"role": "user", "content": user_content}],
             output_config={
@@ -55,7 +56,7 @@ class Gpt:
         raise AssistantResponseError("no text content in LLM response")
 
 
-gpt_gen_name = Gpt(
+gpt_gen_name = ModelAgent(
     instructions=gen_name_system_prompt,
     response_format_base={
         "type": "object",
@@ -67,7 +68,7 @@ gpt_gen_name = Gpt(
     }
 )
 
-gpt_explain = Gpt(
+gpt_explain = ModelAgent(
     instructions=explain_system_prompt,
     response_format_base={
         "type": "object",

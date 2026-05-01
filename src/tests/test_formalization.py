@@ -9,47 +9,53 @@ from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 
 class TestFormalizationAgent:
     """Test that the FormalizationAgent works correctly with the new structure"""
-    
+
     def test_formalization_agent(self):
-        """Test that formalization agent works correctly"""
+        """Test that formalization agent normalizes LLM output to canonical symbols"""
         agent = FormalizationAgent(coordinator)
-        
-        # Mock the GPT response for formalization
+
+        # Mock LLM response uses semantic names and core/logic.py JSON format
         mock_response = {
             "formalizations": [
                 {
                     "symbol": "A",
-                    "ascii": "P(a)",
-                    "json": {"type": "predicate", "name": "P", "args": [{"type": "constant", "name": "a"}]}
+                    "ascii": "is_man(socrates)",
+                    "json_structure": json.dumps({
+                        "type": "predicate", "name": "is_man",
+                        "args": [{"type": "constant", "name": "socrates"}]
+                    })
                 },
                 {
                     "symbol": "B",
-                    "ascii": "forall x. (P(x) -> Q(x))",
-                    "json": {"type": "quantifier", "quant": "forall", "var": {"type": "variable", "name": "x"}, "body": {"type": "binary", "op": "implies", "left": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}, "right": {"type": "predicate", "name": "Q", "args": [{"type": "variable", "name": "x"}]}}}
+                    "ascii": "forall individual. (is_man(individual) -> is_mortal(individual))",
+                    "json_structure": json.dumps({
+                        "type": "quantifier", "quant": "forall",
+                        "var": {"type": "variable", "name": "individual"},
+                        "body": {
+                            "type": "binary", "op": "implies",
+                            "left": {"type": "predicate", "name": "is_man",
+                                     "args": [{"type": "variable", "name": "individual"}]},
+                            "right": {"type": "predicate", "name": "is_mortal",
+                                      "args": [{"type": "variable", "name": "individual"}]}
+                        }
+                    })
                 },
                 {
                     "symbol": "C",
-                    "ascii": "Q(a)",
-                    "json": {"type": "predicate", "name": "Q", "args": [{"type": "constant", "name": "a"}]}
+                    "ascii": "is_mortal(socrates)",
+                    "json_structure": json.dumps({
+                        "type": "predicate", "name": "is_mortal",
+                        "args": [{"type": "constant", "name": "socrates"}]
+                    })
                 }
             ],
-            "definitions": {
-                "predicates": [
-                    {"symbol": "P", "value": "is a man"},
-                    {"symbol": "Q", "value": "is mortal"}
-                ],
-                "constants": [
-                    {"symbol": "a", "value": "Socrates"}
-                ]
-            },
             "confidence": 0.9,
-            "reasoning": "Consistent formalization using P for 'is a man' and Q for 'is mortal' across all propositions"
+            "reasoning": "Classic syllogism formalized with semantic predicate names"
         }
-        
+
         with patch('services.agents.agent_gpt_formalize') as mock_gpt:
             mock_gpt.call.return_value = json.dumps(mock_response)
-            
-            # Test data
+
             agent_data = AgentData(
                 assumptions=[],
                 argument=[
@@ -67,31 +73,32 @@ class TestFormalizationAgent:
                 file_ids=[],
                 agent_data=agent_data
             )
-            
-            # Create FilteredAgentInput for formalization
+
             filtered_input = FilteredAgentInput.for_formalization(agent_input)
-            
-            # Call the formalization agent
             result = agent.formalize_proposition(filtered_input)
-            
-            # Verify the result
+
             assert result.agent_type == "formalizer"
             assert result.operation == "formalize_proposition"
             assert result.result_content["formalization_mode"] == "proposition_to_logic"
             assert len(result.result_content["formalizations"]) == 3
-            assert result.result_content["formalizations"][0]["symbol"] == "A"
-            assert result.result_content["formalizations"][0]["ascii"] == "P(a)"
-            # Check definitions using array structure
-            predicates = {p["symbol"]: p["value"] for p in result.result_content["definitions"]["predicates"]}
-            constants = {c["symbol"]: c["value"] for c in result.result_content["definitions"]["constants"]}
-            assert predicates["P"] == "is a man"
-            assert predicates["Q"] == "is mortal"
-            assert constants["a"] == "Socrates"
+
+            # Python normalizes: is_man → P (first appearance), is_mortal → Q, socrates → a
+            fmls = {f["symbol"]: f["ascii"] for f in result.result_content["formalizations"]}
+            assert fmls["A"] == "P(a)"
+            assert fmls["C"] == "Q(a)"
+            assert "forall x." in fmls["B"]
+
+            # Definitions are Python-generated from semantic names
+            preds = {p["symbol"]: p["value"] for p in result.result_content["definitions"]["predicates"]}
+            consts = {c["symbol"]: c["value"] for c in result.result_content["definitions"]["constants"]}
+            assert preds["P"] == "is_man"
+            assert preds["Q"] == "is_mortal"
+            assert consts["a"] == "socrates"
+
             assert result.result_content["confidence"] == 0.9
-            assert "Consistent formalization" in result.result_content["reasoning"]
             assert result.target_metadata["target_type"] == "argument"
             assert result.target_metadata["target_content"] is None
 
 
 if __name__ == "__main__":
-    pytest.main([__file__]) 
+    pytest.main([__file__])

@@ -1,5 +1,4 @@
 import json
-# import time
 from typing import Dict, Any, List
 from dataclasses import dataclass
 
@@ -232,14 +231,20 @@ class FormalizationAgent:
             # Pass the data directly to the agent
             formalization_response = agent_gpt_formalize.call(json.dumps(payload), file_ids)
             formalization_result = json.loads(formalization_response)
+
+            from services.formalization_normalizer import normalize_formalizations, FormalizationNormalizationError
+            try:
+                formalization_result = normalize_formalizations(
+                    raw_items=formalization_result["formalizations"],
+                    confidence=formalization_result.get("confidence", 0.0),
+                    reasoning=formalization_result.get("reasoning", ""),
+                )
+            except FormalizationNormalizationError as e:
+                logger.error(f"Formalization normalization failed: {e}")
+                raise
             
-            # Debug logging
-            # logger.info(f"FormalizationAgent response: {formalization_result}")
-            # logger.info(f"FormalizationAgent response keys: {list(formalization_result.keys())}")
-            # if 'formalizations' in formalization_result:
-            #     logger.info(f"FormalizationAgent formalizations: {formalization_result['formalizations']}")
-            # else:
-            #     logger.warning("FormalizationAgent response missing 'formalizations' key")
+            symbols = [f["symbol"] for f in formalization_result.get("formalizations", [])]
+            logger.info(f"FormalizationAgent normalized {len(symbols)} formalizations: {symbols}")
             
             # Extract formalization results
             confidence = formalization_result.get("confidence", 0.0)

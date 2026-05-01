@@ -1,6 +1,6 @@
 """Extract a structured argument from plain text using Claude."""
 
-from services.conversation import Gpt
+from services.conversation import ModelAgent
 
 _EXTRACTION_SYSTEM_PROMPT = """
 You are an expert in logical argumentation. Given a piece of text, identify the argument
@@ -67,7 +67,7 @@ _STEP_SCHEMA = {
     "additionalProperties": False,
 }
 
-_gpt_extract = Gpt(
+_gpt_extract = ModelAgent(
     instructions=_EXTRACTION_SYSTEM_PROMPT,
     response_format_base={
         "type": "object",

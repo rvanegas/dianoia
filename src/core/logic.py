@@ -34,18 +34,10 @@ class Term:
 class Variable(Term):
     name: str
 
-    def __post_init__(self):
-        if not re.fullmatch(r"[p-z]", self.name):
-            raise ValueError(f"Variable name {self.name!r} not in p–z")
-
 
 @dataclass(frozen=True)
 class Constant(Term):
     name: str
-
-    def __post_init__(self):
-        if not re.fullmatch(r"[a-o]", self.name):
-            raise ValueError(f"Constant name {self.name!r} not in a–o")
 
 
 # --- Formula base and subclasses ---
@@ -86,10 +78,6 @@ class Predicate(Formula):
 @dataclass(frozen=True)
 class PropVar(Formula):
     name: str
-
-    def __post_init__(self):
-        if not re.fullmatch(r"[A-Z]", self.name):
-            raise ValueError(f"Proposition variable {self.name!r} must be A–Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {"type": "propvar", "name": self.name}
@@ -220,6 +208,45 @@ def arg_to_ascii(a: Union[Term, Formula]) -> str:
     if isinstance(a, Term):
         return a.name
     return a.to_ascii()
+
+
+import re as _re
+
+_CANONICAL_VARIABLES = {'x', 'y', 'z', 'u', 'v', 'w'}
+_CANONICAL_CONST_RE = _re.compile(r'^[a-o]\d*$')
+
+
+def _is_canonical_const(name: str) -> bool:
+    return bool(_CANONICAL_CONST_RE.match(name))
+
+
+def validate_canonical(formula: 'Formula') -> None:
+    """Raise ValueError if formula contains non-canonical Variable or Constant names."""
+    if isinstance(formula, Predicate):
+        for arg in formula.args:
+            if isinstance(arg, Variable):
+                if arg.name not in _CANONICAL_VARIABLES:
+                    raise ValueError(f"Variable {arg.name!r} not in canonical set {_CANONICAL_VARIABLES}")
+            elif isinstance(arg, Constant):
+                if not _is_canonical_const(arg.name):
+                    raise ValueError(f"Constant {arg.name!r} not in a–o[N]")
+    elif isinstance(formula, Equality):
+        for t in (formula.left, formula.right):
+            if isinstance(t, Variable) and t.name not in _CANONICAL_VARIABLES:
+                raise ValueError(f"Variable {t.name!r} not in canonical set")
+            if isinstance(t, Constant) and not _is_canonical_const(t.name):
+                raise ValueError(f"Constant {t.name!r} not in a–o[N]")
+    elif isinstance(formula, Not):
+        validate_canonical(formula.formula)
+    elif isinstance(formula, BinaryOp):
+        validate_canonical(formula.left)
+        validate_canonical(formula.right)
+    elif isinstance(formula, Quantifier):
+        if formula.var.name not in _CANONICAL_VARIABLES:
+            raise ValueError(f"Quantifier variable {formula.var.name!r} not in canonical set")
+        validate_canonical(formula.body)
+    elif isinstance(formula, Modal):
+        validate_canonical(formula.body)
 
 
 # --- JSON → Formula deserializer ---

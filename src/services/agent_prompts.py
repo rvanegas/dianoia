@@ -1,4 +1,4 @@
-from services.conversation import Gpt
+from services.conversation import ModelAgent
 
 # Agent-specific system prompt for justification
 agent_justify_system_prompt = """
@@ -56,7 +56,7 @@ Output:
 """
 
 # Create GPT instance for agent justification
-agent_gpt_justify = Gpt(
+agent_gpt_justify = ModelAgent(
     instructions=agent_justify_system_prompt,
     response_format_base={
         "type": "object",
@@ -361,7 +361,7 @@ Output:
 """
 
 # Create GPT instance for content evaluation
-agent_gpt_evaluate_content = Gpt(
+agent_gpt_evaluate_content = ModelAgent(
     instructions=agent_evaluate_content_system_prompt,
     response_format_base={
         "type": "object",
@@ -477,8 +477,8 @@ Input:
         "symbol": "C",
         "justifiers": ["A", "B"],
         "formalization": {
-          "ascii": "Q(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "ascii": "Q(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       },
@@ -486,8 +486,8 @@ Input:
         "symbol": "A",
         "justifiers": [],
         "formalization": {
-          "ascii": "P(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "ascii": "P(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       }
@@ -497,8 +497,8 @@ Input:
         "symbol": "B",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))", 
-          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "ascii": "forall x. ((P(x) -> Q(x)))",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"binary\", \"op\": \"implies\", \"left\": {\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, \"right\": {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}}}",
           "endorsed": true
         }
       }
@@ -511,11 +511,11 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-          {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "C", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "A", "validity": "1.0", "reasoning": "Valid conclusion from premises B and C"}
+    {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "C", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "A", "validity": "1.0", "reasoning": "Valid conclusion from premises B and C"}
   ],
-              "argument_validity": "1.0",
+  "argument_validity": "1.0",
   "logical_issues": [],
   "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
 }
@@ -530,8 +530,8 @@ Input:
         "symbol": "B",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))", 
-          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "ascii": "forall x. ((P(x) -> Q(x)))",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"binary\", \"op\": \"implies\", \"left\": {\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, \"right\": {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}}}",
           "endorsed": true
         }
       },
@@ -539,8 +539,8 @@ Input:
         "symbol": "C",
         "justifiers": [],
         "formalization": {
-          "ascii": "P(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "ascii": "P(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       },
@@ -548,8 +548,8 @@ Input:
         "symbol": "A",
         "justifiers": ["B", "C"],
         "formalization": {
-          "ascii": "Q(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "ascii": "Q(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       }
@@ -563,11 +563,11 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-          {"symbol": "A", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "C", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
+    {"symbol": "A", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "C", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
   ],
-              "argument_validity": "0.0",
+  "argument_validity": "0.0",
   "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) -> Q(x)) do not logically entail P(a)"],
   "recommendations": ["The premises do not logically support the conclusion"]
 }
@@ -581,7 +581,7 @@ Provide evaluations for:
 """
 
 # Create GPT instance for form evaluation
-agent_gpt_evaluate_form = Gpt(
+agent_gpt_evaluate_form = ModelAgent(
     instructions=agent_evaluate_form_system_prompt,
     response_format_base={
         "type": "object",
@@ -616,163 +616,99 @@ agent_gpt_evaluate_form = Gpt(
 
 # Agent-specific system prompt for formalization
 agent_formalize_system_prompt = """
-You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations using the constraints defined in core/logic.py.
+You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations.
 
 ### Task: Formalize Arguments
 
-You will receive an argument with multiple propositions that need formalization. Your goal is to convert **all** natural language propositions — both assumption steps and argument steps — into formal logical representations that follow the constraints of the logic system, ensuring consistency across the entire argument.
-
-**CRITICAL**: Assumptions are full logical propositions that must be formalized just like argument steps. Do not skip or omit them.
+You will receive an argument with multiple propositions that need formalization. Convert **all** propositions — both assumption steps and argument steps — into formal logical representations. **CRITICAL**: Do not skip assumptions.
 
 ### Input Format
-The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument — **must be formalized**
-- agent_data.assumptions: List of Step objects for background assumptions — **must also be formalized**
-- agent_data.target_type: Type of content being formalized (e.g., "argument")
-- agent_data.target_content: The argument being formalized (if applicable)
-- file_ids: List of file IDs for context
+- agent_data.argument: List of Step objects — **must be formalized**
+- agent_data.assumptions: List of Step objects — **must also be formalized**
 
-Each Step object contains:
-- symbol: String identifier (e.g., "A", "B", "C")
-- proposition: The natural language proposition
-- justifiers: List of symbols that justify this step
-- formalization: Existing formal logic representation (if any)
+Each Step contains: symbol, proposition, justifiers, and optionally formalization (with endorsed flag).
 
-### Formal Logic Constraints
+### Formula Types
 
-The formalization must follow these exact constraints from the logic system:
+Use the following JSON structure format exactly:
 
-1. **Terms**:
-   - **Variables**: Must be single letters p-z (lowercase) - regex: `[p-z]`
-   - **Constants**: Must be single letters a-o (lowercase) - regex: `[a-o]`
+- **Predicate** (including zero-argument): `{"type": "predicate", "name": "pred_name", "args": [...]}`
+- **Equality**: `{"type": "equality", "left": <term>, "right": <term>}`
+- **Not**: `{"type": "not", "formula": <formula>}`
+- **Binary**: `{"type": "binary", "op": "and"|"or"|"implies", "left": <formula>, "right": <formula>}`
+- **Quantifier**: `{"type": "quantifier", "quant": "forall"|"exists", "var": {"type": "variable", "name": "var_name"}, "body": <formula>}`
+- **Modal**: `{"type": "modal", "mod": "box"|"diamond", "body": <formula>}`
 
-2. **Formulas**:
-   - **Predicate**: P(t1, t2, ...) where P is predicate name, t1, t2, ... are terms
-   - **PropVar**: Single uppercase letter A-Z - regex: `[A-Z]`
-   - **Equality**: t1 = t2 where t1, t2 are terms
-   - **Not**: `not φ` (negation)
-   - **BinaryOp**: `(φ and ψ)`, `(φ or ψ)`, `(φ -> ψ)` (and, or, implies)
-   - **Quantifier**: `forall x. (φ)`, `exists x. (φ)` (forall, exists)
-   - **Modal**: `nec φ`, `pos φ` (necessarily, possibly)
+Terms:
+- Variable: `{"type": "variable", "name": "var_name"}` — any lowercase identifier
+- Constant: `{"type": "constant", "name": "const_name"}` — any lowercase identifier
 
-3. **Naming Conventions**:
-   - **Predicate names**: Use abstract, non-descriptive names like "P", "Q", "R" to avoid semantic content that could distract from logical structure
-   - **Constants**: Use a-o (lowercase)
-   - **Variables**: Use p-z (lowercase) 
-   - **PropVars**: Use A-Z (uppercase)
+### Naming — use descriptive semantic names
 
-4. **ASCII Representation Rules**:
-   - **Binary operators**: Use `and`, `or`, `->` (not symbols)
-   - **Quantifiers**: Use `forall x. (φ)`, `exists x. (φ)` format
-   - **Modals**: Use `nec φ` for necessarily, `pos φ` for possibly
-   - **Negation**: Use `not φ` format
+Use **descriptive snake_case names** that capture the meaning of each concept:
+- **Predicate names**: e.g., `is_man`, `is_mortal`, `runs_faster_than`, `is_raining` (for atomic propositions, use zero args)
+- **Constant names**: e.g., `socrates`, `plato`, `the_earth`
+- **Variable names**: any descriptive lowercase name, e.g., `individual`, `entity`, `thing`
+
+Do **not** use abstract single-letter names (P, Q, R, a, b, x) — Python will assign canonical letters. Your job is to capture the correct logical structure and semantic meaning.
 
 ### Guidelines
 1. Preserve the logical meaning of the original proposition
-2. Use appropriate quantifiers when dealing with universal or existential claims
-3. Use modal operators for necessity/possibility claims
-4. Break complex propositions into simpler logical components
-5. Ensure the formalization is syntactically correct according to the constraints
-6. Provide both ASCII representation and JSON structure
-7. Include confidence level and reasoning for the formalization
-8. **CRITICAL**: Use abstract predicate names (P, Q, R, etc.) to avoid semantic content that could distract the evaluator from focusing purely on logical structure. The evaluator should be able to assess validity without being influenced by the meaning of predicate names.
-9. **CONSISTENCY**: Within a single argument, use the same abstract predicate name (P, Q, R, etc.) to represent the same semantic concept across different propositions. For example, if "is_mouse" is formalized as P in one proposition, use P for "is_mouse" in all other propositions in the same argument.
+2. Use quantifiers for universal/existential claims (`forall individual. (...)`)
+3. Use modal operators for necessity/possibility (`nec`, `pos`)
+4. Use zero-argument predicates for atomic propositions (e.g., `is_raining()`)
+5. For abstract claims that resist quantifier structure, use zero-argument predicates to name the key concepts: e.g., "authority is discovered not created" → `discovered_not_created_authority()`, or conjoin several: `grounded_in_practical_rationality() and not_grounded_in_command() and is_discovered()`
+6. Ensure the same semantic concept uses the same predicate name across all steps
+7. Include confidence and reasoning
 
-10. **UNIQUE PREDICATES**: **CRITICAL RULE**: Each predicate must have a unique definition. Never assign the same definition to multiple predicate symbols. For example:
-    - CORRECT: P = "is a mouse", Q = "is large", R = "is small"
-    - INCORRECT: P = "is large", Q = "is large" (same definition for different symbols)
+**ENDORSED FORMALIZATIONS**: Steps with `endorsed: true` already have a correct formalization. Copy their `ascii` and `json_structure` fields into your output exactly as given — do not alter or re-derive them.
 
-11. **EXISTING FORMALIZATIONS**: When existing_formalizations are provided, analyze them to maintain consistency:
-    - If the current proposition contains semantic concepts that appear in existing formalizations, use the same abstract predicate names
-    - If a concept like "mouse" was formalized as P in an existing formalization, use P for "mouse" in the current proposition
-    - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
-    - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
-
-12. **ENDORSED FORMALIZATIONS**: **CRITICAL RULE**: Do NOT generate new formalizations for steps that already have endorsed formalizations:
-    - If a step has a formalization with `endorsed: true`, skip that step entirely
-    - Only formalize steps that either have no formalization or have `endorsed: false`
-    - This ensures that user-endorsed formalizations are never overwritten
-    - If all steps have endorsed formalizations, return an empty formalizations array
-
-13. **COMPLETE RESPONSE**: **CRITICAL RULE**: Your response must include ALL formalizations for the argument, not just the new ones:
-    - Include formalizations for ALL steps in the argument, both new and existing
-    - For steps with existing formalizations (endorsed or not), include them in your response
-    - For steps without formalizations, generate new ones
-    - This ensures the frontend receives a complete picture of all formalizations
-
-14. **COMPLETE DEFINITIONS**: **CRITICAL RULE**: Your definitions must cover ALL predicates and constants used in ANY formalization:
-    - Include definitions for predicates/constants from existing formalizations
-    - Include definitions for predicates/constants from new formalizations
-    - The definitions object should be complete and comprehensive
-    - Do not omit definitions for existing formalizations
-
-15. **CONSISTENCY WITH EXISTING**: When formalizing new propositions, maintain consistency with existing formalizations:
-    - If a semantic concept (like "mouse" or "small") was already formalized, use the same predicate name
-    - If "mouse" was formalized as P in an existing formalization, use P for "mouse" in new formalizations
-    - Only introduce new predicate names for truly new semantic concepts
+**COMPLETE RESPONSE**: Your `formalizations` array MUST contain one entry for every step in both `agent_data.argument` and `agent_data.assumptions`, no exceptions. If a step is very abstract, use zero-argument predicates to capture its key claims rather than omitting it.
 
 ### Examples
 
 Input:
+```json
 {
   "agent_data": {
     "argument": [
-      {
-        "symbol": "B",
-        "proposition": "Socrates is a man",
-        "justifiers": []
-      },
-      {
-        "symbol": "C",
-        "proposition": "Socrates is mortal",
-        "justifiers": ["A", "B"]
-      }
+      {"symbol": "B", "proposition": "Socrates is a man", "justifiers": []},
+      {"symbol": "C", "proposition": "Socrates is mortal", "justifiers": ["A", "B"]}
     ],
     "assumptions": [
-      {
-        "symbol": "A",
-        "proposition": "All men are mortal",
-        "justifiers": []
-      }
-    ],
-    "target_type": "argument",
-    "target_content": null
+      {"symbol": "A", "proposition": "All men are mortal", "justifiers": []}
+    ]
   }
 }
+```
 
 Output:
+```json
 {
   "formalizations": [
     {
       "symbol": "A",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "ascii": "forall individual. (is_man(individual) -> is_mortal(individual))",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"individual\"}, \"body\": {\"type\": \"binary\", \"op\": \"implies\", \"left\": {\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}, \"right\": {\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}}}"
     },
     {
       "symbol": "B",
-      "ascii": "P(a)",
-      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}"
+      "ascii": "is_man(socrates)",
+      "json_structure": "{\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"constant\", \"name\": \"socrates\"}]}"
     },
     {
       "symbol": "C",
-      "ascii": "Q(a)",
-      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}"
+      "ascii": "is_mortal(socrates)",
+      "json_structure": "{\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"constant\", \"name\": \"socrates\"}]}"
     }
   ],
-  "definitions": {
-    "predicates": [
-      {"symbol": "P", "value": "is a man"},
-      {"symbol": "Q", "value": "is mortal"}
-    ],
-    "constants": [
-      {"symbol": "a", "value": "Socrates"}
-    ]
-  },
-  "confidence": "0.95",
-  "reasoning": "Assumption A formalized as the universal premise; argument steps B and C formalized consistently using the same predicate names"
+  "confidence": 0.95,
+  "reasoning": "Classic syllogism: universal premise A, particular premise B, conclusion C"
 }
+```
 
-Input:
+Input (with endorsed formalization):
+```json
 {
   "agent_data": {
     "argument": [
@@ -780,51 +716,38 @@ Input:
         "symbol": "A",
         "proposition": "All mice are small",
         "justifiers": [],
-        "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))",
-          "endorsed": true
-        }
+        "formalization": {"ascii": "forall x. (P(x) -> Q(x))", "endorsed": true}
       },
-      {
-        "symbol": "B",
-        "proposition": "Mice are small",
-        "justifiers": []
-      }
+      {"symbol": "B", "proposition": "Mice are small", "justifiers": []}
     ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
+    "assumptions": []
   }
 }
+```
 
 Output:
+```json
 {
   "formalizations": [
     {
       "symbol": "A",
       "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"binary\", \"op\": \"implies\", \"left\": {\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, \"right\": {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}}}"
     },
     {
       "symbol": "B",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "ascii": "forall entity. (is_mouse(entity) -> is_small(entity))",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"entity\"}, \"body\": {\"type\": \"binary\", \"op\": \"implies\", \"left\": {\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}, \"right\": {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}}}"
     }
   ],
-  "definitions": {
-    "predicates": [
-      {"symbol": "P", "value": "is a mouse"},
-      {"symbol": "Q", "value": "is small"}
-    ],
-    "constants": []
-  },
-  "confidence": "0.95",
-  "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
+  "confidence": 0.95,
+  "reasoning": "Step A has an endorsed formalization included as-is; step B formalized consistently using the same semantic predicate names"
 }
+```
 """
 
 # Create GPT instance for agent formalization
-agent_gpt_formalize = Gpt(
+agent_gpt_formalize = ModelAgent(
     instructions=agent_formalize_system_prompt,
     response_format_base={
         "type": "object",
@@ -834,53 +757,21 @@ agent_gpt_formalize = Gpt(
                 "items": {
                     "type": "object",
                     "properties": {
-                        "symbol": {"type": "string"},
-                        "ascii": {"type": "string"},
+                        "symbol":        {"type": "string"},
+                        "ascii":         {"type": "string"},
                         "json_structure": {"type": "string"}
                     },
                     "required": ["symbol", "ascii", "json_structure"],
                     "additionalProperties": False
                 }
             },
-            "definitions": {
-                "type": "object",
-                "properties": {
-                    "predicates": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "symbol": {"type": "string"},
-                                "value": {"type": "string"}
-                            },
-                            "required": ["symbol", "value"],
-                            "additionalProperties": False
-                        },
-                        "additionalProperties": False
-                    },
-                    "constants": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "symbol": {"type": "string"},
-                                "value": {"type": "string"}
-                            },
-                            "required": ["symbol", "value"],
-                            "additionalProperties": False
-                        },
-                        "additionalProperties": False
-                    }
-                },
-                "required": ["predicates", "constants"],
-                "additionalProperties": False
-            },
             "confidence": {"type": "number"},
-            "reasoning": {"type": "string"}
+            "reasoning":  {"type": "string"}
         },
-        "required": ["formalizations", "definitions", "confidence", "reasoning"],
+        "required": ["formalizations", "confidence", "reasoning"],
         "additionalProperties": False
-    }
+    },
+    max_tokens=16384
 )
 
 # Agent-specific system prompt for improvement
@@ -1506,7 +1397,7 @@ Output:
 """
 
 # Create GPT instance for improvement agent
-agent_gpt_improvement = Gpt(
+agent_gpt_improvement = ModelAgent(
     instructions=agent_improvement_system_prompt,
     response_format_base={
         "type": "object",
