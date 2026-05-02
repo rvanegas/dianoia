@@ -18,7 +18,7 @@ class TestImprovementAgentTriggers:
         
         # Create test step
         self.test_step = Step(
-            symbol="A",
+            symbol="1",
             proposition="Test proposition",
             justifiers=[],
             truth_score="0.5",
@@ -59,7 +59,7 @@ class TestImprovementAgentTriggers:
         # Create step with endorsed formalization
         from schemas.step import Formalization
         formalized_step = Step(
-            symbol="A",
+            symbol="1",
             proposition="Test proposition",
             justifiers=[],
             truth_score="0.5",

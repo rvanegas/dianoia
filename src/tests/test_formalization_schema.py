@@ -53,7 +53,7 @@ def test_schema_matches_example():
     example_response = {
         "formalizations": [
             {
-                "symbol": "A",
+                "symbol": "1",
                 "ascii": "is_man(socrates)",
                 "json_structure": json.dumps({
                     "type": "predicate", "name": "is_man",
@@ -61,7 +61,7 @@ def test_schema_matches_example():
                 })
             },
             {
-                "symbol": "B",
+                "symbol": "2",
                 "ascii": "forall individual. (is_man(individual) -> is_mortal(individual))",
                 "json_structure": json.dumps({
                     "type": "quantifier", "quant": "forall",
@@ -76,7 +76,7 @@ def test_schema_matches_example():
                 })
             },
             {
-                "symbol": "C",
+                "symbol": "3",
                 "ascii": "is_mortal(socrates)",
                 "json_structure": json.dumps({
                     "type": "predicate", "name": "is_mortal",
@@ -111,7 +111,7 @@ def test_schema_json_validation():
     valid_response = {
         "formalizations": [
             {
-                "symbol": "A",
+                "symbol": "1",
                 "ascii": "is_man(socrates)",
                 "json_structure": json.dumps({
                     "type": "predicate", "name": "is_man",
@@ -126,7 +126,7 @@ def test_schema_json_validation():
 
     invalid_response = {
         "formalizations": [
-            {"symbol": "A", "ascii": "is_man(socrates)",
+            {"symbol": "1", "ascii": "is_man(socrates)",
              "json_structure": "{}"}
         ],
         "confidence": 0.95

@@ -18,7 +18,7 @@ class TestImprovementAgentEvaluationIntegration:
         
         # Create test step
         self.test_step = Step(
-            symbol="A",
+            symbol="1",
             proposition="Test proposition",
             justifiers=[],
             truth_score="0.5",
@@ -44,7 +44,7 @@ class TestImprovementAgentEvaluationIntegration:
             StoredAgentResult(
                 agent_type='content_evaluator',
                 operation='evaluate_propositions',
-                result_content={'truth_evaluations': [{'symbol': 'A', 'truth_value': '0.5'}]},
+                result_content={'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                 confidence=0.8,
                 reasoning='Test evaluation',
                 target_metadata=target,
@@ -54,7 +54,7 @@ class TestImprovementAgentEvaluationIntegration:
             StoredAgentResult(
                 agent_type='form_evaluator',
                 operation='evaluate_propositions',
-                result_content={'validity_evaluations': [{'symbol': 'A', 'validity_value': '0.6'}]},
+                result_content={'validity_evaluations': [{'symbol': '1', 'validity_value': '0.6'}]},
                 confidence=0.7,
                 reasoning='Test formal evaluation',
                 target_metadata=target,
@@ -82,13 +82,13 @@ class TestImprovementAgentEvaluationIntegration:
             content_evaluations = [r for r in agent_input.agent_data.latest_results if r['agent_type'] == 'content_evaluator']
             assert len(content_evaluations) == 1
             assert content_evaluations[0]['agent_type'] == 'content_evaluator'
-            assert content_evaluations[0]['result_content']['truth_evaluations'][0]['symbol'] == 'A'
+            assert content_evaluations[0]['result_content']['truth_evaluations'][0]['symbol'] == '1'
             
             # Verify formal evaluations
             formal_evaluations = [r for r in agent_input.agent_data.latest_results if r['agent_type'] == 'form_evaluator']
             assert len(formal_evaluations) == 1
             assert formal_evaluations[0]['agent_type'] == 'form_evaluator'
-            assert formal_evaluations[0]['result_content']['validity_evaluations'][0]['symbol'] == 'A'
+            assert formal_evaluations[0]['result_content']['validity_evaluations'][0]['symbol'] == '1'
             
             # Verify conclusion information
             assert agent_input.agent_data.argument[-1].proposition == "Test proposition"
@@ -180,7 +180,7 @@ class TestImprovementAgentEvaluationIntegration:
     def test_improvement_agent_processes_evaluation_results_successfully(self, mock_gpt_call):
         """Test that improvement agent successfully processes evaluation results"""
         # Mock the GPT response
-        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "impact": "high", "target_proposition": "A", "expected_conclusion_improvement": {"truth_score_improvement": "+0.3", "content_validity_improvement": "+0.2", "formal_validity_improvement": "+0.1"}, "propositions": [{"symbol": null, "proposition": "Test proposition", "type": "new", "placement": "argument", "justifies_symbol": "A", "justification_suggestions": ["Test justification"]}]}]}'
+        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": "+0.3", "content_validity_improvement": "+0.2", "formal_validity_improvement": "+0.1"}, "propositions": [{"symbol": null, "proposition": "Test proposition", "type": "new", "placement": "argument", "justifies_symbol": "1", "justification_suggestions": ["Test justification"]}]}]}'
         
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
@@ -198,7 +198,7 @@ class TestImprovementAgentEvaluationIntegration:
                     {
                         'agent_type': 'content_evaluator',
                         'operation': 'evaluate_propositions',
-                        'result_content': {'truth_evaluations': [{'symbol': 'A', 'truth_value': '0.5'}]},
+                        'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,
                         'reasoning': 'Test evaluation',
                         'snapshot_id': 'test_snap',

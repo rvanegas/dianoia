@@ -5,7 +5,7 @@ import pytest
 
 from core.logic import (
     Predicate, Constant, Variable, Quantifier, QuantifierType,
-    BinaryOp, BinaryOpType, Not, from_json, validate_canonical,
+    Connective, ConnectiveType, from_json, validate_canonical,
 )
 from services.formalization_normalizer import (
     normalize_formalizations,
@@ -58,10 +58,9 @@ def test_shared_predicate_gets_same_symbol():
     # is_mortal appears in both steps → both get Q (second unique predicate)
     f1 = Predicate("is_man", [Constant("socrates")])
     f2 = Predicate("is_mortal", [Constant("socrates")])
-    f3 = BinaryOp(
-        op=BinaryOpType.AND,
-        left=Predicate("is_man", [Constant("socrates")]),
-        right=Predicate("is_mortal", [Constant("socrates")]),
+    f3 = Connective(
+        op=ConnectiveType.AND,
+        args=[Predicate("is_man", [Constant("socrates")]), Predicate("is_mortal", [Constant("socrates")])],
     )
     result = normalize_formalizations(
         [_item("A", f1), _item("B", f2), _item("C", f3)],
@@ -70,7 +69,7 @@ def test_shared_predicate_gets_same_symbol():
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
     assert fmls["A"] == "P(a)"
     assert fmls["B"] == "Q(a)"
-    assert fmls["C"] == "(P(a) and Q(a))"
+    assert fmls["C"] == "P(a) and Q(a)"
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +79,7 @@ def test_shared_predicate_gets_same_symbol():
 def test_zero_arg_predicate():
     formula = Predicate("is_raining", [])
     result = normalize_formalizations([_item("A", formula)], confidence=0.8, reasoning="")
-    assert result["formalizations"][0]["ascii"] == "P()"
+    assert result["formalizations"][0]["ascii"] == "P"
     assert {"symbol": "P", "value": "is_raining"} in result["definitions"]["predicates"]
     assert result["definitions"]["constants"] == []
 
@@ -90,14 +89,14 @@ def test_zero_arg_predicate():
 # ---------------------------------------------------------------------------
 
 def test_bound_variable_normalized_to_x():
-    # forall individual. is_man(individual) → forall x. (P(x))
+    # forall individual. is_man(individual) → forall x. P(x)
     formula = Quantifier(
         quant=QuantifierType.FORALL,
         var=Variable("individual"),
         body=Predicate("is_man", [Variable("individual")]),
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
-    assert result["formalizations"][0]["ascii"] == "forall x. (P(x))"
+    assert result["formalizations"][0]["ascii"] == "forall x. P(x)"
 
 
 def test_nested_quantifiers_get_x_then_y():
@@ -131,8 +130,8 @@ def test_independent_formulas_both_start_at_x():
     )
     result = normalize_formalizations([_item("A", f1), _item("B", f2)], confidence=1.0, reasoning="")
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
-    assert fmls["A"] == "forall x. (P(x))"
-    assert fmls["B"] == "forall x. (Q(x))"
+    assert fmls["A"] == "forall x. P(x)"
+    assert fmls["B"] == "forall x. Q(x)"
 
 
 # ---------------------------------------------------------------------------
@@ -154,10 +153,9 @@ def test_definitions_completeness():
 # ---------------------------------------------------------------------------
 
 def test_ascii_matches_to_ascii():
-    formula = BinaryOp(
-        op=BinaryOpType.IMPLIES,
-        left=Predicate("is_man", [Constant("socrates")]),
-        right=Predicate("is_mortal", [Constant("socrates")]),
+    formula = Connective(
+        op=ConnectiveType.IMPLIES,
+        args=[Predicate("is_man", [Constant("socrates")]), Predicate("is_mortal", [Constant("socrates")])],
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
     out = result["formalizations"][0]
@@ -173,10 +171,9 @@ def test_round_trip_validate_canonical():
     formula = Quantifier(
         quant=QuantifierType.FORALL,
         var=Variable("individual"),
-        body=BinaryOp(
-            op=BinaryOpType.IMPLIES,
-            left=Predicate("is_man", [Variable("individual")]),
-            right=Predicate("is_mortal", [Variable("individual")]),
+        body=Connective(
+            op=ConnectiveType.IMPLIES,
+            args=[Predicate("is_man", [Variable("individual")]), Predicate("is_mortal", [Variable("individual")])],
         ),
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")

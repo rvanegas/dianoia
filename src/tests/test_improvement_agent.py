@@ -14,7 +14,7 @@ class TestImprovementAgent:
         """Test that improvement agent initializes correctly"""
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
-        
+
         assert agent.name == "improver"
         assert agent.coordinator == coordinator
 
@@ -27,21 +27,21 @@ class TestImprovementAgent:
     def test_generate_improvements_success(self, mock_gpt_call):
         """Test that improvement agent generates improvements successfully"""
         # Mock the GPT response
-        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "confidence": 0.8, "impact": "high", "target_proposition": "A", "expected_conclusion_improvement": {"truth_score_improvement": 0.3, "content_validity_improvement": 0.2, "formal_validity_improvement": 0.1, "reasoning": "Test improvement"}, "propositions": [{"symbol": "B", "proposition": "Test proposition", "type": "new", "placement": "argument", "justification_suggestions": ["Test justification"]}]}]}'
-        
+        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "confidence": 0.8, "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": 0.3, "content_validity_improvement": 0.2, "formal_validity_improvement": 0.1, "reasoning": "Test improvement"}, "propositions": [{"symbol": "2", "proposition": "Test proposition", "type": "new", "placement": "argument", "justification_suggestions": ["Test justification"]}]}]}'
+
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
-        
+
         # Create test input
         step = Step(
-            symbol="A",
+            symbol="1",
             proposition="Test proposition",
             justifiers=[],
             truth_score="0.5",
             content_validity="0.4",
             formal_validity="0.3"
         )
-        
+
         agent_input = AgentInput(
             conversation_id="test_conv",
             snapshot_id="test_snap",
@@ -54,7 +54,7 @@ class TestImprovementAgent:
                     {
                         'agent_type': 'content_evaluator',
                         'operation': 'evaluate_propositions',
-                        'result_content': {'truth_evaluations': [{'symbol': 'A', 'truth_value': '0.5'}]},
+                        'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,
                         'reasoning': 'Test evaluation',
                         'snapshot_id': 'test_snap',
@@ -64,9 +64,9 @@ class TestImprovementAgent:
             ),
             file_ids=[]
         )
-        
+
         result = agent.generate_improvements(agent_input)
-        
+
         # Verify the result structure
         assert result.agent_type == "improver"
         assert result.operation == "generate_improvements"
@@ -75,7 +75,7 @@ class TestImprovementAgent:
         assert "improvement_mode" in result.result_content
         assert result.result_content["improvement_mode"] == "evaluation_driven"
         assert "recommendations" in result.result_content
-        
+
         # Verify the GPT was called
         mock_gpt_call.assert_called_once()
 
@@ -84,20 +84,20 @@ class TestImprovementAgent:
         """Test that improvement agent handles errors gracefully"""
         # Mock the GPT to raise an exception
         mock_gpt_call.side_effect = Exception("GPT API error")
-        
+
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
-        
+
         # Create test input
         step = Step(
-            symbol="A",
+            symbol="1",
             proposition="Test proposition",
             justifiers=[],
             truth_score="0.5",
             content_validity="0.4",
             formal_validity="0.3"
         )
-        
+
         agent_input = AgentInput(
             conversation_id="test_conv",
             snapshot_id="test_snap",
@@ -110,7 +110,7 @@ class TestImprovementAgent:
                     {
                         'agent_type': 'content_evaluator',
                         'operation': 'evaluate_propositions',
-                        'result_content': {'truth_evaluations': [{'symbol': 'A', 'truth_value': '0.5'}]},
+                        'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,
                         'reasoning': 'Test evaluation',
                         'snapshot_id': 'test_snap',
@@ -120,9 +120,9 @@ class TestImprovementAgent:
             ),
             file_ids=[]
         )
-        
+
         result = agent.generate_improvements(agent_input)
-        
+
         # Verify error handling
         assert result.agent_type == "improver"
         assert result.operation == "generate_improvements"
@@ -130,3 +130,4 @@ class TestImprovementAgent:
         assert "error" in result.result_content
         assert "GPT API error" in result.result_content["error"]
         assert "Error in improvement generation" in result.reasoning
+

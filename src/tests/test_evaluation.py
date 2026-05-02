@@ -41,9 +41,9 @@ class TestEvaluationAgent:
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9'),
-                        Step(symbol='B', proposition='All men are mortal', justifiers=[], truth_score='0.95', content_validity='0.95', formal_validity='0.95'),
-                        Step(symbol='C', proposition='Socrates is mortal', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9'),
+                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='0.95', content_validity='0.95', formal_validity='0.95'),
+                        Step(symbol='3', proposition='Socrates is mortal', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
                     ],
                     latest_results=[],
                     target_type='argument',
@@ -98,7 +98,7 @@ class TestEvaluationAgent:
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
                     ],
                     latest_results=[],
                     target_type='argument',
@@ -140,7 +140,7 @@ class TestEvaluationAgent:
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
                     ],
                     latest_results=[],
                     target_type='argument',

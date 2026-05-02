@@ -35,7 +35,7 @@ class ExpectedConclusionImprovement(BaseModel):
 
 class ImprovementProposition(BaseModel):
     """A proposition within an improvement recommendation"""
-    symbol: str | None = Field(default=None, description="Symbol identifier for the proposition (e.g., 'B', 'C', 'D'). Leave blank for new propositions.")
+    symbol: str | None = Field(default=None, description="Symbol identifier for the proposition (e.g., '2', '3', '4'). Leave blank for new propositions.")
     proposition: str = Field(description="The natural language proposition text")
     type: str = Field(description="Type of improvement", pattern="^(new|rewrite)$")
     original_symbol: str | None = Field(default=None, description="For rewrites, the symbol of the proposition being rewritten")

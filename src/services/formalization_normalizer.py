@@ -19,25 +19,25 @@ import string
 from typing import Any
 
 from core.logic import (
-    Formula, Predicate, PropVar, Equality, Not, BinaryOp, Quantifier, Modal,
+    Formula, Predicate, Identity, Connective, ConnectiveType, Quantifier, Modal,
     Term, Variable, Constant,
     from_json, validate_canonical,
 )
 from schemas.agent_results import FormalizerResult
 
-_PRED_BASE = [chr(c) for c in range(ord('P'), ord('Z') + 1)]  # P…Z (11)
-_CONST_BASE = list(string.ascii_lowercase[:15])               # a–o (15)
-_VAR_SEQ = ['x', 'y', 'z', 'u', 'v', 'w']                   # 6 canonical variables
+_PRED_BASE = ['P','Q','R','S','T','G','H','I','J','K','L','M','N','O']  # G–T, starting at P (14)
+_CONST_BASE = list(string.ascii_lowercase[:6])                          # a–f (6)
+_VAR_SEQ = ['x', 'y', 'z', 'u', 'v', 'w']                             # u–z, starting at x (6)
 
 
 def _pred_symbol(i: int) -> str:
-    """P…Z for i<11; P1…Z1 for i<22; P2… etc."""
-    return _PRED_BASE[i % 11] + (str(i // 11) if i >= 11 else "")
+    """P…T,G…O for i<14; P1… etc."""
+    return _PRED_BASE[i % 14] + (str(i // 14) if i >= 14 else "")
 
 
 def _const_symbol(i: int) -> str:
-    """a…o for i<15; a1…o1 for i<30; a2… etc."""
-    return _CONST_BASE[i % 15] + (str(i // 15) if i >= 15 else "")
+    """a…f for i<6; a1…f1 for i<12; a2… etc."""
+    return _CONST_BASE[i % 6] + (str(i // 6) if i >= 6 else "")
 
 
 class FormalizationNormalizationError(Exception):
@@ -131,14 +131,12 @@ def _collect_pred_names(formula: Formula, seen: list[str]) -> None:
     if isinstance(formula, Predicate):
         if formula.name not in seen:
             seen.append(formula.name)
-    elif isinstance(formula, (Not, Modal)):
-        _collect_pred_names(formula.formula if isinstance(formula, Not) else formula.body, seen)
-    elif isinstance(formula, BinaryOp):
-        _collect_pred_names(formula.left, seen)
-        _collect_pred_names(formula.right, seen)
-    elif isinstance(formula, Quantifier):
+    elif isinstance(formula, Connective):
+        for arg in formula.args:
+            _collect_pred_names(arg, seen)
+    elif isinstance(formula, (Quantifier, Modal)):
         _collect_pred_names(formula.body, seen)
-    # PropVar, Equality: no predicates
+    # Identity: no predicates
 
 
 def _collect_const_names(formula: Formula, seen: list[str]) -> None:
@@ -146,16 +144,14 @@ def _collect_const_names(formula: Formula, seen: list[str]) -> None:
         for arg in formula.args:
             if isinstance(arg, Constant) and arg.name not in seen:
                 seen.append(arg.name)
-    elif isinstance(formula, Equality):
+    elif isinstance(formula, Identity):
         for t in (formula.left, formula.right):
             if isinstance(t, Constant) and t.name not in seen:
                 seen.append(t.name)
-    elif isinstance(formula, (Not, Modal)):
-        _collect_const_names(formula.formula if isinstance(formula, Not) else formula.body, seen)
-    elif isinstance(formula, BinaryOp):
-        _collect_const_names(formula.left, seen)
-        _collect_const_names(formula.right, seen)
-    elif isinstance(formula, Quantifier):
+    elif isinstance(formula, Connective):
+        for arg in formula.args:
+            _collect_const_names(arg, seen)
+    elif isinstance(formula, (Quantifier, Modal)):
         _collect_const_names(formula.body, seen)
 
 
@@ -183,23 +179,18 @@ def _alpha_normalize(
     elif isinstance(formula, Predicate):
         new_args = [_rename_term(a, var_map) for a in formula.args]
         return Predicate(name=formula.name, args=new_args)
-    elif isinstance(formula, Equality):
-        return Equality(
+    elif isinstance(formula, Identity):
+        return Identity(
             left=_rename_term(formula.left, var_map),
             right=_rename_term(formula.right, var_map),
         )
-    elif isinstance(formula, Not):
-        return Not(_alpha_normalize(formula.formula, var_map, counter))
-    elif isinstance(formula, BinaryOp):
-        return BinaryOp(
+    elif isinstance(formula, Connective):
+        return Connective(
             op=formula.op,
-            left=_alpha_normalize(formula.left, var_map, counter),
-            right=_alpha_normalize(formula.right, var_map, counter),
+            args=[_alpha_normalize(a, var_map, counter) for a in formula.args],
         )
     elif isinstance(formula, Modal):
         return Modal(mod=formula.mod, body=_alpha_normalize(formula.body, var_map, counter))
-    elif isinstance(formula, PropVar):
-        return formula
     return formula
 
 
@@ -222,18 +213,15 @@ def _substitute(
         new_name = pred_map.get(formula.name, formula.name)
         new_args = [_substitute_term(a, const_map) for a in formula.args]
         return Predicate(name=new_name, args=new_args)
-    elif isinstance(formula, Equality):
-        return Equality(
+    elif isinstance(formula, Identity):
+        return Identity(
             left=_substitute_term(formula.left, const_map),
             right=_substitute_term(formula.right, const_map),
         )
-    elif isinstance(formula, Not):
-        return Not(_substitute(formula.formula, pred_map, const_map))
-    elif isinstance(formula, BinaryOp):
-        return BinaryOp(
+    elif isinstance(formula, Connective):
+        return Connective(
             op=formula.op,
-            left=_substitute(formula.left, pred_map, const_map),
-            right=_substitute(formula.right, pred_map, const_map),
+            args=[_substitute(a, pred_map, const_map) for a in formula.args],
         )
     elif isinstance(formula, Quantifier):
         return Quantifier(
@@ -243,8 +231,6 @@ def _substitute(
         )
     elif isinstance(formula, Modal):
         return Modal(mod=formula.mod, body=_substitute(formula.body, pred_map, const_map))
-    elif isinstance(formula, PropVar):
-        return formula
     return formula
 
 

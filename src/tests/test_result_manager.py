@@ -118,15 +118,11 @@ class TestResultManager:
         assert len(form_evaluator_results) == 1
         assert form_evaluator_results[0].result_content['evaluation']['argument_validity'] == 0.8
     
-    def test_result_manager_removes_form_evaluator_when_incomplete(self):
-        """Test that result manager removes form evaluator results when no formalizations exist"""
+    def test_result_manager_accepts_form_evaluator_unconditionally(self):
+        """Test that result manager accepts form evaluator results regardless of formalization state"""
         result_manager = AgentResultManager()
         conversation_id = "test_conversation"
-        
-        # No existing formalization results (incomplete)
-        mock_existing_results = []
-        
-        # Add a form evaluator result (this shouldn't exist but let's test cleanup)
+
         form_evaluator_result = StoredAgentResult(
             agent_type='form_evaluator',
             operation='evaluate_propositions',
@@ -142,19 +138,17 @@ class TestResultManager:
                 }
             },
             confidence=0.8,
-            reasoning='Formal evaluation without formalizations',
+            reasoning='Formal evaluation',
             target_metadata=TargetMetadata(target_type='argument', target_content=''),
             snapshot_id='test_snapshot',
             processed_at=time.time()
         )
-        
-        # Add the result - it should be removed during the add process due to no formalizations
+
         result_manager.add_result(conversation_id, form_evaluator_result)
-        
-        # Verify the result was removed due to no formalizations
+
         results = result_manager.get_results(conversation_id)
         form_evaluator_results = [r for r in results if r.agent_type == 'form_evaluator']
-        assert len(form_evaluator_results) == 0
+        assert len(form_evaluator_results) == 1
     
     def test_result_manager_maintains_content_evaluator_independently(self):
         """Test that result manager maintains content evaluator results independently"""

@@ -21,9 +21,11 @@ def _mock_formalizations_response(steps):
                 "type": "quantifier", "quant": "forall",
                 "var": {"type": "variable", "name": "individual"},
                 "body": {
-                    "type": "binary", "op": "implies",
-                    "left": {"type": "predicate", "name": semantic_pred, "args": [{"type": "variable", "name": "individual"}]},
-                    "right": {"type": "predicate", "name": "is_mortal", "args": [{"type": "variable", "name": "individual"}]}
+                    "type": "connective", "op": "implies",
+                    "args": [
+                        {"type": "predicate", "name": semantic_pred, "args": [{"type": "variable", "name": "individual"}]},
+                        {"type": "predicate", "name": "is_mortal", "args": [{"type": "variable", "name": "individual"}]}
+                    ]
                 }
             })
             ascii_str = f"forall individual. ({semantic_pred}(individual) -> is_mortal(individual))"
@@ -41,9 +43,9 @@ class TestAutomaticFormEvaluator:
         mock_existing_results = []
 
         mock_response = _mock_formalizations_response([
-            ("A", "is_man", "socrates"),
-            ("B", "is_man", None),  # universal: forall individual. (is_man -> is_mortal)
-            ("C", "is_mortal", "socrates"),
+            ("1", "is_man", "socrates"),
+            ("2", "is_man", None),  # universal: forall individual. (is_man -> is_mortal)
+            ("3", "is_mortal", "socrates"),
         ])
 
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
@@ -61,9 +63,9 @@ class TestAutomaticFormEvaluator:
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
-                        Step(symbol='B', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
-                        Step(symbol='C', proposition='Socrates is mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='3', proposition='Socrates is mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
                     ],
                     latest_results=[],
                     target_type='proposition',
@@ -78,8 +80,8 @@ class TestAutomaticFormEvaluator:
             assert result.operation == "formalize_proposition"
             # After normalization, formalizations use canonical symbols
             fmls = {f["symbol"]: f["ascii"] for f in result.result_content["formalizations"]}
-            assert "A" in fmls
-            assert "C" in fmls
+            assert "1" in fmls
+            assert "3" in fmls
             assert result.result_content["confidence"] == 0.95
 
             # Verify that queue_formal_evaluator_if_ready was NOT called by the FormalizationAgent
@@ -92,9 +94,9 @@ class TestAutomaticFormEvaluator:
         mock_existing_results = []
 
         mock_response = _mock_formalizations_response([
-            ("A", "is_man", "socrates"),
-            ("B", "is_man", None),
-            ("C", "is_mortal", "socrates"),
+            ("1", "is_man", "socrates"),
+            ("2", "is_man", None),
+            ("3", "is_mortal", "socrates"),
         ])
 
         with patch('services.agents.agent_gpt_formalize') as mock_gpt, \
@@ -112,9 +114,9 @@ class TestAutomaticFormEvaluator:
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='A', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
-                        Step(symbol='B', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
-                        Step(symbol='C', proposition='Socrates is mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
+                        Step(symbol='3', proposition='Socrates is mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
                     ],
                     latest_results=[],
                     target_type='proposition',

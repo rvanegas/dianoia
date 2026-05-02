@@ -18,7 +18,7 @@ Return a JSON object with two lists:
   The final step (the conclusion) is the proposition that all others ultimately support.
 
 Each proposition is a Step object:
-  - symbol: A single uppercase letter A–Z, assigned in order across both lists
+  - symbol: A positive integer starting at 1, assigned in order across both lists
   - proposition: A single clear declarative sentence
   - justifiers: List of symbols that directly support this step (empty for assumptions
     and the first independent argument steps)
@@ -33,7 +33,7 @@ Each proposition is a Step object:
 - Do not fabricate claims not present in the text
 - Aim for 2–5 assumptions and 3–6 argument steps for typical texts; more is acceptable
   for complex arguments
-- Symbols are assigned in order: A, B, C, … across assumptions first, then argument steps
+- Symbols are assigned in order: 1, 2, 3, … across assumptions first, then argument steps
 
 ### Example
 
@@ -45,12 +45,12 @@ healthier and longer lives."
 Output:
 {
   "assumptions": [
-    {"symbol": "A", "proposition": "Regular exercise strengthens the cardiovascular system.", "justifiers": [], "truth_score": ""},
-    {"symbol": "B", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""}
+    {"symbol": "1", "proposition": "Regular exercise strengthens the cardiovascular system.", "justifiers": [], "truth_score": ""},
+    {"symbol": "2", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""}
   ],
   "argument": [
-    {"symbol": "C", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": ["A"], "truth_score": ""},
-    {"symbol": "D", "proposition": "People who exercise regularly tend to live healthier and longer lives.", "justifiers": ["A", "B", "C"], "truth_score": ""}
+    {"symbol": "3", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": ["1"], "truth_score": ""},
+    {"symbol": "4", "proposition": "People who exercise regularly tend to live healthier and longer lives.", "justifiers": ["1", "2", "3"], "truth_score": ""}
   ]
 }
 """

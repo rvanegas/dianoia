@@ -18,7 +18,7 @@ class TestFormalizationAgent:
         mock_response = {
             "formalizations": [
                 {
-                    "symbol": "A",
+                    "symbol": "1",
                     "ascii": "is_man(socrates)",
                     "json_structure": json.dumps({
                         "type": "predicate", "name": "is_man",
@@ -26,22 +26,24 @@ class TestFormalizationAgent:
                     })
                 },
                 {
-                    "symbol": "B",
-                    "ascii": "forall individual. (is_man(individual) -> is_mortal(individual))",
+                    "symbol": "2",
+                    "ascii": "forall individual. (is_man(individual) implies is_mortal(individual))",
                     "json_structure": json.dumps({
                         "type": "quantifier", "quant": "forall",
                         "var": {"type": "variable", "name": "individual"},
                         "body": {
-                            "type": "binary", "op": "implies",
-                            "left": {"type": "predicate", "name": "is_man",
-                                     "args": [{"type": "variable", "name": "individual"}]},
-                            "right": {"type": "predicate", "name": "is_mortal",
-                                      "args": [{"type": "variable", "name": "individual"}]}
+                            "type": "connective", "op": "implies",
+                            "args": [
+                                {"type": "predicate", "name": "is_man",
+                                 "args": [{"type": "variable", "name": "individual"}]},
+                                {"type": "predicate", "name": "is_mortal",
+                                 "args": [{"type": "variable", "name": "individual"}]}
+                            ]
                         }
                     })
                 },
                 {
-                    "symbol": "C",
+                    "symbol": "3",
                     "ascii": "is_mortal(socrates)",
                     "json_structure": json.dumps({
                         "type": "predicate", "name": "is_mortal",
@@ -59,9 +61,9 @@ class TestFormalizationAgent:
             agent_data = AgentData(
                 assumptions=[],
                 argument=[
-                    Step(symbol="A", proposition="Socrates is a man", justifiers=[], truth_score="", valid=""),
-                    Step(symbol="B", proposition="All men are mortal", justifiers=[], truth_score="", valid=""),
-                    Step(symbol="C", proposition="Socrates is mortal", justifiers=["A", "B"], truth_score="", valid="")
+                    Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score="", valid=""),
+                    Step(symbol="2", proposition="All men are mortal", justifiers=[], truth_score="", valid=""),
+                    Step(symbol="3", proposition="Socrates is mortal", justifiers=["1", "2"], truth_score="", valid="")
                 ],
                 latest_results=[],
                 target_type="argument",
@@ -84,9 +86,9 @@ class TestFormalizationAgent:
 
             # Python normalizes: is_man → P (first appearance), is_mortal → Q, socrates → a
             fmls = {f["symbol"]: f["ascii"] for f in result.result_content["formalizations"]}
-            assert fmls["A"] == "P(a)"
-            assert fmls["C"] == "Q(a)"
-            assert "forall x." in fmls["B"]
+            assert fmls["1"] == "P(a)"
+            assert fmls["3"] == "Q(a)"
+            assert "forall x." in fmls["2"]
 
             # Definitions are Python-generated from semantic names
             preds = {p["symbol"]: p["value"] for p in result.result_content["definitions"]["predicates"]}
