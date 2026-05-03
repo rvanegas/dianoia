@@ -12,6 +12,7 @@ class ConnectiveType(str, Enum):
     AND     = "and"
     OR      = "or"
     IMPLIES = "implies"
+    EQUIV   = "equiv"
 
 
 class QuantifierType(str, Enum):
@@ -27,10 +28,11 @@ class ModalType(str, Enum):
 # Precedence (higher = tighter binding). Unary operators are right-to-left;
 # implies is right-associative; and/or are left-associative.
 _PREC: Dict[str, int] = {
-    "not": 4,
-    "and": 3,
-    "or":  2,
-    "implies": 1,
+    "not": 5,
+    "and": 4,
+    "or":  3,
+    "implies": 2,
+    "equiv": 1,
     "nec": 0, "pos": 0, "forall": 0, "exists": 0,
 }
 _RIGHT_ASSOC = frozenset({"implies"})
