@@ -75,12 +75,14 @@ def normalize_formalizations(
             ) from exc
         parsed.append((sym, formula))
 
-    # --- collect names (cross-step) ---
+    # --- collect names and arities (cross-step) ---
     pred_names: list[str] = []
     const_names: list[str] = []
+    pred_arities: dict[str, int] = {}
     for _, formula in parsed:
         _collect_pred_names(formula, pred_names)
         _collect_const_names(formula, const_names)
+        _collect_pred_arities(formula, pred_arities)
 
     # --- build canonical maps ---
     pred_map = {name: _pred_symbol(i) for i, name in enumerate(pred_names)}
@@ -111,7 +113,7 @@ def normalize_formalizations(
         })
 
     definitions: dict = {
-        "predicates": [{"symbol": v, "value": k} for k, v in pred_map.items() if k != v],
+        "predicates": [{"symbol": v, "value": k, "arity": pred_arities.get(k, 0)} for k, v in pred_map.items() if k != v],
         "constants":  [{"symbol": v, "value": k} for k, v in const_map.items() if k != v],
     }
 
@@ -137,6 +139,16 @@ def _collect_pred_names(formula: Formula, seen: list[str]) -> None:
     elif isinstance(formula, (Quantifier, Modal)):
         _collect_pred_names(formula.body, seen)
     # Identity: no predicates
+
+
+def _collect_pred_arities(formula: Formula, arities: dict[str, int]) -> None:
+    if isinstance(formula, Predicate):
+        arities[formula.name] = len(formula.args)
+    elif isinstance(formula, Connective):
+        for arg in formula.args:
+            _collect_pred_arities(arg, arities)
+    elif isinstance(formula, (Quantifier, Modal)):
+        _collect_pred_arities(formula.body, arities)
 
 
 def _collect_const_names(formula: Formula, seen: list[str]) -> None:

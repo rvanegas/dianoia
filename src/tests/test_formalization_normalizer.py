@@ -34,7 +34,7 @@ def test_single_predicate_and_constant():
     assert fmls[0]["symbol"] == "A"
     assert fmls[0]["ascii"] == "P(a)"
     defs = result["definitions"]
-    assert {"symbol": "P", "value": "is_man"} in defs["predicates"]
+    assert {"symbol": "P", "value": "is_man", "arity": 1} in defs["predicates"]
     assert {"symbol": "a", "value": "socrates"} in defs["constants"]
 
 
@@ -80,7 +80,7 @@ def test_zero_arg_predicate():
     formula = Predicate("is_raining", [])
     result = normalize_formalizations([_item("A", formula)], confidence=0.8, reasoning="")
     assert result["formalizations"][0]["ascii"] == "P"
-    assert {"symbol": "P", "value": "is_raining"} in result["definitions"]["predicates"]
+    assert {"symbol": "P", "value": "is_raining", "arity": 0} in result["definitions"]["predicates"]
     assert result["definitions"]["constants"] == []
 
 
