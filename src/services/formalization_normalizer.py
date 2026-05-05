@@ -24,6 +24,7 @@ from core.logic import (
     from_json, validate_canonical,
 )
 from schemas.agent_results import FormalizerResult
+from core.utils import logger
 
 _PRED_BASE = ['P','Q','R','S','T','G','H','I','J','K','L','M','N','O']  # G–T, starting at P (14)
 _CONST_BASE = list(string.ascii_lowercase[:6])                          # a–f (6)
@@ -64,16 +65,21 @@ def normalize_formalizations(
     """
     # --- parse ---
     parsed: list[tuple[str, Formula]] = []
+    skipped: list[str] = []
     for item in raw_items:
         sym = item["symbol"]
         try:
             tree, _ = json.JSONDecoder().raw_decode(item["json_structure"].strip())
             formula = from_json(tree)
+            parsed.append((sym, formula))
         except Exception as exc:
-            raise FormalizationNormalizationError(
-                f"Failed to parse json_structure for step {sym!r}: {exc}"
-            ) from exc
-        parsed.append((sym, formula))
+            logger.warning(f"Skipping step {sym!r} — failed to parse json_structure: {exc}")
+            skipped.append(sym)
+
+    if skipped and not parsed:
+        raise FormalizationNormalizationError(
+            f"Failed to parse json_structure for all steps: {skipped}"
+        )
 
     # --- collect names and arities (cross-step) ---
     pred_names: list[str] = []

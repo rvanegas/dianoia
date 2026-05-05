@@ -62,6 +62,19 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
         print(f"Error: could not parse argument data: {e}", file=sys.stderr)
         return 1
 
+    step_symbol = getattr(args, "step", None)
+    if step_symbol is not None:
+        all_steps = list(argument_data.assumptions) + list(argument_data.argument)
+        target = next((s for s in all_steps if s.symbol == step_symbol), None)
+        if target is None:
+            print(f"Error: step '{step_symbol}' not found in argument.", file=sys.stderr)
+            return 1
+        keep = {step_symbol} | set(target.justifiers or [])
+        argument_data = ArgumentData(
+            assumptions=[s for s in argument_data.assumptions if s.symbol in keep],
+            argument=[s for s in argument_data.argument if s.symbol in keep],
+        )
+
     conversation_id = f"{uuid.uuid4()}:cli"
     snapshot_id = "1"
     timeout = getattr(args, "timeout", 300)
@@ -109,6 +122,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_evaluate.add_argument("file", help="JSON file containing arguments dict")
     p_evaluate.add_argument("--timeout", type=int, default=300, metavar="N",
                             help="Seconds to wait for agents (default 300)")
+    p_evaluate.add_argument("--step", type=str, default=None, metavar="SYMBOL",
+                            help="Evaluate only this step and its direct justifiers")
 
     return parser
 

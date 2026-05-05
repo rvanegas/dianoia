@@ -420,7 +420,8 @@ agent_gpt_evaluate_content = ModelAgent(
         },
         "required": ["truth_evaluations", "validity_evaluations", "incoherent_sets", "logical_issues", "recommendations"],
         "additionalProperties": False
-    }
+    },
+    max_tokens=16384
 )
 
 # Agent-specific system prompt for form evaluation
@@ -441,6 +442,8 @@ Each Step object contains:
 - justifiers: List of symbols that justify this step
 - formalization: Formal logic representation object with 'ascii' and 'json_structure' fields
 - endorsed: Boolean indicating if the formalization is endorsed by the user
+
+A step has a formalization when `formalization` is non-null, `formalization.endorsed` is true, and `formalization.ascii` is non-empty. Use `ascii` as the authoritative representation; `json_structure` may be null and should be ignored when it is.
 
 ### Task
 
@@ -664,6 +667,21 @@ Do **not** use abstract single-letter names (P, Q, R, a, b, x) — Python will a
 
 **COMPLETE RESPONSE**: Your `formalizations` array MUST contain one entry for every step in both `agent_data.argument` and `agent_data.assumptions`, no exceptions. If a step is very abstract, use zero-argument predicates to capture its key claims rather than omitting it.
 
+### Justification-Aware Formalization
+
+**The ideal**: every derived step (a step with one or more justifiers) should receive a formalization that is formally derivable from the formalizations of its justifier steps by standard first-order logic rules — modus ponens, universal instantiation, conjunction introduction/elimination, existential introduction, etc. Many arguments will fall short of this ideal, but it should be the target.
+
+**Procedure for each derived step**:
+
+1. Collect the formalizations of all justifier steps (endorsed formalizations are authoritative; use them as-is).
+2. Determine what formula is logically entailed by those justifier formalizations — this is the target conclusion for the derived step.
+3. Where possible, formalize the derived step as that entailed formula, using the same predicate names already introduced by the justifiers (consistent variable renaming is fine).
+4. If the natural language content introduces a concept not yet expressed by any justifier's predicates, you face an enthymematic gap. Prefer a formalization that makes the connection to the justifiers' predicates explicit — for instance, by incorporating a universally quantified bridge principle that links the justifiers' predicates to the new concept. Note in your `reasoning` field when you are making an implicit bridge principle explicit. If no such connection is possible, assign the most faithful formalization of the natural language content and note the gap.
+
+**Avoid** mechanically translating the surface meaning of a derived step into entirely fresh predicate names when the justifiers already provide predicates that could carry the inference. A formalization with no shared predicates between a derived step and its justifiers will score as formally invalid.
+
+**Example**: Justifiers give `forall x. is_belief(x) implies mind_independent_truth(x)` (step 1) and `is_belief(institution_a)` (step 2). The derived step "institution A has a mind-independent truth condition" should be formalized as `mind_independent_truth(institution_a)` — reusing the justifiers' predicates via modus ponens — rather than `has_truth_condition(institution_a)` with a fresh predicate.
+
 ### Examples
 
 Input:
@@ -748,6 +766,7 @@ Output:
 # Create GPT instance for agent formalization
 agent_gpt_formalize = ModelAgent(
     instructions=agent_formalize_system_prompt,
+    thinking={"type": "enabled", "budget_tokens": 5000},
     response_format_base={
         "type": "object",
         "properties": {
@@ -770,7 +789,7 @@ agent_gpt_formalize = ModelAgent(
         "required": ["formalizations", "confidence", "reasoning"],
         "additionalProperties": False
     },
-    max_tokens=16384
+    max_tokens=32768
 )
 
 # Agent-specific system prompt for improvement
@@ -1449,5 +1468,6 @@ agent_gpt_improvement = ModelAgent(
         },
         "required": ["recommendations"],
         "additionalProperties": False
-    }
-) 
+    },
+    max_tokens=16384
+)

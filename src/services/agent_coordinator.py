@@ -486,9 +486,30 @@ class AgentCoordinator:
             
             # After formalizer completes, always queue the form_evaluator
             if result.agent_type == 'formalizer':
+                from schemas.step import Formalization
+                import copy
+
+                # Merge formalizer output into steps so the formal evaluator
+                # receives the formalizations the model just produced, not the
+                # bare original steps.
+                new_formalizations = {
+                    f["symbol"]: f
+                    for f in result.result_content.get("formalizations", [])
+                }
+                updated_argument = copy.deepcopy(task.agent_input.agent_data.argument)
+                updated_assumptions = copy.deepcopy(task.agent_input.agent_data.assumptions)
+                for step in updated_argument + updated_assumptions:
+                    if step.symbol in new_formalizations:
+                        f = new_formalizations[step.symbol]
+                        step.formalization = Formalization(
+                            ascii=f["ascii"],
+                            json_structure=f.get("json_structure"),
+                            endorsed=True,
+                        )
+
                 argument_data = ArgumentData(
-                    argument=task.agent_input.agent_data.argument,
-                    assumptions=task.agent_input.agent_data.assumptions,
+                    argument=updated_argument,
+                    assumptions=updated_assumptions,
                     file_ids=task.agent_input.file_ids
                 )
                 self.queue_formal_evaluator_if_ready(

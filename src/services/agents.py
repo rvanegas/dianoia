@@ -9,6 +9,11 @@ from schemas.agent_input import AgentInput, FilteredAgentInput
 from core.utils import logger
 
 
+def _sort_by_symbol(items: list) -> list:
+    """Sort a list of dicts by their 'symbol' field numerically."""
+    return sorted(items, key=lambda x: int(x.get("symbol", 0)))
+
+
 @dataclass
 class AgentResult:
     """Result from an agent operation"""
@@ -49,6 +54,9 @@ class ContentEvaluationAgent:
             # Pass the data directly to the agent
             evaluation_response = agent_gpt_evaluate_content.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
+            for key in ("truth_evaluations", "validity_evaluations"):
+                if evaluation_result.get(key):
+                    evaluation_result[key] = _sort_by_symbol(evaluation_result[key])
             
             # logger.info(f"ContentEvaluationAgent completed")
             # if recommendations:
@@ -114,6 +122,8 @@ class FormalEvaluatorAgent:
             # Pass the data directly to the agent
             evaluation_response = agent_gpt_evaluate_form.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
+            if evaluation_result.get("proposition_evaluations"):
+                evaluation_result["proposition_evaluations"] = _sort_by_symbol(evaluation_result["proposition_evaluations"])
             
             # logger.info(f"FormalEvaluatorAgent completed")
             

@@ -14,10 +14,11 @@ class AssistantResponseError(Exception):
 
 
 class ModelAgent:
-    def __init__(self, instructions: str, response_format_base: dict, max_tokens: int = 4096):
+    def __init__(self, instructions: str, response_format_base: dict, max_tokens: int = 4096, thinking: dict | None = None):
         self.instructions = instructions
         self.response_format_base = response_format_base
         self.max_tokens = max_tokens
+        self.thinking = thinking
 
     def call(self, prompt: str, file_ids: list[str] | None) -> str:
         user_content: list = []
@@ -43,10 +44,16 @@ class ModelAgent:
                 }
             }
         )
+        if self.thinking:
+            kwargs["thinking"] = self.thinking
         if file_ids:
             kwargs["betas"] = ["files-api-2025-04-14"]
 
-        response = client.messages.create(**kwargs)
+        if self.thinking:
+            with client.messages.stream(**kwargs) as stream:
+                response = stream.get_final_message()
+        else:
+            response = client.messages.create(**kwargs)
 
         for block in response.content:
             if block.type == "text":
