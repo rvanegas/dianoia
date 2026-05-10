@@ -23,9 +23,10 @@ def cmd_extract(args: argparse.Namespace) -> int:
         print(f"Error: '{path}' does not exist.", file=sys.stderr)
         return 1
     text = path.read_text(encoding="utf-8")
+    max_props = getattr(args, "max_props", None)
     try:
         from services.extraction import extract_argument
-        result = extract_argument(text)
+        result = extract_argument(text, max_props=max_props)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -60,6 +61,19 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     except Exception as e:
         print(f"Error: could not parse argument data: {e}", file=sys.stderr)
         return 1
+
+    step_symbol = getattr(args, "step", None)
+    if step_symbol is not None:
+        all_steps = list(argument_data.assumptions) + list(argument_data.argument)
+        target = next((s for s in all_steps if s.symbol == step_symbol), None)
+        if target is None:
+            print(f"Error: step '{step_symbol}' not found in argument.", file=sys.stderr)
+            return 1
+        keep = {step_symbol} | set(target.justifiers or [])
+        argument_data = ArgumentData(
+            assumptions=[s for s in argument_data.assumptions if s.symbol in keep],
+            argument=[s for s in argument_data.argument if s.symbol in keep],
+        )
 
     conversation_id = f"{uuid.uuid4()}:cli"
     snapshot_id = "1"
@@ -101,11 +115,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_extract = sub.add_parser("extract", help="Extract argument from a text file, print JSON")
     p_extract.add_argument("file", help="Plain text or markdown file to extract from")
+    p_extract.add_argument("-m", "--max-props", type=int, default=None, metavar="N",
+                           help="Maximum total number of propositions (assumptions + argument steps)")
 
     p_evaluate = sub.add_parser("evaluate", help="Evaluate an argument JSON file with AI agents")
     p_evaluate.add_argument("file", help="JSON file containing arguments dict")
     p_evaluate.add_argument("--timeout", type=int, default=300, metavar="N",
                             help="Seconds to wait for agents (default 300)")
+    p_evaluate.add_argument("--step", type=str, default=None, metavar="SYMBOL",
+                            help="Evaluate only this step and its direct justifiers")
 
     return parser
 

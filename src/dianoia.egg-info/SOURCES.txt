@@ -31,6 +31,7 @@ src/services/argument_service.py
 src/services/conversation.py
 src/services/extraction.py
 src/services/file.py
+src/services/formalization_normalizer.py
 src/services/openaiclient.py
 src/services/startup_init.py
 src/services/system_prompt.py

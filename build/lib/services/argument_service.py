@@ -45,25 +45,21 @@ class ArgumentService:
         self.snapshot_id = snapshot_id
     
     def next_symbol(self) -> str:
-        """Picks next available A-Z in a natural order"""
-        steps = (self.arguments.assumptions + self.arguments.argument)
-        letters = [step.symbol for step in steps]
-        if not all(isinstance(c, str) and len(c) == 1 and
-            'A' <= c <= 'Z' for c in letters):
-            raise ValueError("All elements must be single lowercase letters A-Z")
-        seen = set(letters)
-        if len(seen) == 0:
-            return 'A'
-        if len(seen) == 26:
-            raise ValueError("All 26 letters are already present")
-        if 'Z' not in seen:
-            last = sorted(seen)[-1]
-            return chr(ord(last)+1)
-        for i in range(ord('A'), ord('Z') + 1):
-            c = chr(i)
-            if c not in seen:
-                return c
-        raise RuntimeError("something went wrong")
+        """Picks the next available integer step label (as string)"""
+        steps = self.arguments.assumptions + self.arguments.argument
+        if not steps:
+            return '1'
+        nums = []
+        for step in steps:
+            try:
+                nums.append(int(step.symbol))
+            except (ValueError, TypeError):
+                raise ValueError(f"Step symbol is not an integer: {step.symbol!r}")
+        seen = set(nums)
+        for i in range(1, max(seen) + 2):
+            if i not in seen:
+                return str(i)
+        raise RuntimeError("unreachable")
 
     def new_step(self, proposition: str) -> Step:
         """Make new step"""

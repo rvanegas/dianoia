@@ -484,6 +484,40 @@ class AgentCoordinator:
                 'processed_at': time.time()
             }
             
+            # After formalizer completes, always queue the form_evaluator
+            if result.agent_type == 'formalizer':
+                from schemas.step import Formalization
+                import copy
+
+                # Merge formalizer output into steps so the formal evaluator
+                # receives the formalizations the model just produced, not the
+                # bare original steps.
+                new_formalizations = {
+                    f["symbol"]: f
+                    for f in result.result_content.get("formalizations", [])
+                }
+                updated_argument = copy.deepcopy(task.agent_input.agent_data.argument)
+                updated_assumptions = copy.deepcopy(task.agent_input.agent_data.assumptions)
+                for step in updated_argument + updated_assumptions:
+                    if step.symbol in new_formalizations:
+                        f = new_formalizations[step.symbol]
+                        step.formalization = Formalization(
+                            ascii=f["ascii"],
+                            json_structure=f.get("json_structure"),
+                            endorsed=True,
+                        )
+
+                argument_data = ArgumentData(
+                    argument=updated_argument,
+                    assumptions=updated_assumptions,
+                    file_ids=task.agent_input.file_ids
+                )
+                self.queue_formal_evaluator_if_ready(
+                    task.agent_input.conversation_id,
+                    task.agent_input.snapshot_id,
+                    argument_data
+                )
+
             # Check if improvement agent should be triggered after this agent completes
             if result.agent_type in ['content_evaluator', 'form_evaluator']:
                 # Create argument data for improvement agent check
@@ -715,38 +749,25 @@ class AgentCoordinator:
         
         
         # Queue formalizer for the entire argument
-        # Check if we need to formalize any steps
-        needs_formalization = False
-        for step in argument_data.argument + argument_data.assumptions:
-            if not step.formalization or not step.formalization.endorsed:
-                needs_formalization = True
-                break
-        
-        if needs_formalization:
-            # logger.info(f"Queueing formalizer task for argument in conversation {conversation_id}")
-            formalizer_agent_input = AgentInput(
-                conversation_id=conversation_id,
-                snapshot_id=snapshot_id,
-                agent_data=AgentData(
-                    assumptions=argument_data.assumptions,
-                    argument=argument_data.argument,
-                    latest_results=[],
-                    target_type='argument',
-                    target_content=None
-                ),
-                file_ids=argument_data.file_ids,
-                triggered_by='user_action',
-                trigger_source='argument_change'
-            )
-            # logger.debug(f"Queueing formalizer task for argument")
-            self.queue_task(
-                agent_type='formalizer',
-                agent_input=formalizer_agent_input
-            )
-        else:
-            # logger.info(f"No formalization needed for conversation {conversation_id}")
-            pass
-        
+        formalizer_agent_input = AgentInput(
+            conversation_id=conversation_id,
+            snapshot_id=snapshot_id,
+            agent_data=AgentData(
+                assumptions=argument_data.assumptions,
+                argument=argument_data.argument,
+                latest_results=[],
+                target_type='argument',
+                target_content=None
+            ),
+            file_ids=argument_data.file_ids,
+            triggered_by='user_action',
+            trigger_source='argument_change'
+        )
+        self.queue_task(
+            agent_type='formalizer',
+            agent_input=formalizer_agent_input
+        )
+
         # Queue content evaluator for argument analysis
         content_evaluator_agent_input = AgentInput(
             conversation_id=conversation_id,
@@ -768,8 +789,6 @@ class AgentCoordinator:
         )
         
         # logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
-
-        self.queue_formal_evaluator_if_ready(conversation_id, snapshot_id, argument_data)
 
     
     def queue_improvement_agent_if_ready(self, conversation_id: str, snapshot_id: str, argument_data: ArgumentData):
@@ -896,82 +915,35 @@ class AgentCoordinator:
         return False
     
     def queue_formal_evaluator_if_ready(self, conversation_id: str, snapshot_id: str, argument_data: ArgumentData):
-        """
-        Queue a formal_evaluator task if all formalizations are in place and existing formal_evaluator is outdated.
-        Checks that no formal_evaluator is already 'pending' or 'running'.
-        """
-        # logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
-        logger.debug(f"Queueing formal evaluator if ready for conversation {conversation_id}")
+        """Queue a form_evaluator task unless one is already pending or running."""
+        logger.debug(f"Queueing formal evaluator for conversation {conversation_id}")
 
-        # Check if there's already a pending or running formal_evaluator task
         active_tasks = self.get_active_tasks()
         for task in active_tasks:
             if task.agent_type == 'form_evaluator' and task.agent_input.conversation_id == conversation_id and task.agent_input.snapshot_id == snapshot_id:
                 logger.info(f"Form evaluator task already active for conversation {conversation_id}")
                 return
-        
-        logger.debug(f"Checking if formal evaluator is ready for conversation {conversation_id}")
-        # Extract proposition texts from the argument for form evaluator check
-        form_eval_argument_propositions = []
-        
-        # Extract propositions from list[Step] format
-        argument_steps = argument_data.argument
-        
-        for step in argument_steps:
-            proposition = step.proposition
-            if proposition:
-                form_eval_argument_propositions.append(proposition)
 
-        logger.debug(f"Form evaluator argument propositions: {form_eval_argument_propositions}")
+        form_evaluator_agent_input = AgentInput(
+            conversation_id=conversation_id,
+            snapshot_id=snapshot_id,
+            agent_data=AgentData(
+                assumptions=argument_data.assumptions,
+                argument=argument_data.argument,
+                latest_results=[],
+                target_type='argument',
+                target_content=None
+            ),
+            file_ids=argument_data.file_ids,
+            triggered_by='user_action',
+            trigger_source='formalization_complete'
+        )
 
-        # Check if all propositions in the argument AND assumptions have endorsed formalizations
-        # The formal evaluator now gets formalizations directly from Step objects
-        all_propositions_formalized = True
-        
-        # Check argument steps
-        for step in argument_steps:
-            proposition = step.proposition
-            formalization = step.formalization
-            if proposition and (not formalization or not formalization.endorsed):
-                all_propositions_formalized = False
-                break
-        
-        # Check assumption steps if argument steps are all formalized
-        if all_propositions_formalized:
-            assumption_steps = argument_data.assumptions
-            for step in assumption_steps:
-                proposition = step.proposition
-                formalization = step.formalization
-                if proposition and (not formalization or not formalization.endorsed):
-                    all_propositions_formalized = False
-                    break
-        
-        logger.debug(f"All propositions formalized: {all_propositions_formalized}")
-        
-        if all_propositions_formalized:
-            # Queue form evaluator task
-            form_evaluator_agent_input = AgentInput(
-                conversation_id=conversation_id,
-                snapshot_id=snapshot_id,
-                agent_data=AgentData(
-                    assumptions=argument_data.assumptions,
-                    argument=argument_data.argument,
-                    latest_results=[],
-                    target_type='argument',
-                    target_content=None
-                ),
-                file_ids=argument_data.file_ids,
-                triggered_by='user_action',
-                trigger_source='formalization_complete'
-            )
-            
-            self.queue_task(
-                agent_type='form_evaluator',
-                agent_input=form_evaluator_agent_input
-            )
-            logger.info(f"Queued form evaluator task for conversation {conversation_id}")
-        else:
-            logger.info(f"Not all propositions formalized yet for conversation {conversation_id}")
+        self.queue_task(
+            agent_type='form_evaluator',
+            agent_input=form_evaluator_agent_input
+        )
+        logger.info(f"Queued form evaluator task for conversation {conversation_id}")
     
     def stop(self):
         """Stop all workers"""

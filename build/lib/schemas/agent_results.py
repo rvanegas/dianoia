@@ -20,6 +20,7 @@ class FormalizationItem(TypedDict):
 class DefinitionItem(TypedDict):
     symbol: str
     value: str
+    arity: int  # predicates only; absent on constants
 
 
 class DefinitionsDict(TypedDict):

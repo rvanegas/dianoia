@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: dianoia
-Version: 0.1.5
+Version: 0.1.7
 Summary: AI-powered argumentation server and CLI.
 Requires-Python: >=3.11
 Requires-Dist: platformdirs

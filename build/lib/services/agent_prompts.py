@@ -1,4 +1,4 @@
-from services.conversation import Gpt
+from services.conversation import ModelAgent
 
 # Agent-specific system prompt for justification
 agent_justify_system_prompt = """
@@ -56,7 +56,7 @@ Output:
 """
 
 # Create GPT instance for agent justification
-agent_gpt_justify = Gpt(
+agent_gpt_justify = ModelAgent(
     instructions=agent_justify_system_prompt,
     response_format_base={
         "type": "object",
@@ -85,7 +85,7 @@ The input will be a JSON object with the following structure:
 - agent_data.target_content: Specific content being targeted (if applicable)
 
 Each Step object contains:
-- symbol: String identifier (e.g., "A", "B", "C")
+- symbol: String identifier (e.g., "1", "2", "3")
 - proposition: The natural language proposition
 - justifiers: List of symbols that justify this step
 - content_validity: Content validity from previous evaluation (optional)
@@ -139,19 +139,19 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "Socrates is a god",
         "justifiers": []
       },
       {
-        "symbol": "B", 
+        "symbol": "2",
         "proposition": "All gods are immortal",
         "justifiers": []
       },
       {
-        "symbol": "C",
-        "proposition": "Socrates is immortal", 
-        "justifiers": ["A", "B"]
+        "symbol": "3",
+        "proposition": "Socrates is immortal",
+        "justifiers": ["1", "2"]
       }
     ],
     "assumptions": [],
@@ -163,19 +163,19 @@ Input:
 Output:
 {
   "truth_evaluations": [
-          {"symbol": "A", "truth_value": "0.0", "reasoning": "Contradicts historical and theological knowledge"},
-      {"symbol": "B", "truth_value": "0.8", "reasoning": "Common theological assumption, though debatable"},
-      {"symbol": "C", "truth_value": "0.0", "reasoning": "False conclusion from false premise"}
+          {"symbol": "1", "truth_value": "0.0", "reasoning": "Contradicts historical and theological knowledge"},
+      {"symbol": "2", "truth_value": "0.8", "reasoning": "Common theological assumption, though debatable"},
+      {"symbol": "3", "truth_value": "0.0", "reasoning": "False conclusion from false premise"}
   ],
   "validity_evaluations": [
-          {"symbol": "C", "validity_value": "1.0", "reasoning": "Valid deduction from A and B, though premises are false"}
+          {"symbol": "3", "validity_value": "1.0", "reasoning": "Valid deduction from 1 and 2, though premises are false"}
   ],
 
   "incoherent_sets": [],
   "logical_issues": ["Argument is valid but unsound due to false premise"],
   "recommendations": [
-    "Replace false premise A with true statement about Socrates",
-    "Provide evidence for theological assumptions in B if used"
+    "Replace false premise 1 with true statement about Socrates",
+    "Provide evidence for theological assumptions in 2 if used"
   ]
 }
 
@@ -186,14 +186,14 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "The sun has legs",
         "justifiers": []
       }
     ],
     "assumptions": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The sun has four legs",
         "justifiers": []
       }
@@ -206,7 +206,7 @@ Input:
 Output:
 {
   "truth_evaluations": [
-          {"symbol": "B", "truth_value": "1.0", "reasoning": "True given the assumption that the sun has four legs"}
+          {"symbol": "2", "truth_value": "1.0", "reasoning": "True given the assumption that the sun has four legs"}
   ],
   "validity_evaluations": [],
   "incoherent_sets": [],
@@ -221,19 +221,19 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "Socrates is a man",
         "justifiers": []
       },
       {
-        "symbol": "B",
-        "proposition": "All men are mortal", 
+        "symbol": "2",
+        "proposition": "All men are mortal",
         "justifiers": []
       },
       {
-        "symbol": "C",
+        "symbol": "3",
         "proposition": "Socrates is mortal",
-        "justifiers": ["A", "B"]
+        "justifiers": ["1", "2"]
       }
     ],
     "assumptions": [],
@@ -245,12 +245,12 @@ Input:
 Output:
 {
   "truth_evaluations": [
-          {"symbol": "A", "truth_value": "0.95", "reasoning": "Historical fact, well-documented"},
-      {"symbol": "B", "truth_value": "0.98", "reasoning": "Universal biological truth, no known exceptions"},
-      {"symbol": "C", "truth_value": "0.95", "reasoning": "Valid conclusion from true premises"}
+          {"symbol": "1", "truth_value": "0.95", "reasoning": "Historical fact, well-documented"},
+      {"symbol": "2", "truth_value": "0.98", "reasoning": "Universal biological truth, no known exceptions"},
+      {"symbol": "3", "truth_value": "0.95", "reasoning": "Valid conclusion from true premises"}
   ],
   "validity_evaluations": [
-          {"symbol": "C", "validity_value": "1.0", "reasoning": "Valid deduction from A and B"}
+          {"symbol": "3", "validity_value": "1.0", "reasoning": "Valid deduction from 1 and 2"}
   ],
 
   "incoherent_sets": [],
@@ -265,19 +265,19 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "All humans are mortal",
         "justifiers": []
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "Socrates is human",
         "justifiers": []
       },
       {
-        "symbol": "C",
+        "symbol": "3",
         "proposition": "Socrates is immortal",
-        "justifiers": ["A", "B"]
+        "justifiers": ["1", "2"]
       }
     ],
     "assumptions": [],
@@ -289,22 +289,22 @@ Input:
 Output:
 {
   "truth_evaluations": [
-          {"symbol": "A", "truth_value": "0.98", "reasoning": "Universal biological truth"},
-      {"symbol": "B", "truth_value": "0.95", "reasoning": "Historical fact"},
-      {"symbol": "C", "truth_value": "0.0", "reasoning": "Contradicts premises A and B"}
+          {"symbol": "1", "truth_value": "0.98", "reasoning": "Universal biological truth"},
+      {"symbol": "2", "truth_value": "0.95", "reasoning": "Historical fact"},
+      {"symbol": "3", "truth_value": "0.0", "reasoning": "Contradicts premises 1 and 2"}
   ],
   "validity_evaluations": [
-          {"symbol": "C", "validity_value": "0.0", "reasoning": "Logical contradiction with premises"}
+          {"symbol": "3", "validity_value": "0.0", "reasoning": "Logical contradiction with premises"}
   ],
   "incoherent_sets": [
     {
-      "symbols": ["A", "B", "C"],
+      "symbols": ["1", "2", "3"],
       "incoherence_value": "1.0"
     }
   ],
   "logical_issues": ["Contains logical contradiction"],
   "recommendations": [
-    "Fix contradiction in C - Socrates cannot be both mortal (from A+B) and immortal"
+    "Fix contradiction in 3 - Socrates cannot be both mortal (from 1+2) and immortal"
   ]
 }
 
@@ -313,19 +313,19 @@ Output:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The policy worked in another country",
         "justifiers": []
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "Our country is similar",
         "justifiers": []
       },
       {
-        "symbol": "C",
+        "symbol": "3",
         "proposition": "The policy will work here",
-        "justifiers": ["A", "B"]
+        "justifiers": ["1", "2"]
       }
     ],
     "assumptions": [],
@@ -337,31 +337,31 @@ Output:
 Output:
 {
   "truth_evaluations": [
-          {"symbol": "A", "truth_value": "0.7", "reasoning": "Limited evidence, context-dependent"},
-      {"symbol": "B", "truth_value": "0.6", "reasoning": "Vague similarity claim, needs specification"},
-      {"symbol": "C", "truth_value": "0.5", "reasoning": "Weak conclusion from weak premises"}
+          {"symbol": "1", "truth_value": "0.7", "reasoning": "Limited evidence, context-dependent"},
+      {"symbol": "2", "truth_value": "0.6", "reasoning": "Vague similarity claim, needs specification"},
+      {"symbol": "3", "truth_value": "0.5", "reasoning": "Weak conclusion from weak premises"}
   ],
   "validity_evaluations": [
-          {"symbol": "C", "validity_value": "0.6", "reasoning": "Weak analogical inference from A and B"}
+          {"symbol": "3", "validity_value": "0.6", "reasoning": "Weak analogical inference from 1 and 2"}
   ],
 
   "incoherent_sets": [
     {
-      "symbols": ["A", "B", "C"],
+      "symbols": ["1", "2", "3"],
       "incoherence_value": "0.7"
     }
   ],
   "logical_issues": ["Relies on weak analogical reasoning"],
   "recommendations": [
-    "Provide specific evidence of policy success in other country (A)",
-    "Specify relevant similarities and differences between countries (B)",
-    "Strengthen analogical reasoning in C"
+    "Provide specific evidence of policy success in other country (1)",
+    "Specify relevant similarities and differences between countries (2)",
+    "Strengthen analogical reasoning in 3"
   ]
 }
 """
 
 # Create GPT instance for content evaluation
-agent_gpt_evaluate_content = Gpt(
+agent_gpt_evaluate_content = ModelAgent(
     instructions=agent_evaluate_content_system_prompt,
     response_format_base={
         "type": "object",
@@ -420,7 +420,8 @@ agent_gpt_evaluate_content = Gpt(
         },
         "required": ["truth_evaluations", "validity_evaluations", "incoherent_sets", "logical_issues", "recommendations"],
         "additionalProperties": False
-    }
+    },
+    max_tokens=16384
 )
 
 # Agent-specific system prompt for form evaluation
@@ -437,10 +438,12 @@ The input will be a JSON object with the following structure:
 - agent_data.target_content: Specific content being targeted (if applicable)
 
 Each Step object contains:
-- symbol: String identifier (e.g., "A", "B", "C")
+- symbol: String identifier (e.g., "1", "2", "3")
 - justifiers: List of symbols that justify this step
 - formalization: Formal logic representation object with 'ascii' and 'json_structure' fields
 - endorsed: Boolean indicating if the formalization is endorsed by the user
+
+A step has a formalization when `formalization` is non-null, `formalization.endorsed` is true, and `formalization.ascii` is non-empty. Use `ascii` as the authoritative representation; `json_structure` may be null and should be ignored when it is.
 
 ### Task
 
@@ -474,31 +477,31 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "C",
-        "justifiers": ["A", "B"],
+        "symbol": "2",
+        "justifiers": [],
         "formalization": {
-          "ascii": "Q(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "ascii": "P(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       },
       {
-        "symbol": "A",
-        "justifiers": [],
+        "symbol": "3",
+        "justifiers": ["1", "2"],
         "formalization": {
-          "ascii": "P(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "ascii": "Q(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       }
     ],
     "assumptions": [
       {
-        "symbol": "B",
+        "symbol": "1",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))", 
-          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "ascii": "forall x. (P(x) implies Q(x))",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
           "endorsed": true
         }
       }
@@ -511,13 +514,13 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-          {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "C", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "A", "validity": "1.0", "reasoning": "Valid conclusion from premises B and C"}
+    {"symbol": "1", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "2", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "3", "validity": "1.0", "reasoning": "Valid conclusion from premises 1 and 2"}
   ],
-              "argument_validity": "1.0",
+  "argument_validity": "1.0",
   "logical_issues": [],
-  "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) -> Q(x)) logically entail Q(a)"]
+  "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) implies Q(x)) logically entail Q(a)"]
 }
 
 # Invalid deductive argument
@@ -527,29 +530,29 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "B",
+        "symbol": "1",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))", 
-          "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}",
+          "ascii": "forall x. (P(x) implies Q(x))",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
           "endorsed": true
         }
       },
       {
-        "symbol": "C",
+        "symbol": "2",
         "justifiers": [],
         "formalization": {
-          "ascii": "P(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}",
+          "ascii": "Q(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       },
       {
-        "symbol": "A",
-        "justifiers": ["B", "C"],
+        "symbol": "3",
+        "justifiers": ["1", "2"],
         "formalization": {
-          "ascii": "Q(a)", 
-          "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}",
+          "ascii": "P(a)",
+          "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
       }
@@ -563,12 +566,12 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-          {"symbol": "A", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "B", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-      {"symbol": "C", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
+    {"symbol": "1", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "2", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
+    {"symbol": "3", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
   ],
-              "argument_validity": "0.0",
-  "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) -> Q(x)) do not logically entail P(a)"],
+  "argument_validity": "0.0",
+  "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) implies Q(x)) do not logically entail P(a)"],
   "recommendations": ["The premises do not logically support the conclusion"]
 }
 
@@ -581,7 +584,7 @@ Provide evaluations for:
 """
 
 # Create GPT instance for form evaluation
-agent_gpt_evaluate_form = Gpt(
+agent_gpt_evaluate_form = ModelAgent(
     instructions=agent_evaluate_form_system_prompt,
     response_format_base={
         "type": "object",
@@ -616,216 +619,154 @@ agent_gpt_evaluate_form = Gpt(
 
 # Agent-specific system prompt for formalization
 agent_formalize_system_prompt = """
-You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations using the constraints defined in core/logic.py.
+You are an AI agent working on logical argumentation. Your task is to formalize natural language propositions into formal logical representations.
 
 ### Task: Formalize Arguments
 
-You will receive an argument with multiple propositions that need formalization. Your goal is to convert **all** natural language propositions — both assumption steps and argument steps — into formal logical representations that follow the constraints of the logic system, ensuring consistency across the entire argument.
-
-**CRITICAL**: Assumptions are full logical propositions that must be formalized just like argument steps. Do not skip or omit them.
+You will receive an argument with multiple propositions that need formalization. Convert **all** propositions — both assumption steps and argument steps — into formal logical representations. **CRITICAL**: Do not skip assumptions.
 
 ### Input Format
-The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument — **must be formalized**
-- agent_data.assumptions: List of Step objects for background assumptions — **must also be formalized**
-- agent_data.target_type: Type of content being formalized (e.g., "argument")
-- agent_data.target_content: The argument being formalized (if applicable)
-- file_ids: List of file IDs for context
+- agent_data.argument: List of Step objects — **must be formalized**
+- agent_data.assumptions: List of Step objects — **must also be formalized**
 
-Each Step object contains:
-- symbol: String identifier (e.g., "A", "B", "C")
-- proposition: The natural language proposition
-- justifiers: List of symbols that justify this step
-- formalization: Existing formal logic representation (if any)
+Each Step contains: symbol, proposition, justifiers, and optionally formalization (with endorsed flag).
 
-### Formal Logic Constraints
+### Formula Types
 
-The formalization must follow these exact constraints from the logic system:
+Use the following JSON structure format exactly:
 
-1. **Terms**:
-   - **Variables**: Must be single letters p-z (lowercase) - regex: `[p-z]`
-   - **Constants**: Must be single letters a-o (lowercase) - regex: `[a-o]`
+- **Predicate** (including zero-argument): `{"type": "predicate", "name": "pred_name", "args": [...]}`
+- **Identity**: `{"type": "identity", "left": <term>, "right": <term>}`
+- **Connective**: `{"type": "connective", "op": "not"|"and"|"or"|"implies", "args": [<formula>, ...]}`  (`not` takes 1 arg; `and`/`or`/`implies` take 2)
+- **Quantifier**: `{"type": "quantifier", "quant": "forall"|"exists", "var": {"type": "variable", "name": "var_name"}, "body": <formula>}`
+- **Modal**: `{"type": "modal", "mod": "nec"|"pos", "body": <formula>}`
 
-2. **Formulas**:
-   - **Predicate**: P(t1, t2, ...) where P is predicate name, t1, t2, ... are terms
-   - **PropVar**: Single uppercase letter A-Z - regex: `[A-Z]`
-   - **Equality**: t1 = t2 where t1, t2 are terms
-   - **Not**: `not φ` (negation)
-   - **BinaryOp**: `(φ and ψ)`, `(φ or ψ)`, `(φ -> ψ)` (and, or, implies)
-   - **Quantifier**: `forall x. (φ)`, `exists x. (φ)` (forall, exists)
-   - **Modal**: `nec φ`, `pos φ` (necessarily, possibly)
+Terms:
+- Variable: `{"type": "variable", "name": "var_name"}` — any lowercase identifier
+- Constant: `{"type": "constant", "name": "const_name"}` — any lowercase identifier
 
-3. **Naming Conventions**:
-   - **Predicate names**: Use abstract, non-descriptive names like "P", "Q", "R" to avoid semantic content that could distract from logical structure
-   - **Constants**: Use a-o (lowercase)
-   - **Variables**: Use p-z (lowercase) 
-   - **PropVars**: Use A-Z (uppercase)
+### Naming — use descriptive semantic names
 
-4. **ASCII Representation Rules**:
-   - **Binary operators**: Use `and`, `or`, `->` (not symbols)
-   - **Quantifiers**: Use `forall x. (φ)`, `exists x. (φ)` format
-   - **Modals**: Use `nec φ` for necessarily, `pos φ` for possibly
-   - **Negation**: Use `not φ` format
+Use **descriptive snake_case names** that capture the meaning of each concept:
+- **Predicate names**: e.g., `is_man`, `is_mortal`, `runs_faster_than`, `is_raining` (for atomic propositions, use zero args)
+- **Constant names**: e.g., `socrates`, `plato`, `the_earth`
+- **Variable names**: any descriptive lowercase name, e.g., `individual`, `entity`, `thing`
+
+Do **not** use abstract single-letter names (P, Q, R, a, b, x) — Python will assign canonical letters. Your job is to capture the correct logical structure and semantic meaning.
 
 ### Guidelines
 1. Preserve the logical meaning of the original proposition
-2. Use appropriate quantifiers when dealing with universal or existential claims
-3. Use modal operators for necessity/possibility claims
-4. Break complex propositions into simpler logical components
-5. Ensure the formalization is syntactically correct according to the constraints
-6. Provide both ASCII representation and JSON structure
-7. Include confidence level and reasoning for the formalization
-8. **CRITICAL**: Use abstract predicate names (P, Q, R, etc.) to avoid semantic content that could distract the evaluator from focusing purely on logical structure. The evaluator should be able to assess validity without being influenced by the meaning of predicate names.
-9. **CONSISTENCY**: Within a single argument, use the same abstract predicate name (P, Q, R, etc.) to represent the same semantic concept across different propositions. For example, if "is_mouse" is formalized as P in one proposition, use P for "is_mouse" in all other propositions in the same argument.
+2. Use quantifiers for universal/existential claims (`forall individual. (...)`)
+3. Use modal operators for necessity/possibility (`nec`, `pos`)
+4. Use zero-argument predicates for atomic propositions (e.g., `is_raining()`)
+5. For abstract claims that resist quantifier structure, use zero-argument predicates to name the key concepts: e.g., "authority is discovered not created" → `discovered_not_created_authority()`, or conjoin several: `grounded_in_practical_rationality() and not_grounded_in_command() and is_discovered()`
+6. Ensure the same semantic concept uses the same predicate name across all steps
+7. Include confidence and reasoning
 
-10. **UNIQUE PREDICATES**: **CRITICAL RULE**: Each predicate must have a unique definition. Never assign the same definition to multiple predicate symbols. For example:
-    - CORRECT: P = "is a mouse", Q = "is large", R = "is small"
-    - INCORRECT: P = "is large", Q = "is large" (same definition for different symbols)
+**ENDORSED FORMALIZATIONS**: Steps with `endorsed: true` already have a correct formalization. Copy their `ascii` and `json_structure` fields into your output exactly as given — do not alter or re-derive them.
 
-11. **EXISTING FORMALIZATIONS**: When existing_formalizations are provided, analyze them to maintain consistency:
-    - If the current proposition contains semantic concepts that appear in existing formalizations, use the same abstract predicate names
-    - If a concept like "mouse" was formalized as P in an existing formalization, use P for "mouse" in the current proposition
-    - If a concept like "small" was formalized as Q in an existing formalization, use Q for "small" in the current proposition
-    - Only introduce new abstract predicate names (R, S, T, etc.) for concepts that haven't been formalized before
+**COMPLETE RESPONSE**: Your `formalizations` array MUST contain one entry for every step in both `agent_data.argument` and `agent_data.assumptions`, no exceptions. If a step is very abstract, use zero-argument predicates to capture its key claims rather than omitting it.
 
-12. **ENDORSED FORMALIZATIONS**: **CRITICAL RULE**: Do NOT generate new formalizations for steps that already have endorsed formalizations:
-    - If a step has a formalization with `endorsed: true`, skip that step entirely
-    - Only formalize steps that either have no formalization or have `endorsed: false`
-    - This ensures that user-endorsed formalizations are never overwritten
-    - If all steps have endorsed formalizations, return an empty formalizations array
+### Justification-Aware Formalization
 
-13. **COMPLETE RESPONSE**: **CRITICAL RULE**: Your response must include ALL formalizations for the argument, not just the new ones:
-    - Include formalizations for ALL steps in the argument, both new and existing
-    - For steps with existing formalizations (endorsed or not), include them in your response
-    - For steps without formalizations, generate new ones
-    - This ensures the frontend receives a complete picture of all formalizations
+**The ideal**: every derived step (a step with one or more justifiers) should receive a formalization that is formally derivable from the formalizations of its justifier steps by standard first-order logic rules — modus ponens, universal instantiation, conjunction introduction/elimination, existential introduction, etc. Many arguments will fall short of this ideal, but it should be the target.
 
-14. **COMPLETE DEFINITIONS**: **CRITICAL RULE**: Your definitions must cover ALL predicates and constants used in ANY formalization:
-    - Include definitions for predicates/constants from existing formalizations
-    - Include definitions for predicates/constants from new formalizations
-    - The definitions object should be complete and comprehensive
-    - Do not omit definitions for existing formalizations
+**Procedure for each derived step**:
 
-15. **CONSISTENCY WITH EXISTING**: When formalizing new propositions, maintain consistency with existing formalizations:
-    - If a semantic concept (like "mouse" or "small") was already formalized, use the same predicate name
-    - If "mouse" was formalized as P in an existing formalization, use P for "mouse" in new formalizations
-    - Only introduce new predicate names for truly new semantic concepts
+1. Collect the formalizations of all justifier steps (endorsed formalizations are authoritative; use them as-is).
+2. Determine what formula is logically entailed by those justifier formalizations — this is the target conclusion for the derived step.
+3. Where possible, formalize the derived step as that entailed formula, using the same predicate names already introduced by the justifiers (consistent variable renaming is fine).
+4. If the natural language content introduces a concept not yet expressed by any justifier's predicates, you face an enthymematic gap. Prefer a formalization that makes the connection to the justifiers' predicates explicit — for instance, by incorporating a universally quantified bridge principle that links the justifiers' predicates to the new concept. Note in your `reasoning` field when you are making an implicit bridge principle explicit. If no such connection is possible, assign the most faithful formalization of the natural language content and note the gap.
+
+**Avoid** mechanically translating the surface meaning of a derived step into entirely fresh predicate names when the justifiers already provide predicates that could carry the inference. A formalization with no shared predicates between a derived step and its justifiers will score as formally invalid.
+
+**Example**: Justifiers give `forall x. is_belief(x) implies mind_independent_truth(x)` (step 1) and `is_belief(institution_a)` (step 2). The derived step "institution A has a mind-independent truth condition" should be formalized as `mind_independent_truth(institution_a)` — reusing the justifiers' predicates via modus ponens — rather than `has_truth_condition(institution_a)` with a fresh predicate.
 
 ### Examples
 
 Input:
+```json
 {
   "agent_data": {
     "argument": [
-      {
-        "symbol": "B",
-        "proposition": "Socrates is a man",
-        "justifiers": []
-      },
-      {
-        "symbol": "C",
-        "proposition": "Socrates is mortal",
-        "justifiers": ["A", "B"]
-      }
+      {"symbol": "2", "proposition": "Socrates is a man", "justifiers": []},
+      {"symbol": "3", "proposition": "Socrates is mortal", "justifiers": ["1", "2"]}
     ],
     "assumptions": [
-      {
-        "symbol": "A",
-        "proposition": "All men are mortal",
-        "justifiers": []
-      }
-    ],
-    "target_type": "argument",
-    "target_content": null
+      {"symbol": "1", "proposition": "All men are mortal", "justifiers": []}
+    ]
   }
 }
+```
 
 Output:
+```json
 {
   "formalizations": [
     {
-      "symbol": "A",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "symbol": "1",
+      "ascii": "forall individual. (is_man(individual) implies is_mortal(individual))",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"individual\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}, {\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}]}}"
     },
     {
-      "symbol": "B",
-      "ascii": "P(a)",
-      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"a\"]}"
+      "symbol": "2",
+      "ascii": "is_man(socrates)",
+      "json_structure": "{\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"constant\", \"name\": \"socrates\"}]}"
     },
     {
-      "symbol": "C",
-      "ascii": "Q(a)",
-      "json_structure": "{\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"a\"]}"
+      "symbol": "3",
+      "ascii": "is_mortal(socrates)",
+      "json_structure": "{\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"constant\", \"name\": \"socrates\"}]}"
     }
   ],
-  "definitions": {
-    "predicates": [
-      {"symbol": "P", "value": "is a man"},
-      {"symbol": "Q", "value": "is mortal"}
-    ],
-    "constants": [
-      {"symbol": "a", "value": "Socrates"}
-    ]
-  },
-  "confidence": "0.95",
-  "reasoning": "Assumption A formalized as the universal premise; argument steps B and C formalized consistently using the same predicate names"
+  "confidence": 0.95,
+  "reasoning": "Classic syllogism: universal premise 1, particular premise 2, conclusion 3"
 }
+```
 
-Input:
+Input (with endorsed formalization):
+```json
 {
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "All mice are small",
         "justifiers": [],
-        "formalization": {
-          "ascii": "forall x. (P(x) -> Q(x))",
-          "endorsed": true
-        }
+        "formalization": {"ascii": "forall x. P(x) implies Q(x)", "endorsed": true}
       },
-      {
-        "symbol": "B",
-        "proposition": "Mice are small",
-        "justifiers": []
-      }
+      {"symbol": "2", "proposition": "Mice are small", "justifiers": []}
     ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
+    "assumptions": []
   }
 }
+```
 
 Output:
+```json
 {
   "formalizations": [
     {
-      "symbol": "A",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "symbol": "1",
+      "ascii": "forall x. P(x) implies Q(x)",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}"
     },
     {
-      "symbol": "B",
-      "ascii": "forall x. (P(x) -> Q(x))",
-      "json_structure": "{\"type\": \"universal\", \"variable\": \"x\", \"body\": {\"type\": \"implication\", \"antecedent\": {\"type\": \"predicate\", \"predicate\": \"P\", \"terms\": [\"x\"]}, \"consequent\": {\"type\": \"predicate\", \"predicate\": \"Q\", \"terms\": [\"x\"]}}}"
+      "symbol": "2",
+      "ascii": "forall entity. (is_mouse(entity) implies is_small(entity))",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"entity\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}]}}"
     }
   ],
-  "definitions": {
-    "predicates": [
-      {"symbol": "P", "value": "is a mouse"},
-      {"symbol": "Q", "value": "is small"}
-    ],
-    "constants": []
-  },
-  "confidence": "0.95",
-  "reasoning": "Consistent with existing formalization: using P for 'mouse' and Q for 'small' as established in previous formalization"
+  "confidence": 0.95,
+  "reasoning": "Step 1 has an endorsed formalization included as-is; step 2 formalized consistently using the same semantic predicate names"
 }
+```
 """
 
 # Create GPT instance for agent formalization
-agent_gpt_formalize = Gpt(
+agent_gpt_formalize = ModelAgent(
     instructions=agent_formalize_system_prompt,
+    thinking={"type": "enabled", "budget_tokens": 5000},
     response_format_base={
         "type": "object",
         "properties": {
@@ -834,53 +775,21 @@ agent_gpt_formalize = Gpt(
                 "items": {
                     "type": "object",
                     "properties": {
-                        "symbol": {"type": "string"},
-                        "ascii": {"type": "string"},
+                        "symbol":        {"type": "string"},
+                        "ascii":         {"type": "string"},
                         "json_structure": {"type": "string"}
                     },
                     "required": ["symbol", "ascii", "json_structure"],
                     "additionalProperties": False
                 }
             },
-            "definitions": {
-                "type": "object",
-                "properties": {
-                    "predicates": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "symbol": {"type": "string"},
-                                "value": {"type": "string"}
-                            },
-                            "required": ["symbol", "value"],
-                            "additionalProperties": False
-                        },
-                        "additionalProperties": False
-                    },
-                    "constants": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "symbol": {"type": "string"},
-                                "value": {"type": "string"}
-                            },
-                            "required": ["symbol", "value"],
-                            "additionalProperties": False
-                        },
-                        "additionalProperties": False
-                    }
-                },
-                "required": ["predicates", "constants"],
-                "additionalProperties": False
-            },
             "confidence": {"type": "number"},
-            "reasoning": {"type": "string"}
+            "reasoning":  {"type": "string"}
         },
-        "required": ["formalizations", "definitions", "confidence", "reasoning"],
+        "required": ["formalizations", "confidence", "reasoning"],
         "additionalProperties": False
-    }
+    },
+    max_tokens=32768
 )
 
 # Agent-specific system prompt for improvement
@@ -902,7 +811,7 @@ The input will be a JSON object with the following structure:
 - current_conclusion_scores: Current truth, content validity, and formal validity scores of the conclusion
 
 Each Step object contains:
-- symbol: String identifier (e.g., "A", "B", "C")
+- symbol: String identifier (e.g., "1", "2", "3")
 - proposition: The natural language proposition
 - justifiers: List of symbols that justify this step
 - truth_score: Truth evaluation score (0.0 to 1.0)
@@ -949,7 +858,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The policy will reduce crime",
         "justifiers": [],
         "truth_score": "0.3",
@@ -963,7 +872,7 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.3", "reasoning": "Vague claim without evidence"}
+      {"symbol": "1", "truth_value": "0.3", "reasoning": "Vague claim without evidence"}
     ]
   },
   "conclusion_proposition": "The policy will reduce crime",
@@ -981,7 +890,7 @@ Output:
       "id": "rec_001",
       "reasoning": "The conclusion has a very low truth score (0.3) because it lacks supporting evidence. Adding specific evidence about the policy's effectiveness will significantly improve the conclusion's credibility.",
       "impact": "high",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score_improvement": "+0.4",
         "content_validity_improvement": "+0.3",
@@ -993,15 +902,15 @@ Output:
           "proposition": "Similar policies have reduced crime by 25% in comparable cities",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Statistical evidence from peer-reviewed studies", "Case studies from similar urban areas"]
         },
         {
-          "symbol": null, 
+          "symbol": null,
           "proposition": "The policy targets root causes of crime through community engagement",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on crime prevention"]
         }
       ]
@@ -1016,14 +925,14 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The economy is growing",
         "justifiers": []
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "Therefore, unemployment will decrease",
-        "justifiers": ["A"],
+        "justifiers": ["1"],
         "truth_score": "0.6",
         "content_validity": "0.3",
         "formal_validity": null
@@ -1035,7 +944,7 @@ Input:
   },
   "evaluation_results": {
     "validity_evaluations": [
-      {"symbol": "B", "validity_value": "0.3", "reasoning": "Weak inference - economic growth doesn't always reduce unemployment"}
+      {"symbol": "2", "validity_value": "0.3", "reasoning": "Weak inference - economic growth doesn't always reduce unemployment"}
     ]
   },
   "conclusion_proposition": "Unemployment will decrease",
@@ -1053,7 +962,7 @@ Output:
       "id": "rec_002",
       "reasoning": "The conclusion has a low validity score (0.3) because the inference from economic growth to unemployment reduction is weak. Adding a bridging premise will strengthen the logical connection.",
       "impact": "high",
-      "target_proposition": "B",
+      "target_proposition": "2",
       "expected_conclusion_improvement": {
         "truth_score_improvement": "+0.1",
         "content_validity_improvement": "+0.5",
@@ -1065,7 +974,7 @@ Output:
           "proposition": "Economic growth creates new job opportunities in expanding sectors",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "B",
+          "justifies_symbol": "2",
           "justification_suggestions": ["Economic theory on job creation", "Historical data on employment growth"]
         }
       ]
@@ -1080,7 +989,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "Climate change is real",
         "justifiers": [],
         "truth_score": "0.9",
@@ -1088,9 +997,9 @@ Input:
         "formal_validity": null
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "We should take action",
-        "justifiers": ["A"],
+        "justifiers": ["1"],
         "truth_score": "0.7",
         "content_validity": "0.5",
         "formal_validity": null
@@ -1102,11 +1011,11 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.9", "reasoning": "Strong scientific consensus"},
-      {"symbol": "B", "truth_value": "0.7", "reasoning": "Vague conclusion needs more specific reasoning"}
+      {"symbol": "1", "truth_value": "0.9", "reasoning": "Strong scientific consensus"},
+      {"symbol": "2", "truth_value": "0.7", "reasoning": "Vague conclusion needs more specific reasoning"}
     ],
     "validity_evaluations": [
-      {"symbol": "B", "validity_value": "0.5", "reasoning": "Weak inference - doesn't specify what action or why"}
+      {"symbol": "2", "validity_value": "0.5", "reasoning": "Weak inference - doesn't specify what action or why"}
     ]
   },
   "conclusion_proposition": "We should take action",
@@ -1124,7 +1033,7 @@ Output:
       "id": "rec_003",
       "reasoning": "The conclusion has moderate scores but could be significantly improved by making it more precise and adding supporting evidence. The conclusion rewrite improves clarity by specifying the type of action (decisive) and the target (climate change) without changing the fundamental claim. This mixed approach will strengthen both the conclusion and its justification.",
       "impact": "medium",
-      "target_proposition": "B",
+      "target_proposition": "2",
       "expected_conclusion_improvement": {
         "truth_score": "0.2",
         "content_validity": "0.4",
@@ -1132,10 +1041,10 @@ Output:
       },
       "propositions": [
         {
-          "symbol": "B",
+          "symbol": "2",
           "proposition": "We should take decisive action to address climate change",
           "type": "rewrite",
-          "original_symbol": "B",
+          "original_symbol": "2",
           "original_proposition": "We should take action",
           "placement": "argument",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on climate action"]
@@ -1145,7 +1054,7 @@ Output:
           "proposition": "Carbon pricing has been effective in reducing emissions in other countries",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "B",
+          "justifies_symbol": "2",
           "justification_suggestions": ["Case studies from European countries", "Economic research on carbon pricing"]
         },
         {
@@ -1153,7 +1062,7 @@ Output:
           "proposition": "Reducing emissions will mitigate the worst effects of climate change",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "B",
+          "justifies_symbol": "2",
           "justification_suggestions": ["Climate science research", "IPCC reports on emission reduction impacts"]
         }
       ]
@@ -1168,7 +1077,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The new drug shows promise in clinical trials",
         "justifiers": [],
         "truth_score": "0.6",
@@ -1176,9 +1085,9 @@ Input:
         "formal_validity": null
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "Therefore, the drug should be approved",
-        "justifiers": ["A"],
+        "justifiers": ["1"],
         "truth_score": "0.5",
         "content_validity": "0.4",
         "formal_validity": null
@@ -1190,11 +1099,11 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.6", "reasoning": "Moderate evidence, needs more supporting data"},
-      {"symbol": "B", "truth_value": "0.5", "reasoning": "Weak conclusion from weak premise"}
+      {"symbol": "1", "truth_value": "0.6", "reasoning": "Moderate evidence, needs more supporting data"},
+      {"symbol": "2", "truth_value": "0.5", "reasoning": "Weak conclusion from weak premise"}
     ],
     "validity_evaluations": [
-      {"symbol": "B", "validity_value": "0.4", "reasoning": "Premise A is too weak to support approval conclusion"}
+      {"symbol": "2", "validity_value": "0.4", "reasoning": "Premise 1 is too weak to support approval conclusion"}
     ]
   },
   "conclusion_proposition": "The drug should be approved",
@@ -1210,9 +1119,9 @@ Output:
   "recommendations": [
     {
       "id": "rec_004",
-      "reasoning": "The conclusion has low scores because premise A is too weak to support the approval conclusion. Adding supporting evidence for the premise will strengthen the overall argument.",
+      "reasoning": "The conclusion has low scores because premise 1 is too weak to support the approval conclusion. Adding supporting evidence for the premise will strengthen the overall argument.",
       "impact": "high",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score": "0.3",
         "content_validity": "0.4",
@@ -1224,7 +1133,7 @@ Output:
           "proposition": "Phase II trials showed 70% effectiveness rate",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Clinical trial reports", "Peer-reviewed medical journals"]
         },
         {
@@ -1232,7 +1141,7 @@ Output:
           "proposition": "Safety profile meets FDA requirements",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Safety analysis reports", "FDA regulatory guidelines"]
         },
         {
@@ -1240,7 +1149,7 @@ Output:
           "proposition": "The drug addresses an unmet medical need",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Medical literature review", "Healthcare provider surveys"]
         }
       ]
@@ -1255,7 +1164,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "We should take action on climate change",
         "justifiers": [],
         "truth_score": "0.6",
@@ -1269,7 +1178,7 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.6", "reasoning": "Vague conclusion needs more specificity"}
+      {"symbol": "1", "truth_value": "0.6", "reasoning": "Vague conclusion needs more specificity"}
     ]
   },
   "conclusion_proposition": "We should take action on climate change",
@@ -1287,7 +1196,7 @@ CORRECT Output (preserves truth conditions):
       "id": "rec_clarity",
       "reasoning": "The conclusion has moderate scores due to vagueness. A clarity-focused rewrite will improve precision without changing the fundamental claim.",
       "impact": "medium",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score_improvement": "+0.1",
         "content_validity_improvement": "+0.3",
@@ -1295,10 +1204,10 @@ CORRECT Output (preserves truth conditions):
       },
       "propositions": [
         {
-          "symbol": "A",
+          "symbol": "1",
           "proposition": "We should take decisive action to address climate change",
           "type": "rewrite",
-          "original_symbol": "A",
+          "original_symbol": "1",
           "original_proposition": "We should take action on climate change",
           "placement": "argument",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on climate action"]
@@ -1315,7 +1224,7 @@ INCORRECT Output (changes truth conditions - DO NOT DO THIS):
       "id": "rec_wrong",
       "reasoning": "The conclusion needs more specificity",
       "impact": "high",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score_improvement": "+0.4",
         "content_validity_improvement": "+0.5",
@@ -1323,10 +1232,10 @@ INCORRECT Output (changes truth conditions - DO NOT DO THIS):
       },
       "propositions": [
         {
-          "symbol": "A",
+          "symbol": "1",
           "proposition": "We should implement carbon pricing policies to reduce emissions",
           "type": "rewrite",
-          "original_symbol": "A",
+          "original_symbol": "1",
           "original_proposition": "We should take action on climate change",
           "placement": "argument",
           "justification_suggestions": ["Economic analysis", "Policy documents"]
@@ -1343,7 +1252,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The company should expand internationally",
         "justifiers": [],
         "truth_score": "0.4",
@@ -1357,7 +1266,7 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.4", "reasoning": "Vague claim without supporting evidence or reasoning"}
+      {"symbol": "1", "truth_value": "0.4", "reasoning": "Vague claim without supporting evidence or reasoning"}
     ]
   },
   "conclusion_proposition": "The company should expand internationally",
@@ -1375,7 +1284,7 @@ Output:
       "id": "rec_005",
       "reasoning": "The conclusion has very low scores because it lacks comprehensive justification. A complete justification set will provide multiple supporting reasons that work together to make the conclusion compelling.",
       "impact": "high",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score": "0.5",
         "content_validity": "0.6",
@@ -1387,7 +1296,7 @@ Output:
           "proposition": "International markets show strong demand for our products",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Market research reports", "International sales data", "Customer surveys"]
         },
         {
@@ -1395,7 +1304,7 @@ Output:
           "proposition": "Expansion will diversify our revenue streams",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Financial analysis", "Risk assessment reports", "Industry benchmarks"]
         },
         {
@@ -1403,7 +1312,7 @@ Output:
           "proposition": "We have the operational capacity to support international growth",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Capacity analysis", "Resource planning documents", "Expert assessments"]
         },
         {
@@ -1411,7 +1320,7 @@ Output:
           "proposition": "Competitors are already expanding internationally",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Competitive analysis", "Industry reports", "Market intelligence"]
         }
       ]
@@ -1426,7 +1335,7 @@ Input:
   "agent_data": {
     "argument": [
       {
-        "symbol": "A",
+        "symbol": "1",
         "proposition": "The new policy will reduce traffic congestion",
         "justifiers": [],
         "truth_score": "0.6",
@@ -1434,17 +1343,17 @@ Input:
         "formal_validity": null
       },
       {
-        "symbol": "B",
+        "symbol": "2",
         "proposition": "Reduced congestion will improve air quality",
-        "justifiers": ["A"],
+        "justifiers": ["1"],
         "truth_score": "0.7",
         "content_validity": "0.6",
         "formal_validity": null
       },
       {
-        "symbol": "C",
+        "symbol": "3",
         "proposition": "Therefore, the policy should be implemented",
-        "justifiers": ["B"],
+        "justifiers": ["2"],
         "truth_score": "0.5",
         "content_validity": "0.4",
         "formal_validity": null
@@ -1456,9 +1365,9 @@ Input:
   },
   "evaluation_results": {
     "truth_evaluations": [
-      {"symbol": "A", "truth_value": "0.6", "reasoning": "Moderate evidence, needs more supporting data"},
-      {"symbol": "B", "truth_value": "0.7", "reasoning": "Reasonable inference, but premise A is weak"},
-      {"symbol": "C", "truth_value": "0.5", "reasoning": "Weak conclusion from weak intermediate premise"}
+      {"symbol": "1", "truth_value": "0.6", "reasoning": "Moderate evidence, needs more supporting data"},
+      {"symbol": "2", "truth_value": "0.7", "reasoning": "Reasonable inference, but premise 1 is weak"},
+      {"symbol": "3", "truth_value": "0.5", "reasoning": "Weak conclusion from weak intermediate premise"}
     ]
   },
   "conclusion_proposition": "The policy should be implemented",
@@ -1474,9 +1383,9 @@ Output:
   "recommendations": [
     {
       "id": "rec_006",
-      "reasoning": "The conclusion has low scores because the intermediate premise B relies on weak premise A. Strengthening premise A will improve the entire argument chain and ultimately strengthen the conclusion.",
+      "reasoning": "The conclusion has low scores because the intermediate premise 2 relies on weak premise 1. Strengthening premise 1 will improve the entire argument chain and ultimately strengthen the conclusion.",
       "impact": "high",
-      "target_proposition": "A",
+      "target_proposition": "1",
       "expected_conclusion_improvement": {
         "truth_score_improvement": "+0.2",
         "content_validity_improvement": "+0.3",
@@ -1488,7 +1397,7 @@ Output:
           "proposition": "Similar policies have reduced congestion by 30% in comparable cities",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Transportation studies", "City planning reports", "Traffic analysis data"]
         },
         {
@@ -1496,7 +1405,7 @@ Output:
           "proposition": "The policy includes specific congestion reduction mechanisms",
           "type": "new",
           "placement": "argument",
-          "justifies_symbol": "A",
+          "justifies_symbol": "1",
           "justification_suggestions": ["Policy documents", "Engineering analysis", "Expert testimony"]
         }
       ]
@@ -1506,7 +1415,7 @@ Output:
 """
 
 # Create GPT instance for improvement agent
-agent_gpt_improvement = Gpt(
+agent_gpt_improvement = ModelAgent(
     instructions=agent_improvement_system_prompt,
     response_format_base={
         "type": "object",
@@ -1559,5 +1468,6 @@ agent_gpt_improvement = Gpt(
         },
         "required": ["recommendations"],
         "additionalProperties": False
-    }
-) 
+    },
+    max_tokens=16384
+)

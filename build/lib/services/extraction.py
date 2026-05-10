@@ -1,6 +1,6 @@
 """Extract a structured argument from plain text using Claude."""
 
-from services.conversation import Gpt
+from services.conversation import ModelAgent
 
 _EXTRACTION_SYSTEM_PROMPT = """
 You are an expert in logical argumentation. Given a piece of text, identify the argument
@@ -18,7 +18,7 @@ Return a JSON object with two lists:
   The final step (the conclusion) is the proposition that all others ultimately support.
 
 Each proposition is a Step object:
-  - symbol: A single uppercase letter A–Z, assigned in order across both lists
+  - symbol: A positive integer starting at 1, assigned in order across both lists
   - proposition: A single clear declarative sentence
   - justifiers: List of symbols that directly support this step (empty for assumptions
     and the first independent argument steps)
@@ -33,7 +33,7 @@ Each proposition is a Step object:
 - Do not fabricate claims not present in the text
 - Aim for 2–5 assumptions and 3–6 argument steps for typical texts; more is acceptable
   for complex arguments
-- Symbols are assigned in order: A, B, C, … across assumptions first, then argument steps
+- Symbols are assigned in order: 1, 2, 3, … across assumptions first, then argument steps
 
 ### Example
 
@@ -45,12 +45,12 @@ healthier and longer lives."
 Output:
 {
   "assumptions": [
-    {"symbol": "A", "proposition": "Regular exercise strengthens the cardiovascular system.", "justifiers": [], "truth_score": ""},
-    {"symbol": "B", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""}
+    {"symbol": "1", "proposition": "Regular exercise strengthens the cardiovascular system.", "justifiers": [], "truth_score": ""},
+    {"symbol": "2", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""}
   ],
   "argument": [
-    {"symbol": "C", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": ["A"], "truth_score": ""},
-    {"symbol": "D", "proposition": "People who exercise regularly tend to live healthier and longer lives.", "justifiers": ["A", "B", "C"], "truth_score": ""}
+    {"symbol": "3", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": ["1"], "truth_score": ""},
+    {"symbol": "4", "proposition": "People who exercise regularly tend to live healthier and longer lives.", "justifiers": ["1", "2", "3"], "truth_score": ""}
   ]
 }
 """
@@ -67,21 +67,23 @@ _STEP_SCHEMA = {
     "additionalProperties": False,
 }
 
-_gpt_extract = Gpt(
-    instructions=_EXTRACTION_SYSTEM_PROMPT,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "assumptions": {"type": "array", "items": _STEP_SCHEMA},
-            "argument":    {"type": "array", "items": _STEP_SCHEMA},
-        },
-        "required": ["assumptions", "argument"],
-        "additionalProperties": False,
+_RESPONSE_FORMAT = {
+    "type": "object",
+    "properties": {
+        "assumptions": {"type": "array", "items": _STEP_SCHEMA},
+        "argument":    {"type": "array", "items": _STEP_SCHEMA},
     },
+    "required": ["assumptions", "argument"],
+    "additionalProperties": False,
+}
+
+_gpt_extract = ModelAgent(
+    instructions=_EXTRACTION_SYSTEM_PROMPT,
+    response_format_base=_RESPONSE_FORMAT,
 )
 
 
-def extract_argument(text: str) -> dict:
+def extract_argument(text: str, max_props: int | None = None) -> dict:
     """Extract a structured argument from plain text.
 
     Returns an Arguments-compatible dict with 'assumptions' and 'argument' keys.
@@ -89,7 +91,19 @@ def extract_argument(text: str) -> dict:
     """
     import json
 
-    raw = _gpt_extract.call(text, file_ids=None)
+    if max_props is not None:
+        extra = (
+            f"\n- Use at most {max_props} propositions in total across assumptions and"
+            " argument steps; merge or drop minor claims to stay within this limit"
+        )
+        agent = ModelAgent(
+            instructions=_EXTRACTION_SYSTEM_PROMPT + extra,
+            response_format_base=_RESPONSE_FORMAT,
+        )
+    else:
+        agent = _gpt_extract
+
+    raw = agent.call(text, file_ids=None)
     result = json.loads(raw)
 
     if not result.get("argument"):

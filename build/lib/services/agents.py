@@ -1,5 +1,4 @@
 import json
-# import time
 from typing import Dict, Any, List
 from dataclasses import dataclass
 
@@ -8,6 +7,11 @@ from services.conversation import gpt_gen_name
 from schemas.agent_input import AgentInput, FilteredAgentInput
 
 from core.utils import logger
+
+
+def _sort_by_symbol(items: list) -> list:
+    """Sort a list of dicts by their 'symbol' field numerically."""
+    return sorted(items, key=lambda x: int(x.get("symbol", 0)))
 
 
 @dataclass
@@ -50,6 +54,9 @@ class ContentEvaluationAgent:
             # Pass the data directly to the agent
             evaluation_response = agent_gpt_evaluate_content.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
+            for key in ("truth_evaluations", "validity_evaluations"):
+                if evaluation_result.get(key):
+                    evaluation_result[key] = _sort_by_symbol(evaluation_result[key])
             
             # logger.info(f"ContentEvaluationAgent completed")
             # if recommendations:
@@ -115,6 +122,8 @@ class FormalEvaluatorAgent:
             # Pass the data directly to the agent
             evaluation_response = agent_gpt_evaluate_form.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
+            if evaluation_result.get("proposition_evaluations"):
+                evaluation_result["proposition_evaluations"] = _sort_by_symbol(evaluation_result["proposition_evaluations"])
             
             # logger.info(f"FormalEvaluatorAgent completed")
             
@@ -232,14 +241,20 @@ class FormalizationAgent:
             # Pass the data directly to the agent
             formalization_response = agent_gpt_formalize.call(json.dumps(payload), file_ids)
             formalization_result = json.loads(formalization_response)
+
+            from services.formalization_normalizer import normalize_formalizations, FormalizationNormalizationError
+            try:
+                formalization_result = normalize_formalizations(
+                    raw_items=formalization_result["formalizations"],
+                    confidence=formalization_result.get("confidence", 0.0),
+                    reasoning=formalization_result.get("reasoning", ""),
+                )
+            except FormalizationNormalizationError as e:
+                logger.error(f"Formalization normalization failed: {e}")
+                raise
             
-            # Debug logging
-            # logger.info(f"FormalizationAgent response: {formalization_result}")
-            # logger.info(f"FormalizationAgent response keys: {list(formalization_result.keys())}")
-            # if 'formalizations' in formalization_result:
-            #     logger.info(f"FormalizationAgent formalizations: {formalization_result['formalizations']}")
-            # else:
-            #     logger.warning("FormalizationAgent response missing 'formalizations' key")
+            symbols = [f["symbol"] for f in formalization_result.get("formalizations", [])]
+            logger.info(f"FormalizationAgent normalized {len(symbols)} formalizations: {symbols}")
             
             # Extract formalization results
             confidence = formalization_result.get("confidence", 0.0)
