@@ -28,10 +28,10 @@ The alphabet is partitioned so each symbol kind occupies a non-overlapping range
 
 ### Predicate application
 
-A predicate applied to zero or more terms. Zero-argument predicates omit the parentheses.
+A predicate applied to zero or more terms. Arguments are written immediately after the predicate name with no parentheses or separators.
 
 ```
-ASCII: P(x, a)
+ASCII: Pxa
 JSON:  {
          "type": "predicate",
          "name": "P",
@@ -67,12 +67,12 @@ JSON:  {
 Negation, conjunction, disjunction, implication, and biconditional are all connectives. The `op` value doubles as the ASCII token. `not` takes one argument; the binary connectives take two. Parentheses are added only when required by precedence.
 
 ```
-ASCII: not P(x)
+ASCII: not Px
 JSON:  {"type": "connective", "op": "not", "args": [{"type": "predicate", "name": "P", "args": [...]}]}
 ```
 
 ```
-ASCII: P(x) and Q(x)
+ASCII: Px and Qx
 JSON:  {
          "type": "connective",
          "op": "and",
@@ -84,12 +84,12 @@ JSON:  {
 ```
 
 ```
-ASCII: P(a) implies Q(a)
+ASCII: Pa implies Qa
 JSON:  {"type": "connective", "op": "implies", "args": [..., ...]}
 ```
 
 ```
-ASCII: P(a) equiv Q(a)
+ASCII: Pa equiv Qa
 JSON:  {"type": "connective", "op": "equiv", "args": [..., ...]}
 ```
 
@@ -97,25 +97,38 @@ JSON:  {"type": "connective", "op": "equiv", "args": [..., ...]}
 
 The `quant` value doubles as the ASCII token.
 
+A quantifier can bind one or more variables; multiple variables are comma-separated.
+
 ```
-ASCII: forall x. P(x)
+ASCII: forall x. Px
 JSON:  {
          "type": "quantifier",
          "quant": "forall",
-         "var":  {"type": "variable", "name": "x"},
+         "vars": [{"type": "variable", "name": "x"}],
          "body": {"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}
        }
 ```
 
-Nested quantifiers:
 ```
-ASCII: forall x. exists y. R(x, y)
+ASCII: forall x,y. Rxy
+JSON:  {
+         "type": "quantifier",
+         "quant": "forall",
+         "vars": [{"type": "variable", "name": "x"}, {"type": "variable", "name": "y"}],
+         "body": {"type": "predicate", "name": "R",
+                  "args": [{"type": "variable", "name": "x"}, {"type": "variable", "name": "y"}]}
+       }
+```
+
+Mixed quantifiers over distinct variable lists remain nested:
+```
+ASCII: forall x. exists y. Rxy
 JSON:  {
          "type": "quantifier", "quant": "forall",
-         "var": {"type": "variable", "name": "x"},
+         "vars": [{"type": "variable", "name": "x"}],
          "body": {
            "type": "quantifier", "quant": "exists",
-           "var": {"type": "variable", "name": "y"},
+           "vars": [{"type": "variable", "name": "y"}],
            "body": {
              "type": "predicate", "name": "R",
              "args": [
@@ -132,10 +145,10 @@ JSON:  {
 The `mod` value doubles as the ASCII token.
 
 ```
-ASCII: nec P(x)
+ASCII: nec Px
 JSON:  {"type": "modal", "mod": "nec", "body": {...}}
 
-ASCII: pos P(x)
+ASCII: pos Px
 JSON:  {"type": "modal", "mod": "pos", "body": {...}}
 ```
 
@@ -167,16 +180,14 @@ formula    ::= predicate
              | quantifier
              | modal
 
-predicate  ::= NAME "(" term_list ")"
-             | NAME                        -- zero-argument: parens omitted
-term_list  ::= term ("," term)*
+predicate  ::= NAME term*               -- args written immediately after name, no parens or separators
 
 identity   ::= term "=" term
 
 connective ::= "not" formula
              | formula ("and" | "or" | "implies" | "equiv") formula
 
-quantifier ::= ("forall" | "exists") VAR "." formula
+quantifier ::= ("forall" | "exists") VAR ("," VAR)* "." formula
 
 modal      ::= ("nec" | "pos") formula
 
@@ -195,7 +206,7 @@ NAME     ::= "P"..."O" | "P1"..."O1" | ...            -- G-T, enumerated from P
 | `"predicate"`  | `name: string`, `args: term[]`                                              | empty `args` omits parens in ASCII                                    |
 | `"identity"`   | `left: term`, `right: term`                                                 |                                                                       |
 | `"connective"` | `op: "not"\|"and"\|"or"\|"implies"\|"equiv"`, `args: formula[]`             | `not` takes 1; others take 2                                          |
-| `"quantifier"` | `quant: "forall"\|"exists"`, `var: term{type:"variable"}`, `body: formula`  |                                                                       |
+| `"quantifier"` | `quant: "forall"\|"exists"`, `vars: term[]{type:"variable"}`, `body: formula` | one or more variables                                                 |
 | `"modal"`      | `mod: "nec"\|"pos"`, `body: formula`                                        |                                                                       |
 | `"variable"`   | `name: string`                                                              | canonical: `x y z u v w`; used inside `args`, `var`, `left`, `right`  |
 | `"constant"`   | `name: string`                                                              | canonical: `a-f`; used inside `args`, `left`, `right`                 |
@@ -206,7 +217,7 @@ NAME     ::= "P"..."O" | "P1"..."O1" | ...            -- G-T, enumerated from P
 
 **ASCII:**
 ```
-forall x. pos P(x) and x = a
+forall x. pos Px and x = a
 ```
 
 **JSON:**
@@ -214,7 +225,7 @@ forall x. pos P(x) and x = a
 {
   "type": "quantifier",
   "quant": "forall",
-  "var": {"type": "variable", "name": "x"},
+  "vars": [{"type": "variable", "name": "x"}],
   "body": {
     "type": "modal",
     "mod": "pos",

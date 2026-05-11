@@ -81,8 +81,7 @@ class Predicate(Formula):
     def to_ascii(self) -> str:
         if not self.args:
             return self.name
-        args = ", ".join(arg_to_ascii(a) for a in self.args)
-        return f"{self.name}({args})"
+        return self.name + "".join(arg_to_ascii(a) for a in self.args)
 
 
 @dataclass(frozen=True)
@@ -129,19 +128,20 @@ class Connective(Formula):
 @dataclass(frozen=True)
 class Quantifier(Formula):
     quant: QuantifierType
-    var: Variable
+    vars: List[Variable]
     body: Formula
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "quantifier",
             "quant": self.quant.value,
-            "var": term_to_dict(self.var),
+            "vars": [term_to_dict(v) for v in self.vars],
             "body": self.body.to_dict()
         }
 
     def to_ascii(self) -> str:
-        return f"{self.quant.value} {self.var.name}. {self.body.to_ascii()}"
+        var_str = ",".join(v.name for v in self.vars)
+        return f"{self.quant.value} {var_str}. {self.body.to_ascii()}"
 
 
 @dataclass(frozen=True)
@@ -228,8 +228,9 @@ def validate_canonical(formula: 'Formula') -> None:
         for arg in formula.args:
             validate_canonical(arg)
     elif isinstance(formula, Quantifier):
-        if formula.var.name not in _CANONICAL_VARIABLES:
-            raise ValueError(f"Quantifier variable {formula.var.name!r} not in canonical set")
+        for v in formula.vars:
+            if v.name not in _CANONICAL_VARIABLES:
+                raise ValueError(f"Quantifier variable {v.name!r} not in canonical set")
         validate_canonical(formula.body)
     elif isinstance(formula, Modal):
         validate_canonical(formula.body)
@@ -252,9 +253,12 @@ def from_json(d: Dict[str, Any]) -> Formula:
         return Connective(op, args)
     if t == "quantifier":
         quant = QuantifierType(d["quant"])
-        var = Variable(d["var"]["name"])
+        if "vars" in d:
+            vars_ = [Variable(v["name"]) for v in d["vars"]]
+        else:
+            vars_ = [Variable(d["var"]["name"])]
         body = from_json(d["body"])
-        return Quantifier(quant, var, body)
+        return Quantifier(quant, vars_, body)
     if t == "modal":
         mod = ModalType(d["mod"])
         body = from_json(d["body"])
@@ -278,7 +282,7 @@ if __name__ == "__main__":
     a = Constant("a")
     phi = Quantifier(
         quant=QuantifierType.FORALL,
-        var=x,
+        vars=[x],
         body=Modal(
             mod=ModalType.DIAMOND,
             body=Connective(

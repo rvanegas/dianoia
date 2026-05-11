@@ -86,8 +86,8 @@ class TestFormalizationAgent:
 
             # Python normalizes: is_man → P (first appearance), is_mortal → Q, socrates → a
             fmls = {f["symbol"]: f["ascii"] for f in result.result_content["formalizations"]}
-            assert fmls["1"] == "P(a)"
-            assert fmls["3"] == "Q(a)"
+            assert fmls["1"] == "Pa"
+            assert fmls["3"] == "Qa"
             assert "forall x." in fmls["2"]
 
             # Definitions are Python-generated from semantic names

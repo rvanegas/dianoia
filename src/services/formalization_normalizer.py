@@ -184,16 +184,20 @@ def _alpha_normalize(
 ) -> Formula:
     """Rename bound variables to x, y, z, u, v, w in DFS quantifier order."""
     if isinstance(formula, Quantifier):
-        if counter[0] >= len(_VAR_SEQ):
-            raise ValueError(
-                f"Formula has more than {len(_VAR_SEQ)} nested quantifiers"
-            )
-        new_var_name = _VAR_SEQ[counter[0]]
-        counter[0] += 1
-        old_name = formula.var.name
-        var_map = {**var_map, old_name: new_var_name}
+        new_var_names = []
+        new_var_map = dict(var_map)
+        for v in formula.vars:
+            if counter[0] >= len(_VAR_SEQ):
+                raise ValueError(
+                    f"Formula has more than {len(_VAR_SEQ)} nested quantifiers"
+                )
+            new_name = _VAR_SEQ[counter[0]]
+            counter[0] += 1
+            new_var_map[v.name] = new_name
+            new_var_names.append(new_name)
+        var_map = new_var_map
         new_body = _alpha_normalize(formula.body, var_map, counter)
-        return Quantifier(quant=formula.quant, var=Variable(new_var_name), body=new_body)
+        return Quantifier(quant=formula.quant, vars=[Variable(n) for n in new_var_names], body=new_body)
     elif isinstance(formula, Predicate):
         new_args = [_rename_term(a, var_map) for a in formula.args]
         return Predicate(name=formula.name, args=new_args)
@@ -244,7 +248,7 @@ def _substitute(
     elif isinstance(formula, Quantifier):
         return Quantifier(
             quant=formula.quant,
-            var=formula.var,
+            vars=formula.vars,
             body=_substitute(formula.body, pred_map, const_map),
         )
     elif isinstance(formula, Modal):

@@ -32,7 +32,7 @@ def test_single_predicate_and_constant():
     fmls = result["formalizations"]
     assert len(fmls) == 1
     assert fmls[0]["symbol"] == "A"
-    assert fmls[0]["ascii"] == "P(a)"
+    assert fmls[0]["ascii"] == "Pa"
     defs = result["definitions"]
     assert {"symbol": "P", "value": "is_man", "arity": 1} in defs["predicates"]
     assert {"symbol": "a", "value": "socrates"} in defs["constants"]
@@ -46,8 +46,8 @@ def test_two_predicates_ordered():
         [_item("A", f1), _item("B", f2)], confidence=1.0, reasoning=""
     )
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
-    assert fmls["A"] == "P(a)"
-    assert fmls["B"] == "Q(a)"
+    assert fmls["A"] == "Pa"
+    assert fmls["B"] == "Qa"
 
 
 # ---------------------------------------------------------------------------
@@ -67,9 +67,9 @@ def test_shared_predicate_gets_same_symbol():
         confidence=1.0, reasoning=""
     )
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
-    assert fmls["A"] == "P(a)"
-    assert fmls["B"] == "Q(a)"
-    assert fmls["C"] == "P(a) and Q(a)"
+    assert fmls["A"] == "Pa"
+    assert fmls["B"] == "Qa"
+    assert fmls["C"] == "Pa and Qa"
 
 
 # ---------------------------------------------------------------------------
@@ -89,26 +89,26 @@ def test_zero_arg_predicate():
 # ---------------------------------------------------------------------------
 
 def test_bound_variable_normalized_to_x():
-    # forall individual. is_man(individual) → forall x. P(x)
+    # forall individual. is_man(individual) → forall x. Px
     formula = Quantifier(
         quant=QuantifierType.FORALL,
-        var=Variable("individual"),
+        vars=[Variable("individual")],
         body=Predicate("is_man", [Variable("individual")]),
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
-    assert result["formalizations"][0]["ascii"] == "forall x. P(x)"
+    assert result["formalizations"][0]["ascii"] == "forall x. Px"
 
 
 def test_nested_quantifiers_get_x_then_y():
-    # forall entity. exists thing. R(entity, thing)
+    # forall entity. exists thing. Rxy
     inner = Quantifier(
         quant=QuantifierType.EXISTS,
-        var=Variable("thing"),
+        vars=[Variable("thing")],
         body=Predicate("rel", [Variable("entity"), Variable("thing")]),
     )
     outer = Quantifier(
         quant=QuantifierType.FORALL,
-        var=Variable("entity"),
+        vars=[Variable("entity")],
         body=inner,
     )
     result = normalize_formalizations([_item("A", outer)], confidence=1.0, reasoning="")
@@ -120,18 +120,18 @@ def test_nested_quantifiers_get_x_then_y():
 def test_independent_formulas_both_start_at_x():
     f1 = Quantifier(
         quant=QuantifierType.FORALL,
-        var=Variable("individual"),
+        vars=[Variable("individual")],
         body=Predicate("is_man", [Variable("individual")]),
     )
     f2 = Quantifier(
         quant=QuantifierType.FORALL,
-        var=Variable("entity"),
+        vars=[Variable("entity")],
         body=Predicate("is_mortal", [Variable("entity")]),
     )
     result = normalize_formalizations([_item("A", f1), _item("B", f2)], confidence=1.0, reasoning="")
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
-    assert fmls["A"] == "forall x. P(x)"
-    assert fmls["B"] == "forall x. Q(x)"
+    assert fmls["A"] == "forall x. Px"
+    assert fmls["B"] == "forall x. Qx"
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ def test_ascii_matches_to_ascii():
 def test_round_trip_validate_canonical():
     formula = Quantifier(
         quant=QuantifierType.FORALL,
-        var=Variable("individual"),
+        vars=[Variable("individual")],
         body=Connective(
             op=ConnectiveType.IMPLIES,
             args=[Predicate("is_man", [Variable("individual")]), Predicate("is_mortal", [Variable("individual")])],
@@ -207,6 +207,6 @@ def test_too_many_variables_raises():
     # 7 nested quantifiers
     body: Formula = Predicate("p", [])
     for i in range(7):
-        body = Quantifier(quant=QuantifierType.FORALL, var=Variable(f"v{i}"), body=body)
+        body = Quantifier(quant=QuantifierType.FORALL, vars=[Variable(f"v{i}")], body=body)
     with pytest.raises(ValueError, match="more than"):
         normalize_formalizations([_item("A", body)], confidence=0.0, reasoning="")
