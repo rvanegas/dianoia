@@ -1,4 +1,9 @@
+from pathlib import Path
 from services.conversation import ModelAgent
+
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
+_LOGIC_ASCII = (_PROJECT_ROOT / "LOGIC-ASCII.md").read_text()
+_LOGIC_JSON  = (_PROJECT_ROOT / "LOGIC-JSON.md").read_text()
 
 # Agent-specific system prompt for justification
 agent_justify_system_prompt = """
@@ -430,10 +435,16 @@ You are an AI agent working on logical argumentation. Your task is to evaluate O
 
 For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
 
+### Notation Reference
+
+Formalizations use the following ASCII notation. Read this carefully before evaluating any formulas.
+
+""" + _LOGIC_ASCII + """
+
 ### Input Format
 The input will be a JSON object with the following structure:
 - agent_data.argument: List of Step objects in the main argument
-- agent_data.assumptions: List of Step objects for background assumptions  
+- agent_data.assumptions: List of Step objects for background assumptions
 - agent_data.target_type: Type of content being evaluated (e.g., "argument")
 - agent_data.target_content: Specific content being targeted (if applicable)
 
@@ -464,8 +475,8 @@ The argument_validity should reflect the formal logical validity of the argument
 - Consider only the formal logical relationships between propositions
 - Use the formalizations to assess logical validity
 - **IMPORTANT**: Pay attention to variable renaming and the transitivity of implication
-- When premises use different variable names (e.g., ∀y (P(y) → Q(y)) and ∀x (P(x) → Q(x))), the argument can still be valid if the logical structure supports the conclusion
-- The transitivity of implication means: if ∀x (P(x) → Q(x)) and ∀y (Q(y) → R(y)), then ∀x (P(x) → R(x)) is valid
+- When premises use different variable names (e.g., `forall y. Py implies Qy` and `forall x. Px implies Qx`), the argument can still be valid if the logical structure supports the conclusion
+- The transitivity of implication means: if `forall x. Px implies Qx` and `forall y. Qy implies Ry`, then `forall x. Px implies Rx` is valid
 - Variable names can be renamed consistently without affecting validity
 
 ### Examples
@@ -480,7 +491,7 @@ Input:
         "symbol": "2",
         "justifiers": [],
         "formalization": {
-          "ascii": "P(a)",
+          "ascii": "Pa",
           "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
@@ -489,7 +500,7 @@ Input:
         "symbol": "3",
         "justifiers": ["1", "2"],
         "formalization": {
-          "ascii": "Q(a)",
+          "ascii": "Qa",
           "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
@@ -500,8 +511,8 @@ Input:
         "symbol": "1",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) implies Q(x))",
-          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
+          "ascii": "forall x. Px implies Qx",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"x\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
           "endorsed": true
         }
       }
@@ -520,7 +531,7 @@ Output:
   ],
   "argument_validity": "1.0",
   "logical_issues": [],
-  "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) implies Q(x)) logically entail Q(a)"]
+  "recommendations": ["Argument is deductively valid: Pa and forall x. Px implies Qx logically entail Qa"]
 }
 
 # Invalid deductive argument
@@ -533,8 +544,8 @@ Input:
         "symbol": "1",
         "justifiers": [],
         "formalization": {
-          "ascii": "forall x. (P(x) implies Q(x))",
-          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
+          "ascii": "forall x. Px implies Qx",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"x\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
           "endorsed": true
         }
       },
@@ -542,7 +553,7 @@ Input:
         "symbol": "2",
         "justifiers": [],
         "formalization": {
-          "ascii": "Q(a)",
+          "ascii": "Qa",
           "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
@@ -551,7 +562,7 @@ Input:
         "symbol": "3",
         "justifiers": ["1", "2"],
         "formalization": {
-          "ascii": "P(a)",
+          "ascii": "Pa",
           "json_structure": "{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
           "endorsed": true
         }
@@ -571,7 +582,7 @@ Output:
     {"symbol": "3", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
   ],
   "argument_validity": "0.0",
-  "logical_issues": ["Invalid argument: Q(a) and forall x. (P(x) implies Q(x)) do not logically entail P(a)"],
+  "logical_issues": ["Invalid argument: Qa and forall x. Px implies Qx do not logically entail Pa"],
   "recommendations": ["The premises do not logically support the conclusion"]
 }
 
@@ -631,19 +642,13 @@ You will receive an argument with multiple propositions that need formalization.
 
 Each Step contains: symbol, proposition, justifiers, and optionally formalization (with endorsed flag).
 
-### Formula Types
+### Formula JSON Structure
 
-Use the following JSON structure format exactly:
+""" + _LOGIC_JSON + """
 
-- **Predicate** (including zero-argument): `{"type": "predicate", "name": "pred_name", "args": [...]}`
-- **Identity**: `{"type": "identity", "left": <term>, "right": <term>}`
-- **Connective**: `{"type": "connective", "op": "not"|"and"|"or"|"implies", "args": [<formula>, ...]}`  (`not` takes 1 arg; `and`/`or`/`implies` take 2)
-- **Quantifier**: `{"type": "quantifier", "quant": "forall"|"exists", "var": {"type": "variable", "name": "var_name"}, "body": <formula>}`
-- **Modal**: `{"type": "modal", "mod": "nec"|"pos", "body": <formula>}`
-
-Terms:
-- Variable: `{"type": "variable", "name": "var_name"}` — any lowercase identifier
-- Constant: `{"type": "constant", "name": "const_name"}` — any lowercase identifier
+**Note on naming**: The guide above uses canonical single-letter symbols (P, Q, R, x, y, a, ...).
+When writing your formalizations, use **descriptive semantic names** (`is_man`, `individual`, `socrates`, etc.) instead — Python normalization assigns canonical symbols automatically.
+The `ascii` field you write is a human-readable hint and is replaced by a canonical representation; only `json_structure` is machine-read.
 
 ### Naming — use descriptive semantic names
 
@@ -706,7 +711,7 @@ Output:
     {
       "symbol": "1",
       "ascii": "forall individual. (is_man(individual) implies is_mortal(individual))",
-      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"individual\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}, {\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}]}}"
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"individual\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_man\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}, {\"type\": \"predicate\", \"name\": \"is_mortal\", \"args\": [{\"type\": \"variable\", \"name\": \"individual\"}]}]}}"
     },
     {
       "symbol": "2",
@@ -733,7 +738,7 @@ Input (with endorsed formalization):
         "symbol": "1",
         "proposition": "All mice are small",
         "justifiers": [],
-        "formalization": {"ascii": "forall x. P(x) implies Q(x)", "endorsed": true}
+        "formalization": {"ascii": "forall x. Px implies Qx", "endorsed": true}
       },
       {"symbol": "2", "proposition": "Mice are small", "justifiers": []}
     ],
@@ -748,13 +753,13 @@ Output:
   "formalizations": [
     {
       "symbol": "1",
-      "ascii": "forall x. P(x) implies Q(x)",
-      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"x\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}"
+      "ascii": "forall x. Px implies Qx",
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"x\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}"
     },
     {
       "symbol": "2",
       "ascii": "forall entity. (is_mouse(entity) implies is_small(entity))",
-      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"var\": {\"type\": \"variable\", \"name\": \"entity\"}, \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}]}}"
+      "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"entity\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"is_mouse\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}, {\"type\": \"predicate\", \"name\": \"is_small\", \"args\": [{\"type\": \"variable\", \"name\": \"entity\"}]}]}}"
     }
   ],
   "confidence": 0.95,

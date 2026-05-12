@@ -19,7 +19,7 @@ def _mock_formalizations_response(steps):
         else:
             js = json.dumps({
                 "type": "quantifier", "quant": "forall",
-                "var": {"type": "variable", "name": "individual"},
+                "vars": [{"type": "variable", "name": "individual"}],
                 "body": {
                     "type": "connective", "op": "implies",
                     "args": [

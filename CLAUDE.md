@@ -58,7 +58,8 @@ Client polls GET /api/agents/results ──────────────�
 - `services/argument_service.py` — Core argument manipulation (`next_symbol()`, `new_step()`, `clean_citations()`)
 - `services/conversation.py` — `Gpt` wrapper class for name generation and explanations; uses `client.messages.create()` with `output_config` for structured JSON
 - `services/openaiclient.py` — Anthropic client instance (named for historical reasons)
-- `core/logic.py` — Mathematical logic formalization: `Term` (Variable, Constant), `Formula` (Predicate, PropVar, Equality, Quantifier, BinaryOp, Modal), each with `to_dict()` / `to_unicode()` / `to_ascii()`
+- `core/logic.py` — Modal first-order logic with predicate variables: `Variable`, `Constant`, `PredicateVariable`; `Formula` subclasses `Predicate`, `Identity`, `Connective`, `Quantifier`, `Modal`; each with `to_dict()` / `to_ascii()` / `from_json()`. See `LOGIC-ASCII.md` and `LOGIC-JSON.md` for the notation.
+- `services/formalization_normalizer.py` — Replaces semantic names from the LLM (`is_mortal`, `socrates`) with canonical symbols before storage: predicates → `P Q R …` (first-appearance order across all steps), constants → `a b c …`, bound individual variables → `x y z …` (DFS order, per formula), bound predicate variables → `X Y Z …` (DFS order, per formula). The `ascii` field is always regenerated from the normalized JSON tree, never taken from model output.
 - `schemas/` — Pydantic request/response schemas
 - `startup_init.py` — Background thread that pre-warms GPT instances at server startup to avoid first-request delays
 
@@ -75,7 +76,7 @@ Agent trigger logic and cooldown periods live in `agent_coordinator.py`.
 ### Key Concepts
 
 - **Snapshot**: Immutable capture of argument state at a point in time. Agent results are bound to a snapshot so recommendations remain coherent.
-- **Formalization**: Each proposition can be given a formal logical representation (from `core/logic.py`) that a user can endorse. Once all propositions in an argument are endorsed, the `FormalEvaluatorAgent` runs.
+- **Formalization**: Each proposition can be given a formal logical representation (`core/logic.py`) that a user can endorse. The `FormalizationAgent` produces semantic-name JSON; `formalization_normalizer` canonicalizes it. Once all propositions are endorsed, the `FormalEvaluatorAgent` runs.
 - **Improvement recommendations**: Sets of suggested proposition additions/rewrites produced by the `ImprovementAgent`, each with expected score improvements and reasoning.
 
 ### Test Patterns

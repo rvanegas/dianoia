@@ -6,7 +6,8 @@ single-letter canonical symbols deterministically:
 
 - Predicates → P, Q, R … (in order of first appearance across all steps)
 - Constants  → a, b, c … a–o (in order of first appearance)
-- Bound variables → x, y, z, u, v, w (per-formula, in DFS quantifier order)
+- Bound individual variables → x, y, z, u, v, w (per-formula, DFS order)
+- Bound predicate variables  → X, Y, Z, U, V, W (per-formula, DFS order)
 
 ``ascii`` strings are regenerated from the normalized formula tree rather
 than taken from the model.
@@ -20,24 +21,23 @@ from typing import Any
 
 from core.logic import (
     Formula, Predicate, Identity, Connective, ConnectiveType, Quantifier, Modal,
-    Term, Variable, Constant,
+    Variable, Constant, PredicateVariable, Arg,
     from_json, validate_canonical,
 )
 from schemas.agent_results import FormalizerResult
 from core.utils import logger
 
-_PRED_BASE = ['P','Q','R','S','T','G','H','I','J','K','L','M','N','O']  # G–T, starting at P (14)
-_CONST_BASE = list(string.ascii_lowercase[:6])                          # a–f (6)
-_VAR_SEQ = ['x', 'y', 'z', 'u', 'v', 'w']                             # u–z, starting at x (6)
+_PRED_BASE     = ['P','Q','R','S','T','G','H','I','J','K','L','M','N','O']  # 14
+_CONST_BASE    = list(string.ascii_lowercase[:6])                            # a–f
+_VAR_SEQ       = ['x', 'y', 'z', 'u', 'v', 'w']
+_PRED_VAR_SEQ  = ['X', 'Y', 'Z', 'U', 'V', 'W']
 
 
 def _pred_symbol(i: int) -> str:
-    """P…T,G…O for i<14; P1… etc."""
     return _PRED_BASE[i % 14] + (str(i // 14) if i >= 14 else "")
 
 
 def _const_symbol(i: int) -> str:
-    """a…f for i<6; a1…f1 for i<12; a2… etc."""
     return _CONST_BASE[i % 6] + (str(i // 6) if i >= 6 else "")
 
 
@@ -54,16 +54,7 @@ def normalize_formalizations(
     confidence: float,
     reasoning: str,
 ) -> FormalizerResult:
-    """Normalize a batch of raw formalization dicts from the LLM.
-
-    Each item in *raw_items* is ``{symbol, ascii, json_structure}`` where
-    ``json_structure`` is a JSON string in ``core/logic.py`` format with
-    semantic (multi-character) predicate/constant names.
-
-    Returns a complete ``FormalizerResult`` with canonical symbols and
-    Python-generated ``ascii`` strings.
-    """
-    # --- parse ---
+    """Normalize a batch of raw formalization dicts from the LLM."""
     parsed: list[tuple[str, Formula]] = []
     skipped: list[str] = []
     for item in raw_items:
@@ -81,7 +72,6 @@ def normalize_formalizations(
             f"Failed to parse json_structure for all steps: {skipped}"
         )
 
-    # --- collect names and arities (cross-step) ---
     pred_names: list[str] = []
     const_names: list[str] = []
     pred_arities: dict[str, int] = {}
@@ -90,21 +80,15 @@ def normalize_formalizations(
         _collect_const_names(formula, const_names)
         _collect_pred_arities(formula, pred_arities)
 
-    # --- build canonical maps ---
-    pred_map = {name: _pred_symbol(i) for i, name in enumerate(pred_names)}
+    pred_map  = {name: _pred_symbol(i) for i, name in enumerate(pred_names)}
     const_map = {name: _const_symbol(i) for i, name in enumerate(const_names)}
 
-    # --- normalize each formula ---
     result_items = []
     for sym, formula in parsed:
-        # alpha-normalize bound variables first (per-formula)
-        var_map: dict[str, str] = {}
-        formula = _alpha_normalize(formula, var_map, [0])
-
-        # substitute canonical predicate and constant names
+        var_map: dict[str, Arg] = {}
+        formula = _alpha_normalize(formula, var_map, [0, 0])
         formula = _substitute(formula, pred_map, const_map)
 
-        # validate
         try:
             validate_canonical(formula)
         except ValueError as exc:
@@ -137,19 +121,19 @@ def normalize_formalizations(
 
 def _collect_pred_names(formula: Formula, seen: list[str]) -> None:
     if isinstance(formula, Predicate):
-        if formula.name not in seen:
-            seen.append(formula.name)
+        if isinstance(formula.head, str) and formula.head not in seen:
+            seen.append(formula.head)
     elif isinstance(formula, Connective):
         for arg in formula.args:
             _collect_pred_names(arg, seen)
     elif isinstance(formula, (Quantifier, Modal)):
         _collect_pred_names(formula.body, seen)
-    # Identity: no predicates
 
 
 def _collect_pred_arities(formula: Formula, arities: dict[str, int]) -> None:
     if isinstance(formula, Predicate):
-        arities[formula.name] = len(formula.args)
+        if isinstance(formula.head, str):
+            arities[formula.head] = len(formula.args)
     elif isinstance(formula, Connective):
         for arg in formula.args:
             _collect_pred_arities(arg, arities)
@@ -179,32 +163,47 @@ def _collect_const_names(formula: Formula, seen: list[str]) -> None:
 
 def _alpha_normalize(
     formula: Formula,
-    var_map: dict[str, str],
-    counter: list[int],  # mutable single-element list used as a counter
+    var_map: dict[str, Arg],
+    counter: list[int],  # [individual_idx, pred_var_idx]
 ) -> Formula:
-    """Rename bound variables to x, y, z, u, v, w in DFS quantifier order."""
+    """Rename bound variables to canonical sequences in DFS quantifier order."""
     if isinstance(formula, Quantifier):
-        new_var_names = []
+        new_vars = []
         new_var_map = dict(var_map)
         for v in formula.vars:
-            if counter[0] >= len(_VAR_SEQ):
-                raise ValueError(
-                    f"Formula has more than {len(_VAR_SEQ)} nested quantifiers"
-                )
-            new_name = _VAR_SEQ[counter[0]]
-            counter[0] += 1
-            new_var_map[v.name] = new_name
-            new_var_names.append(new_name)
+            if isinstance(v, Variable):
+                if counter[0] >= len(_VAR_SEQ):
+                    raise ValueError(
+                        f"Formula has more than {len(_VAR_SEQ)} bound individual variables"
+                    )
+                new_name = _VAR_SEQ[counter[0]]
+                counter[0] += 1
+                new_var_map[v.name] = Variable(new_name)
+                new_vars.append(Variable(new_name))
+            elif isinstance(v, PredicateVariable):
+                if counter[1] >= len(_PRED_VAR_SEQ):
+                    raise ValueError(
+                        f"Formula has more than {len(_PRED_VAR_SEQ)} bound predicate variables"
+                    )
+                new_name = _PRED_VAR_SEQ[counter[1]]
+                counter[1] += 1
+                new_var_map[v.name] = PredicateVariable(new_name)
+                new_vars.append(PredicateVariable(new_name))
         var_map = new_var_map
         new_body = _alpha_normalize(formula.body, var_map, counter)
-        return Quantifier(quant=formula.quant, vars=[Variable(n) for n in new_var_names], body=new_body)
+        return Quantifier(quant=formula.quant, vars=new_vars, body=new_body)
     elif isinstance(formula, Predicate):
-        new_args = [_rename_term(a, var_map) for a in formula.args]
-        return Predicate(name=formula.name, args=new_args)
+        new_head = formula.head
+        if isinstance(formula.head, PredicateVariable) and formula.head.name in var_map:
+            renamed = var_map[formula.head.name]
+            if isinstance(renamed, PredicateVariable):
+                new_head = renamed
+        new_args = [_rename_arg(a, var_map) for a in formula.args]
+        return Predicate(head=new_head, args=new_args)
     elif isinstance(formula, Identity):
         return Identity(
-            left=_rename_term(formula.left, var_map),
-            right=_rename_term(formula.right, var_map),
+            left=_rename_arg(formula.left, var_map),
+            right=_rename_arg(formula.right, var_map),
         )
     elif isinstance(formula, Connective):
         return Connective(
@@ -216,10 +215,10 @@ def _alpha_normalize(
     return formula
 
 
-def _rename_term(term: Term, var_map: dict[str, str]) -> Term:
-    if isinstance(term, Variable) and term.name in var_map:
-        return Variable(var_map[term.name])
-    return term
+def _rename_arg(arg: Arg, var_map: dict[str, Arg]) -> Arg:
+    if isinstance(arg, (Variable, PredicateVariable)) and arg.name in var_map:
+        return var_map[arg.name]
+    return arg
 
 
 # ---------------------------------------------------------------------------
@@ -232,13 +231,16 @@ def _substitute(
     const_map: dict[str, str],
 ) -> Formula:
     if isinstance(formula, Predicate):
-        new_name = pred_map.get(formula.name, formula.name)
-        new_args = [_substitute_term(a, const_map) for a in formula.args]
-        return Predicate(name=new_name, args=new_args)
+        if isinstance(formula.head, str):
+            new_head = pred_map.get(formula.head, formula.head)
+        else:
+            new_head = formula.head
+        new_args = [_substitute_arg(a, const_map) for a in formula.args]
+        return Predicate(head=new_head, args=new_args)
     elif isinstance(formula, Identity):
         return Identity(
-            left=_substitute_term(formula.left, const_map),
-            right=_substitute_term(formula.right, const_map),
+            left=_substitute_arg(formula.left, const_map),
+            right=_substitute_arg(formula.right, const_map),
         )
     elif isinstance(formula, Connective):
         return Connective(
@@ -256,7 +258,7 @@ def _substitute(
     return formula
 
 
-def _substitute_term(term: Term, const_map: dict[str, str]) -> Term:
-    if isinstance(term, Constant):
-        return Constant(const_map.get(term.name, term.name))
-    return term
+def _substitute_arg(arg: Arg, const_map: dict[str, str]) -> Arg:
+    if isinstance(arg, Constant):
+        return Constant(const_map.get(arg.name, arg.name))
+    return arg
