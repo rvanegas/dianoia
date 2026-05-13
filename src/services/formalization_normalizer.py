@@ -21,7 +21,7 @@ from typing import Any
 
 from core.logic import (
     Formula, Predicate, Identity, Connective, ConnectiveType, Quantifier, Modal,
-    Variable, Constant, PredicateVariable, Arg,
+    Variable, Constant, PredicateVariable, PredicateConstant, Arg,
     from_json, validate_canonical,
 )
 from schemas.agent_results import FormalizerResult
@@ -121,8 +121,8 @@ def normalize_formalizations(
 
 def _collect_pred_names(formula: Formula, seen: list[str]) -> None:
     if isinstance(formula, Predicate):
-        if isinstance(formula.head, str) and formula.head not in seen:
-            seen.append(formula.head)
+        if isinstance(formula.head, PredicateConstant) and formula.head.name not in seen:
+            seen.append(formula.head.name)
     elif isinstance(formula, Connective):
         for arg in formula.args:
             _collect_pred_names(arg, seen)
@@ -132,8 +132,8 @@ def _collect_pred_names(formula: Formula, seen: list[str]) -> None:
 
 def _collect_pred_arities(formula: Formula, arities: dict[str, int]) -> None:
     if isinstance(formula, Predicate):
-        if isinstance(formula.head, str):
-            arities[formula.head] = len(formula.args)
+        if isinstance(formula.head, PredicateConstant):
+            arities[formula.head.name] = len(formula.args)
     elif isinstance(formula, Connective):
         for arg in formula.args:
             _collect_pred_arities(arg, arities)
@@ -231,8 +231,8 @@ def _substitute(
     const_map: dict[str, str],
 ) -> Formula:
     if isinstance(formula, Predicate):
-        if isinstance(formula.head, str):
-            new_head = pred_map.get(formula.head, formula.head)
+        if isinstance(formula.head, PredicateConstant):
+            new_head = PredicateConstant(pred_map.get(formula.head.name, formula.head.name))
         else:
             new_head = formula.head
         new_args = [_substitute_arg(a, const_map) for a in formula.args]

@@ -38,7 +38,7 @@ _PREC: Dict[str, int] = {
 _RIGHT_ASSOC = frozenset({"implies"})
 
 
-# --- Terms and predicate variables ---
+# --- Symbol kinds ---
 
 @dataclass(frozen=True)
 class Term:
@@ -57,15 +57,21 @@ class Constant(Term):
 
 @dataclass(frozen=True)
 class PredicateVariable:
-    """A variable ranging over universals/predicates (X, Y, Z, U, V, W)."""
+    """A bound variable ranging over universals (X, Y, Z, U, V, W)."""
+    name: str
+
+
+@dataclass(frozen=True)
+class PredicateConstant:
+    """A named predicate constant (P, Q, R, …)."""
     name: str
 
 
 # Anything that can appear in an argument or identity position.
-Arg = Union[Variable, Constant, PredicateVariable]
+Arg = Union[Variable, Constant, PredicateVariable, PredicateConstant]
 
 # Anything that can appear as the head of a predicate application.
-PredHead = Union[str, PredicateVariable]
+PredHead = Union[PredicateConstant, PredicateVariable]
 
 
 # --- Formula base and subclasses ---
@@ -92,11 +98,11 @@ class Predicate(Formula):
         if isinstance(self.head, PredicateVariable):
             d["pred_var"] = self.head.name
         else:
-            d["name"] = self.head
+            d["pred_const"] = self.head.name
         return d
 
     def to_ascii(self) -> str:
-        h = self.head.name if isinstance(self.head, PredicateVariable) else self.head
+        h = self.head.name
         if not self.args:
             return h
         return h + "".join(arg_to_ascii(a) for a in self.args)
@@ -187,11 +193,13 @@ def arg_to_dict(a: Arg) -> Dict[str, Any]:
         return {"type": "constant", "name": a.name}
     if isinstance(a, PredicateVariable):
         return {"type": "pred_variable", "name": a.name}
+    if isinstance(a, PredicateConstant):
+        return {"type": "pred_constant", "name": a.name}
     raise TypeError(f"Unknown arg {a!r}")
 
 
 def arg_to_ascii(a: Union[Arg, Formula]) -> str:
-    if isinstance(a, (Variable, Constant, PredicateVariable)):
+    if isinstance(a, (Variable, Constant, PredicateVariable, PredicateConstant)):
         return a.name
     return a.to_ascii()
 
@@ -204,6 +212,8 @@ def arg_from_dict(d: Dict[str, Any]) -> Arg:
         return Constant(d["name"])
     if tt == "pred_variable":
         return PredicateVariable(d["name"])
+    if tt == "pred_constant":
+        return PredicateConstant(d["name"])
     raise ValueError(f"Unknown arg type {tt!r}")
 
 
@@ -233,10 +243,15 @@ def _wrap(s: str, child: Formula, parent_prec: int,
 _CANONICAL_VARIABLES      = {'x', 'y', 'z', 'u', 'v', 'w'}
 _CANONICAL_PRED_VARIABLES = {'X', 'Y', 'Z', 'U', 'V', 'W'}
 _CANONICAL_CONST_RE       = _re.compile(r'^[a-f]\d*$')
+_CANONICAL_PRED_CONST_RE  = _re.compile(r'^[PQRSTGHIJKLMNO]\d*$')
 
 
 def _is_canonical_const(name: str) -> bool:
     return bool(_CANONICAL_CONST_RE.match(name))
+
+
+def _is_canonical_pred_const(name: str) -> bool:
+    return bool(_CANONICAL_PRED_CONST_RE.match(name))
 
 
 def validate_canonical(formula: 'Formula') -> None:
@@ -248,10 +263,11 @@ def validate_canonical(formula: 'Formula') -> None:
             raise ValueError(f"Constant {a.name!r} not in a–f[N]")
         elif isinstance(a, PredicateVariable) and a.name not in _CANONICAL_PRED_VARIABLES:
             raise ValueError(f"Predicate variable {a.name!r} not in canonical set")
+        elif isinstance(a, PredicateConstant) and not _is_canonical_pred_const(a.name):
+            raise ValueError(f"Predicate constant {a.name!r} not in canonical set")
 
     if isinstance(formula, Predicate):
-        if isinstance(formula.head, PredicateVariable):
-            _check_arg(formula.head)
+        _check_arg(formula.head)
         for arg in formula.args:
             _check_arg(arg)
     elif isinstance(formula, Identity):
@@ -273,7 +289,7 @@ def validate_canonical(formula: 'Formula') -> None:
 def from_json(d: Dict[str, Any]) -> Formula:
     t = d.get("type")
     if t == "predicate":
-        head: PredHead = PredicateVariable(d["pred_var"]) if "pred_var" in d else d["name"]
+        head: PredHead = PredicateVariable(d["pred_var"]) if "pred_var" in d else PredicateConstant(d["pred_const"])
         args = [arg_from_dict(a) for a in d["args"]]
         return Predicate(head, args)
     if t == "identity":
@@ -297,19 +313,20 @@ def from_json(d: Dict[str, Any]) -> Formula:
 # --- Example usage ---
 
 if __name__ == "__main__":
-    x = Variable("x")
+    y = Variable("y")
     X = PredicateVariable("X")
+    P = PredicateConstant("P")
     a = Constant("a")
 
-    # forall x,X. pos Xx and x = a
+    # forall X,y. pos Xy and y = a
     phi = Quantifier(
         quant=QuantifierType.FORALL,
-        vars=[x, X],
+        vars=[X, y],
         body=Modal(
             mod=ModalType.DIAMOND,
             body=Connective(
                 op=ConnectiveType.AND,
-                args=[Predicate(X, [x]), Identity(x, a)]
+                args=[Predicate(X, [y]), Identity(y, a)]
             )
         )
     )
@@ -318,3 +335,10 @@ if __name__ == "__main__":
     print("ASCII:", phi.to_ascii())
     phi2 = from_json(js)
     assert phi2 == phi
+
+    # X = P  (predicate variable identical to predicate constant)
+    psi = Identity(X, P)
+    js2 = psi.to_dict()
+    print(json.dumps(js2, indent=2))
+    print("ASCII:", psi.to_ascii())
+    assert from_json(js2) == psi

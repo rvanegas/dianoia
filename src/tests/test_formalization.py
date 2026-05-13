@@ -21,7 +21,7 @@ class TestFormalizationAgent:
                     "symbol": "1",
                     "ascii": "is_man(socrates)",
                     "json_structure": json.dumps({
-                        "type": "predicate", "name": "is_man",
+                        "type": "predicate", "pred_const": "is_man",
                         "args": [{"type": "constant", "name": "socrates"}]
                     })
                 },
@@ -34,9 +34,9 @@ class TestFormalizationAgent:
                         "body": {
                             "type": "connective", "op": "implies",
                             "args": [
-                                {"type": "predicate", "name": "is_man",
+                                {"type": "predicate", "pred_const": "is_man",
                                  "args": [{"type": "variable", "name": "individual"}]},
-                                {"type": "predicate", "name": "is_mortal",
+                                {"type": "predicate", "pred_const": "is_mortal",
                                  "args": [{"type": "variable", "name": "individual"}]}
                             ]
                         }
@@ -46,7 +46,7 @@ class TestFormalizationAgent:
                     "symbol": "3",
                     "ascii": "is_mortal(socrates)",
                     "json_structure": json.dumps({
-                        "type": "predicate", "name": "is_mortal",
+                        "type": "predicate", "pred_const": "is_mortal",
                         "args": [{"type": "constant", "name": "socrates"}]
                     })
                 }

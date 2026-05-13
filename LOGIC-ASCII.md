@@ -9,14 +9,16 @@ It covers every symbol kind, how formulas are formed, and what they mean.
 ## Symbol Kinds
 
 Four kinds of symbol appear in formulas. Case is the only syntactic distinction
-between the two variable kinds.
+between the two variable kinds. Within any single formula, the same letter is
+not used for both an individual variable and a predicate variable (e.g. `x` and
+`X` do not both appear in one formula) — this avoids visual ambiguity.
 
-| Kind               | Range                         | Refers to           |
-|--------------------|-------------------------------|---------------------|
-| Individual variable | `x y z u v w`                | a particular        |
-| Predicate variable  | `X Y Z U V W`                | a universal         |
-| Individual constant | `a b c d e f` (then `a1` ...) | a named particular  |
-| Predicate constant  | `P Q R S T G H I J K L M N O` (then `P1` ...) | a named universal |
+| Kind                | Range                                         | Refers to           |
+|---------------------|-----------------------------------------------|---------------------|
+| Individual variable | `x y z u v w`                                 | a particular        |
+| Predicate variable  | `X Y Z U V W`                                 | a universal         |
+| Individual constant | `a b c d e f` (then `a1` ...)                 | a named particular  |
+| Predicate constant  | `P Q R S T G H I J K L M N O` (then `P1` ...) | a named universal   |
 
 **Particulars** are the entities for which Leibniz's Law fails: two distinct
 particulars can share all their properties. **Universals** are the entities for
@@ -40,7 +42,7 @@ P          -- zero-argument predicate (propositional)
 Pa         -- P applied to constant a
 Pxy        -- P applied to x then y
 Xab        -- predicate variable X applied to a then b
-Xx         -- predicate variable X applied to individual variable x
+Xy         -- predicate variable X applied to individual variable y
 ```
 
 The head and each argument are single symbols; length makes the parse unambiguous
@@ -55,7 +57,7 @@ predicate):
 ```
 x = a      -- particular x is identical to constant a
 x = Y      -- particular x is identical to universal Y (false for any x, Y)
-X = Y      -- universal X is identical to universal Y
+X = P      -- universal X is identical to universal P
 ```
 
 ---
@@ -64,13 +66,13 @@ X = Y      -- universal X is identical to universal Y
 
 ### Connectives
 
-| Connective   | Symbol    | Arity  |
-|--------------|-----------|--------|
-| Negation     | `not`     | unary  |
-| Conjunction  | `and`     | binary |
-| Disjunction  | `or`      | binary |
-| Implication  | `implies` | binary |
-| Biconditional | `equiv`  | binary |
+| Connective    | Symbol    | Arity  |
+|---------------|-----------|--------|
+| Negation      | `not`     | unary  |
+| Conjunction   | `and`     | binary |
+| Disjunction   | `or`      | binary |
+| Implication   | `implies` | binary |
+| Biconditional | `equiv`   | binary |
 
 Precedence (tighter-binding first): `not` > `and` > `or` > `implies` > `equiv`.
 `implies` is right-associative; `and` and `or` are left-associative. Parentheses
@@ -80,7 +82,7 @@ are added only when the default parse would give a different tree.
 not Px
 Px and Qx
 Px or Qx implies Rx
-not Px and Qx         -- reads as (not Px) and Qx
+not Px and Qx             -- reads as (not Px) and Qx
 Px implies Qx implies Rx  -- reads as Px implies (Qx implies Rx)
 ```
 
@@ -95,9 +97,9 @@ may appear in the same binder.
 forall x. Px
 exists x. Px and Qx
 forall x,y. Rxy
-forall x,X. Xx
-forall x,X. Xx implies Px
-exists X. Xx and not Xy
+forall X,y. Xy
+forall X,y. Xy implies Py
+exists X. Xa and not Xb
 ```
 
 The quantifier has the lowest precedence of all operators: its scope extends as
@@ -112,7 +114,7 @@ Nested quantifiers with different connectives remain nested:
 
 ```
 forall x. exists y. Rxy
-forall x,X. exists y. Xxy
+forall X,z. exists y. Xzy
 ```
 
 ### Modal Operators
@@ -122,7 +124,7 @@ same low precedence as quantifiers:
 
 ```
 nec Px
-pos Px and Qx       -- pos binds only Px; reads as (pos Px) and Qx
+pos Px and Qx       -- pos scopes over both Px and Qx; reads as pos (Px and Qx)
 nec forall x. Px    -- nec scopes over the entire quantified formula
 ```
 
@@ -132,13 +134,13 @@ nec forall x. Px    -- nec scopes over the entire quantified formula
 
 Higher number binds more tightly.
 
-| Level | Operators                                | Associativity     |
-|-------|------------------------------------------|-------------------|
-| 5     | `not`                                    | right (unary)     |
-| 4     | `and`                                    | left              |
-| 3     | `or`                                     | left              |
-| 2     | `implies`                                | right             |
-| 1     | `equiv`                                  | left              |
+| Level | Operators                                | Associativity       |
+|-------|------------------------------------------|---------------------|
+| 5     | `not`                                    | right (unary)       |
+| 4     | `and`                                    | left                |
+| 3     | `or`                                     | left                |
+| 2     | `implies`                                | right               |
+| 1     | `equiv`                                  | left                |
 | 0     | `nec` `pos` `forall` `exists`            | scope extends right |
 
 Atomic formulas (predications, identity) always bind most tightly.
@@ -151,8 +153,8 @@ Atomic formulas (predications, identity) always bind most tightly.
 
 `forall x. Fx` is true when every particular satisfies F.
 `exists x. Fx` is true when at least one particular satisfies F.
-`forall X. Xx` is true when every universal is instantiated by x.
-`exists X. Xx` is true when at least one universal is instantiated by x.
+`forall X. Xa` is true when every universal is instantiated by a.
+`exists X. Xa` is true when at least one universal is instantiated by a.
 
 ### Type mismatches
 
@@ -160,14 +162,7 @@ There are no ill-formed formulas, only false ones. If a particular appears where
 a universal is expected — or the reverse — the formula is simply false:
 
 ```
-forall x,Y. nec not x = Y   -- necessarily, no particular is identical to any universal
-```
-
-This can equivalently be written with universality (U) and particularity (P) as
-named predicate constants that hold of the respective categories:
-
-```
-forall x,y. nec Ux and Py implies not x = y
+forall X,y. nec not X = y   -- necessarily, no particular is identical to any universal
 ```
 
 ### Predicate variables as first-class
@@ -175,7 +170,7 @@ forall x,y. nec Ux and Py implies not x = y
 Quantifying over predicate variables is not a higher-order ascent — it is
 quantification over universals, which are full members of the domain alongside
 particulars. The case convention marks which sub-domain a bound variable ranges
-over, not a logical type distinction. `forall X. Xx` says the same kind of thing
+over, not a logical type distinction. `forall X. Xa` says the same kind of thing
 as `forall x. Px`: it ranges over entities in the domain and says something about
 each of them.
 
@@ -190,19 +185,15 @@ forall x. Px implies Qx
 -- There exists a particular that is both P and Q
 exists x. Px and Qx
 
--- Every universal instantiated by x is also instantiated by y
-forall X. Xx implies Xy
+-- Every universal instantiated by a is also instantiated by b
+forall X. Xa implies Xb
 
--- For every particular and every universal, the universal does not
--- apply to the particular necessarily
-forall x,X. not nec Xx
+-- For every particular and every universal, the universal does not apply to the particular necessarily
+forall X,y. not nec Xy
 
 -- The categorical necessity: no particular is identical to any universal
-forall x,Y. nec not x = Y
+forall X,y. nec not X = y
 
 -- P and Q are the same universal (both are necessarily coextensive)
-forall x. Px equiv Qx
-
--- x has all the properties that y has
-forall X. Xy implies Xx
+forall x. nec Px equiv Qx
 ```

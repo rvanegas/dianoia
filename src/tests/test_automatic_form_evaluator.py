@@ -12,7 +12,7 @@ def _mock_formalizations_response(steps):
         if semantic_const:
             js = json.dumps({
                 "type": "predicate",
-                "name": semantic_pred,
+                "pred_const": semantic_pred,
                 "args": [{"type": "constant", "name": semantic_const}]
             })
             ascii_str = f"{semantic_pred}({semantic_const})"
@@ -23,8 +23,8 @@ def _mock_formalizations_response(steps):
                 "body": {
                     "type": "connective", "op": "implies",
                     "args": [
-                        {"type": "predicate", "name": semantic_pred, "args": [{"type": "variable", "name": "individual"}]},
-                        {"type": "predicate", "name": "is_mortal", "args": [{"type": "variable", "name": "individual"}]}
+                        {"type": "predicate", "pred_const": semantic_pred, "args": [{"type": "variable", "name": "individual"}]},
+                        {"type": "predicate", "pred_const": "is_mortal", "args": [{"type": "variable", "name": "individual"}]}
                     ]
                 }
             })

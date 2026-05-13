@@ -5,7 +5,7 @@ import pytest
 
 from core.logic import (
     Predicate, Constant, Variable, Quantifier, QuantifierType,
-    Connective, ConnectiveType, from_json, validate_canonical,
+    Connective, ConnectiveType, PredicateConstant, from_json, validate_canonical,
 )
 from services.formalization_normalizer import (
     normalize_formalizations,
@@ -27,7 +27,7 @@ def _item(symbol, formula):
 
 def test_single_predicate_and_constant():
     # is_man(socrates) → P(a)
-    formula = Predicate("is_man", [Constant("socrates")])
+    formula = Predicate(PredicateConstant("is_man"), [Constant("socrates")])
     result = normalize_formalizations([_item("A", formula)], confidence=0.9, reasoning="")
     fmls = result["formalizations"]
     assert len(fmls) == 1
@@ -40,8 +40,8 @@ def test_single_predicate_and_constant():
 
 def test_two_predicates_ordered():
     # is_man(socrates), is_mortal(socrates) → P(a), Q(a)
-    f1 = Predicate("is_man", [Constant("socrates")])
-    f2 = Predicate("is_mortal", [Constant("socrates")])
+    f1 = Predicate(PredicateConstant("is_man"), [Constant("socrates")])
+    f2 = Predicate(PredicateConstant("is_mortal"), [Constant("socrates")])
     result = normalize_formalizations(
         [_item("A", f1), _item("B", f2)], confidence=1.0, reasoning=""
     )
@@ -56,11 +56,11 @@ def test_two_predicates_ordered():
 
 def test_shared_predicate_gets_same_symbol():
     # is_mortal appears in both steps → both get Q (second unique predicate)
-    f1 = Predicate("is_man", [Constant("socrates")])
-    f2 = Predicate("is_mortal", [Constant("socrates")])
+    f1 = Predicate(PredicateConstant("is_man"), [Constant("socrates")])
+    f2 = Predicate(PredicateConstant("is_mortal"), [Constant("socrates")])
     f3 = Connective(
         op=ConnectiveType.AND,
-        args=[Predicate("is_man", [Constant("socrates")]), Predicate("is_mortal", [Constant("socrates")])],
+        args=[Predicate(PredicateConstant("is_man"), [Constant("socrates")]), Predicate(PredicateConstant("is_mortal"), [Constant("socrates")])],
     )
     result = normalize_formalizations(
         [_item("A", f1), _item("B", f2), _item("C", f3)],
@@ -77,7 +77,7 @@ def test_shared_predicate_gets_same_symbol():
 # ---------------------------------------------------------------------------
 
 def test_zero_arg_predicate():
-    formula = Predicate("is_raining", [])
+    formula = Predicate(PredicateConstant("is_raining"), [])
     result = normalize_formalizations([_item("A", formula)], confidence=0.8, reasoning="")
     assert result["formalizations"][0]["ascii"] == "P"
     assert {"symbol": "P", "value": "is_raining", "arity": 0} in result["definitions"]["predicates"]
@@ -93,7 +93,7 @@ def test_bound_variable_normalized_to_x():
     formula = Quantifier(
         quant=QuantifierType.FORALL,
         vars=[Variable("individual")],
-        body=Predicate("is_man", [Variable("individual")]),
+        body=Predicate(PredicateConstant("is_man"), [Variable("individual")]),
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
     assert result["formalizations"][0]["ascii"] == "forall x. Px"
@@ -104,7 +104,7 @@ def test_nested_quantifiers_get_x_then_y():
     inner = Quantifier(
         quant=QuantifierType.EXISTS,
         vars=[Variable("thing")],
-        body=Predicate("rel", [Variable("entity"), Variable("thing")]),
+        body=Predicate(PredicateConstant("rel"), [Variable("entity"), Variable("thing")]),
     )
     outer = Quantifier(
         quant=QuantifierType.FORALL,
@@ -121,12 +121,12 @@ def test_independent_formulas_both_start_at_x():
     f1 = Quantifier(
         quant=QuantifierType.FORALL,
         vars=[Variable("individual")],
-        body=Predicate("is_man", [Variable("individual")]),
+        body=Predicate(PredicateConstant("is_man"), [Variable("individual")]),
     )
     f2 = Quantifier(
         quant=QuantifierType.FORALL,
         vars=[Variable("entity")],
-        body=Predicate("is_mortal", [Variable("entity")]),
+        body=Predicate(PredicateConstant("is_mortal"), [Variable("entity")]),
     )
     result = normalize_formalizations([_item("A", f1), _item("B", f2)], confidence=1.0, reasoning="")
     fmls = {f["symbol"]: f["ascii"] for f in result["formalizations"]}
@@ -139,8 +139,8 @@ def test_independent_formulas_both_start_at_x():
 # ---------------------------------------------------------------------------
 
 def test_definitions_completeness():
-    f1 = Predicate("is_man", [Constant("socrates")])
-    f2 = Predicate("is_mortal", [Constant("plato")])
+    f1 = Predicate(PredicateConstant("is_man"), [Constant("socrates")])
+    f2 = Predicate(PredicateConstant("is_mortal"), [Constant("plato")])
     result = normalize_formalizations([_item("A", f1), _item("B", f2)], confidence=1.0, reasoning="")
     pred_syms = {d["value"]: d["symbol"] for d in result["definitions"]["predicates"]}
     const_syms = {d["value"]: d["symbol"] for d in result["definitions"]["constants"]}
@@ -155,7 +155,7 @@ def test_definitions_completeness():
 def test_ascii_matches_to_ascii():
     formula = Connective(
         op=ConnectiveType.IMPLIES,
-        args=[Predicate("is_man", [Constant("socrates")]), Predicate("is_mortal", [Constant("socrates")])],
+        args=[Predicate(PredicateConstant("is_man"), [Constant("socrates")]), Predicate(PredicateConstant("is_mortal"), [Constant("socrates")])],
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
     out = result["formalizations"][0]
@@ -173,7 +173,7 @@ def test_round_trip_validate_canonical():
         vars=[Variable("individual")],
         body=Connective(
             op=ConnectiveType.IMPLIES,
-            args=[Predicate("is_man", [Variable("individual")]), Predicate("is_mortal", [Variable("individual")])],
+            args=[Predicate(PredicateConstant("is_man"), [Variable("individual")]), Predicate(PredicateConstant("is_mortal"), [Variable("individual")])],
         ),
     )
     result = normalize_formalizations([_item("A", formula)], confidence=1.0, reasoning="")
@@ -195,7 +195,7 @@ def test_malformed_json_structure_raises():
 def test_many_predicates_uses_numbered_symbols():
     # 27 unique predicate names — should succeed with P1, Q1… instead of raising
     items = [
-        _item(chr(ord("A") + i % 26), Predicate(f"pred_{i}", []))
+        _item(chr(ord("A") + i % 26), Predicate(PredicateConstant(f"pred_{i}"), []))
         for i in range(27)
     ]
     result = normalize_formalizations(items, confidence=0.0, reasoning="")
@@ -205,7 +205,7 @@ def test_many_predicates_uses_numbered_symbols():
 
 def test_too_many_variables_raises():
     # 7 nested quantifiers
-    body: Formula = Predicate("p", [])
+    body: Formula = Predicate(PredicateConstant("p"), [])
     for i in range(7):
         body = Quantifier(quant=QuantifierType.FORALL, vars=[Variable(f"v{i}")], body=body)
     with pytest.raises(ValueError, match="more than"):

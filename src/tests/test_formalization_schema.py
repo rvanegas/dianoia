@@ -56,7 +56,7 @@ def test_schema_matches_example():
                 "symbol": "1",
                 "ascii": "is_man(socrates)",
                 "json_structure": json.dumps({
-                    "type": "predicate", "name": "is_man",
+                    "type": "predicate", "pred_const": "is_man",
                     "args": [{"type": "constant", "name": "socrates"}]
                 })
             },
@@ -68,9 +68,9 @@ def test_schema_matches_example():
                     "var": {"type": "variable", "name": "individual"},
                     "body": {
                         "type": "binary", "op": "implies",
-                        "left": {"type": "predicate", "name": "is_man",
+                        "left": {"type": "predicate", "pred_const": "is_man",
                                  "args": [{"type": "variable", "name": "individual"}]},
-                        "right": {"type": "predicate", "name": "is_mortal",
+                        "right": {"type": "predicate", "pred_const": "is_mortal",
                                   "args": [{"type": "variable", "name": "individual"}]}
                     }
                 })
@@ -79,7 +79,7 @@ def test_schema_matches_example():
                 "symbol": "3",
                 "ascii": "is_mortal(socrates)",
                 "json_structure": json.dumps({
-                    "type": "predicate", "name": "is_mortal",
+                    "type": "predicate", "pred_const": "is_mortal",
                     "args": [{"type": "constant", "name": "socrates"}]
                 })
             }
@@ -114,7 +114,7 @@ def test_schema_json_validation():
                 "symbol": "1",
                 "ascii": "is_man(socrates)",
                 "json_structure": json.dumps({
-                    "type": "predicate", "name": "is_man",
+                    "type": "predicate", "pred_const": "is_man",
                     "args": [{"type": "constant", "name": "socrates"}]
                 })
             }

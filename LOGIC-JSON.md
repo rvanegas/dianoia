@@ -25,7 +25,12 @@ Every JSON argument position (inside `args`, `vars`, `left`, `right`) is a
 {"type": "variable",      "name": "x"}   -- individual variable (x y z u v w)
 {"type": "constant",      "name": "a"}   -- individual constant (a b c ... a1 ...)
 {"type": "pred_variable", "name": "X"}   -- predicate variable  (X Y Z U V W)
+{"type": "pred_constant", "name": "P"}   -- predicate constant  (P Q R S T G H ...)
 ```
+
+Within any single formula, the same letter is not used for both an individual
+variable and a predicate variable (e.g. `x` and `X` do not both appear in one
+formula) — this avoids visual ambiguity.
 
 ---
 
@@ -37,19 +42,19 @@ The head is either a named predicate constant (`"name"`) or a bound predicate
 variable (`"pred_var"`). `"args"` is an array of symbol nodes (may be empty).
 
 ```json
-{"type": "predicate", "name": "P", "args": []}
+{"type": "predicate", "pred_const": "P", "args": []}
 ```
 ASCII: `P`
 
 ```json
-{"type": "predicate", "name": "P", "args": [{"type": "variable", "name": "x"}]}
+{"type": "predicate", "pred_const": "P", "args": [{"type": "variable", "name": "x"}]}
 ```
 ASCII: `Px`
 
 ```json
 {
   "type": "predicate",
-  "name": "R",
+  "pred_const": "R",
   "args": [
     {"type": "variable", "name": "x"},
     {"type": "constant", "name": "a"}
@@ -62,10 +67,10 @@ ASCII: `Rxa`
 {
   "type": "predicate",
   "pred_var": "X",
-  "args": [{"type": "variable", "name": "x"}]
+  "args": [{"type": "variable", "name": "y"}]
 }
 ```
-ASCII: `Xx`
+ASCII: `Xy`
 
 ### identity
 
@@ -128,13 +133,13 @@ ASCII: `forall x. <formula>`
   "type": "quantifier",
   "quant": "forall",
   "vars": [
-    {"type": "variable",      "name": "x"},
-    {"type": "pred_variable", "name": "X"}
+    {"type": "pred_variable", "name": "X"},
+    {"type": "variable",      "name": "y"}
   ],
   "body": <formula>
 }
 ```
-ASCII: `forall x,X. <formula>`
+ASCII: `forall X,y. <formula>`
 
 ### modal
 
@@ -149,15 +154,15 @@ ASCII: `nec <formula>`
 
 ## Complete Example
 
-ASCII: `forall x,X. pos Xx and x = a`
+ASCII: `forall X,y. pos Xy and y = a`
 
 ```json
 {
   "type": "quantifier",
   "quant": "forall",
   "vars": [
-    {"type": "variable",      "name": "x"},
-    {"type": "pred_variable", "name": "X"}
+    {"type": "pred_variable", "name": "X"},
+    {"type": "variable",      "name": "y"}
   ],
   "body": {
     "type": "modal",
@@ -169,11 +174,11 @@ ASCII: `forall x,X. pos Xx and x = a`
         {
           "type": "predicate",
           "pred_var": "X",
-          "args": [{"type": "variable", "name": "x"}]
+          "args": [{"type": "variable", "name": "y"}]
         },
         {
           "type": "identity",
-          "left":  {"type": "variable", "name": "x"},
+          "left":  {"type": "variable", "name": "y"},
           "right": {"type": "constant", "name": "a"}
         }
       ]
@@ -188,7 +193,7 @@ ASCII: `forall x,X. pos Xx and x = a`
 
 | `"type"`          | Required fields                                              | Notes                                           |
 |-------------------|--------------------------------------------------------------|-------------------------------------------------|
-| `"predicate"`     | `"name": string` OR `"pred_var": string`; `"args": []`      | exactly one of `name`/`pred_var`                |
+| `"predicate"`     | `"pred_const": string` OR `"pred_var": string`; `"args": []` | exactly one of `pred_const`/`pred_var`         |
 | `"identity"`      | `"left": symbol`, `"right": symbol`                         |                                                 |
 | `"connective"`    | `"op": string`, `"args": [formula, ...]`                    | `not` takes 1 arg; others take 2                |
 | `"quantifier"`    | `"quant": string`, `"vars": [symbol, ...]`, `"body": formula` | `vars` entries are `variable` or `pred_variable` |
@@ -196,3 +201,4 @@ ASCII: `forall x,X. pos Xx and x = a`
 | `"variable"`      | `"name": string`                                            | canonical: `x y z u v w`                       |
 | `"constant"`      | `"name": string`                                            | canonical: `a b c d e f` (then `a1` ...)        |
 | `"pred_variable"` | `"name": string`                                            | canonical: `X Y Z U V W`                       |
+| `"pred_constant"` | `"name": string`                                            | canonical: `P Q R S T G H I J K L M N O` (then `P1` ...) |
