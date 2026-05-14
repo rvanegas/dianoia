@@ -154,7 +154,7 @@ ASCII: `nec <formula>`
 
 ## Complete Example
 
-ASCII: `forall X,y. pos Xy and y = a`
+ASCII: `forall X,y. pos (Xy and y = a)`
 
 ```json
 {

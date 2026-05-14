@@ -33,7 +33,8 @@ _PREC: Dict[str, int] = {
     "or":  3,
     "implies": 2,
     "equiv": 1,
-    "nec": 0, "pos": 0, "forall": 0, "exists": 0,
+    "nec": 5, "pos": 5,
+    "forall": 0, "exists": 0,
 }
 _RIGHT_ASSOC = frozenset({"implies"})
 
@@ -181,7 +182,9 @@ class Modal(Formula):
         }
 
     def to_ascii(self) -> str:
-        return f"{self.mod.value} {self.body.to_ascii()}"
+        p = _PREC[self.mod.value]
+        s = self.body.to_ascii()
+        return f"{self.mod.value} {_wrap(s, self.body, p)}"
 
 
 # --- Helpers ---
