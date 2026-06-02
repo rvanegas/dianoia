@@ -1,4 +1,4 @@
-README
+README.md
 pyproject.toml
 src/api/__init__.py
 src/api/agents.py

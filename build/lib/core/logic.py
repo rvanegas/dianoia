@@ -33,12 +33,13 @@ _PREC: Dict[str, int] = {
     "or":  3,
     "implies": 2,
     "equiv": 1,
-    "nec": 0, "pos": 0, "forall": 0, "exists": 0,
+    "nec": 5, "pos": 5,
+    "forall": 0, "exists": 0,
 }
 _RIGHT_ASSOC = frozenset({"implies"})
 
 
-# --- Terms ---
+# --- Symbol kinds ---
 
 @dataclass(frozen=True)
 class Term:
@@ -55,6 +56,25 @@ class Constant(Term):
     name: str
 
 
+@dataclass(frozen=True)
+class PredicateVariable:
+    """A bound variable ranging over universals (X, Y, Z, U, V, W)."""
+    name: str
+
+
+@dataclass(frozen=True)
+class PredicateConstant:
+    """A named predicate constant (P, Q, R, …)."""
+    name: str
+
+
+# Anything that can appear in an argument or identity position.
+Arg = Union[Variable, Constant, PredicateVariable, PredicateConstant]
+
+# Anything that can appear as the head of a predicate application.
+PredHead = Union[PredicateConstant, PredicateVariable]
+
+
 # --- Formula base and subclasses ---
 
 @dataclass(frozen=True)
@@ -68,33 +88,37 @@ class Formula:
 
 @dataclass(frozen=True)
 class Predicate(Formula):
-    name: str
-    args: List[Term]
+    head: PredHead          # str = predicate constant name; PredicateVariable = bound variable
+    args: List[Arg]
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "type": "predicate",
-            "name": self.name,
-            "args": [term_to_dict(t) for t in self.args]
+            "args": [arg_to_dict(a) for a in self.args],
         }
+        if isinstance(self.head, PredicateVariable):
+            d["pred_var"] = self.head.name
+        else:
+            d["pred_const"] = self.head.name
+        return d
 
     def to_ascii(self) -> str:
+        h = self.head.name
         if not self.args:
-            return self.name
-        args = ", ".join(arg_to_ascii(a) for a in self.args)
-        return f"{self.name}({args})"
+            return h
+        return h + "".join(arg_to_ascii(a) for a in self.args)
 
 
 @dataclass(frozen=True)
 class Identity(Formula):
-    left: Term
-    right: Term
+    left: Arg
+    right: Arg
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "identity",
-            "left": term_to_dict(self.left),
-            "right": term_to_dict(self.right)
+            "left": arg_to_dict(self.left),
+            "right": arg_to_dict(self.right),
         }
 
     def to_ascii(self) -> str:
@@ -110,7 +134,7 @@ class Connective(Formula):
         return {
             "type": "connective",
             "op": self.op.value,
-            "args": [a.to_dict() for a in self.args]
+            "args": [a.to_dict() for a in self.args],
         }
 
     def to_ascii(self) -> str:
@@ -129,19 +153,20 @@ class Connective(Formula):
 @dataclass(frozen=True)
 class Quantifier(Formula):
     quant: QuantifierType
-    var: Variable
+    vars: List[Union[Variable, PredicateVariable]]
     body: Formula
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "quantifier",
             "quant": self.quant.value,
-            "var": term_to_dict(self.var),
-            "body": self.body.to_dict()
+            "vars": [arg_to_dict(v) for v in self.vars],
+            "body": self.body.to_dict(),
         }
 
     def to_ascii(self) -> str:
-        return f"{self.quant.value} {self.var.name}. {self.body.to_ascii()}"
+        var_str = ",".join(v.name for v in self.vars)
+        return f"{self.quant.value} {var_str}. {self.body.to_ascii()}"
 
 
 @dataclass(frozen=True)
@@ -153,27 +178,46 @@ class Modal(Formula):
         return {
             "type": "modal",
             "mod": self.mod.value,
-            "body": self.body.to_dict()
+            "body": self.body.to_dict(),
         }
 
     def to_ascii(self) -> str:
-        return f"{self.mod.value} {self.body.to_ascii()}"
+        p = _PREC[self.mod.value]
+        s = self.body.to_ascii()
+        return f"{self.mod.value} {_wrap(s, self.body, p)}"
 
 
-# --- Helpers for terms and args ---
+# --- Helpers ---
 
-def term_to_dict(t: Term) -> Dict[str, Any]:
-    if isinstance(t, Variable):
-        return {"type": "variable", "name": t.name}
-    if isinstance(t, Constant):
-        return {"type": "constant", "name": t.name}
-    raise TypeError(f"Unknown term {t!r}")
+def arg_to_dict(a: Arg) -> Dict[str, Any]:
+    if isinstance(a, Variable):
+        return {"type": "variable", "name": a.name}
+    if isinstance(a, Constant):
+        return {"type": "constant", "name": a.name}
+    if isinstance(a, PredicateVariable):
+        return {"type": "pred_variable", "name": a.name}
+    if isinstance(a, PredicateConstant):
+        return {"type": "pred_constant", "name": a.name}
+    raise TypeError(f"Unknown arg {a!r}")
 
 
-def arg_to_ascii(a: Union[Term, Formula]) -> str:
-    if isinstance(a, Term):
+def arg_to_ascii(a: Union[Arg, Formula]) -> str:
+    if isinstance(a, (Variable, Constant, PredicateVariable, PredicateConstant)):
         return a.name
     return a.to_ascii()
+
+
+def arg_from_dict(d: Dict[str, Any]) -> Arg:
+    tt = d.get("type")
+    if tt == "variable":
+        return Variable(d["name"])
+    if tt == "constant":
+        return Constant(d["name"])
+    if tt == "pred_variable":
+        return PredicateVariable(d["name"])
+    if tt == "pred_constant":
+        return PredicateConstant(d["name"])
+    raise ValueError(f"Unknown arg type {tt!r}")
 
 
 def _formula_prec(f: Formula) -> int:
@@ -192,44 +236,52 @@ def _wrap(s: str, child: Formula, parent_prec: int,
     if cp < parent_prec:
         return f"({s})"
     if cp == parent_prec:
-        # same precedence: parens needed when associativity would give a different tree
-        if right_assoc and not is_right:   # left child of right-assoc op
+        if right_assoc and not is_right:
             return f"({s})"
-        if not right_assoc and is_right:   # right child of left-assoc op
+        if not right_assoc and is_right:
             return f"({s})"
     return s
 
 
-_CANONICAL_VARIABLES = {'x', 'y', 'z', 'u', 'v', 'w'}
-_CANONICAL_CONST_RE = _re.compile(r'^[a-f]\d*$')
+_CANONICAL_VARIABLES      = {'x', 'y', 'z', 'u', 'v', 'w'}
+_CANONICAL_PRED_VARIABLES = {'X', 'Y', 'Z', 'U', 'V', 'W'}
+_CANONICAL_CONST_RE       = _re.compile(r'^[a-f]\d*$')
+_CANONICAL_PRED_CONST_RE  = _re.compile(r'^[PQRSTGHIJKLMNO]\d*$')
 
 
 def _is_canonical_const(name: str) -> bool:
     return bool(_CANONICAL_CONST_RE.match(name))
 
 
+def _is_canonical_pred_const(name: str) -> bool:
+    return bool(_CANONICAL_PRED_CONST_RE.match(name))
+
+
 def validate_canonical(formula: 'Formula') -> None:
-    """Raise ValueError if formula contains non-canonical Variable or Constant names."""
+    """Raise ValueError if formula contains non-canonical symbol names."""
+    def _check_arg(a: Arg) -> None:
+        if isinstance(a, Variable) and a.name not in _CANONICAL_VARIABLES:
+            raise ValueError(f"Variable {a.name!r} not in canonical set")
+        elif isinstance(a, Constant) and not _is_canonical_const(a.name):
+            raise ValueError(f"Constant {a.name!r} not in a–f[N]")
+        elif isinstance(a, PredicateVariable) and a.name not in _CANONICAL_PRED_VARIABLES:
+            raise ValueError(f"Predicate variable {a.name!r} not in canonical set")
+        elif isinstance(a, PredicateConstant) and not _is_canonical_pred_const(a.name):
+            raise ValueError(f"Predicate constant {a.name!r} not in canonical set")
+
     if isinstance(formula, Predicate):
+        _check_arg(formula.head)
         for arg in formula.args:
-            if isinstance(arg, Variable):
-                if arg.name not in _CANONICAL_VARIABLES:
-                    raise ValueError(f"Variable {arg.name!r} not in canonical set {_CANONICAL_VARIABLES}")
-            elif isinstance(arg, Constant):
-                if not _is_canonical_const(arg.name):
-                    raise ValueError(f"Constant {arg.name!r} not in a–f[N]")
+            _check_arg(arg)
     elif isinstance(formula, Identity):
-        for t in (formula.left, formula.right):
-            if isinstance(t, Variable) and t.name not in _CANONICAL_VARIABLES:
-                raise ValueError(f"Variable {t.name!r} not in canonical set")
-            if isinstance(t, Constant) and not _is_canonical_const(t.name):
-                raise ValueError(f"Constant {t.name!r} not in a–f[N]")
+        _check_arg(formula.left)
+        _check_arg(formula.right)
     elif isinstance(formula, Connective):
         for arg in formula.args:
             validate_canonical(arg)
     elif isinstance(formula, Quantifier):
-        if formula.var.name not in _CANONICAL_VARIABLES:
-            raise ValueError(f"Quantifier variable {formula.var.name!r} not in canonical set")
+        for v in formula.vars:
+            _check_arg(v)
         validate_canonical(formula.body)
     elif isinstance(formula, Modal):
         validate_canonical(formula.body)
@@ -240,21 +292,20 @@ def validate_canonical(formula: 'Formula') -> None:
 def from_json(d: Dict[str, Any]) -> Formula:
     t = d.get("type")
     if t == "predicate":
-        args = [term_from_dict(a) for a in d["args"]]
-        return Predicate(d["name"], args)
+        head: PredHead = PredicateVariable(d["pred_var"]) if "pred_var" in d else PredicateConstant(d["pred_const"])
+        args = [arg_from_dict(a) for a in d["args"]]
+        return Predicate(head, args)
     if t == "identity":
-        left = term_from_dict(d["left"])
-        right = term_from_dict(d["right"])
-        return Identity(left, right)
+        return Identity(arg_from_dict(d["left"]), arg_from_dict(d["right"]))
     if t == "connective":
         op = ConnectiveType(d["op"])
         args = [from_json(a) for a in d["args"]]
         return Connective(op, args)
     if t == "quantifier":
         quant = QuantifierType(d["quant"])
-        var = Variable(d["var"]["name"])
+        vars_ = [arg_from_dict(v) for v in d["vars"]]
         body = from_json(d["body"])
-        return Quantifier(quant, var, body)
+        return Quantifier(quant, vars_, body)
     if t == "modal":
         mod = ModalType(d["mod"])
         body = from_json(d["body"])
@@ -262,28 +313,23 @@ def from_json(d: Dict[str, Any]) -> Formula:
     raise ValueError(f"Unknown formula type {t!r}")
 
 
-def term_from_dict(d: Dict[str, Any]) -> Term:
-    tt = d.get("type")
-    if tt == "variable":
-        return Variable(d["name"])
-    if tt == "constant":
-        return Constant(d["name"])
-    raise ValueError(f"Unknown term type {tt!r}")
-
-
 # --- Example usage ---
 
 if __name__ == "__main__":
-    x = Variable("x")
+    y = Variable("y")
+    X = PredicateVariable("X")
+    P = PredicateConstant("P")
     a = Constant("a")
+
+    # forall X,y. pos Xy and y = a
     phi = Quantifier(
         quant=QuantifierType.FORALL,
-        var=x,
+        vars=[X, y],
         body=Modal(
             mod=ModalType.DIAMOND,
             body=Connective(
                 op=ConnectiveType.AND,
-                args=[Predicate("P", [x]), Identity(x, a)]
+                args=[Predicate(X, [y]), Identity(y, a)]
             )
         )
     )
@@ -292,3 +338,10 @@ if __name__ == "__main__":
     print("ASCII:", phi.to_ascii())
     phi2 = from_json(js)
     assert phi2 == phi
+
+    # X = P  (predicate variable identical to predicate constant)
+    psi = Identity(X, P)
+    js2 = psi.to_dict()
+    print(json.dumps(js2, indent=2))
+    print("ASCII:", psi.to_ascii())
+    assert from_json(js2) == psi
