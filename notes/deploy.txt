@@ -18,8 +18,10 @@ scp gh keys and config to server
 git clone git@github.com:rvanegas/dianoia.git
 
 add dianoia/bin to bash PATH
-copy OPENAI_ID to backend/.env
-set VITE_API_BASE_URL in frontend/.env to https://myhostname.com
+create .env in repo root (gitignored) with:
+  ANTHROPIC_API_KEY=<key>
+  ANTHROPIC_MODEL=claude-sonnet-4-6   # optional, this is the default
+docker-compose passes this to the container via env_file directive.
 
 hard reset:
 docker-compose down --volumes --remove-orphans
