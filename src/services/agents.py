@@ -280,8 +280,13 @@ class FormalizationAgent:
                 logger.error(f"Formalization normalization failed: {e}")
                 raise
             
-            symbols = [f["symbol"] for f in formalization_result.get("formalizations", [])]
-            logger.info(f"FormalizationAgent normalized {len(symbols)} formalizations: {symbols}")
+            expected_symbols = {step.symbol for step in steps_needing_formalization}
+            returned_symbols = {f["symbol"] for f in formalization_result.get("formalizations", [])}
+            missing_symbols = expected_symbols - returned_symbols
+            if missing_symbols:
+                logger.warning(f"FormalizationAgent: model omitted formalizations for symbols {sorted(missing_symbols)} (expected {sorted(expected_symbols)}, got {sorted(returned_symbols)})")
+            else:
+                logger.info(f"FormalizationAgent: all {len(returned_symbols)} expected formalizations returned: {sorted(returned_symbols)}")
             
             # Extract formalization results
             confidence = formalization_result.get("confidence", 0.0)
