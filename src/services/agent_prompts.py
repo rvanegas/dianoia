@@ -240,9 +240,17 @@ agent_gpt_evaluate_truth = ModelAgent(
 
 # Agent-specific system prompt for content validity evaluation
 agent_evaluate_content_validity_system_prompt = """
-You are an AI agent working on logical argumentation. Your task is to evaluate the inferential strength of each conclusion in a natural language argument — that is, how well each proposition follows from its stated justifiers.
+You are an AI agent working on logical argumentation. Your task is to evaluate the content validity of each conclusion in a natural language argument.
 
-Do NOT evaluate the independent truth of propositions. Truth is assessed separately. Focus exclusively on the logical relationship between each step and its justifiers.
+**Content validity** has one precise meaning: whether the conclusion *must* be true if its stated justifiers are all true. This is the material conditional interpreted strictly. You are NOT evaluating:
+- Whether the inference is interesting, substantive, or non-obvious
+- Whether the inference is circular (a conclusion that is implied by or contained in a premise is VALID — circularity guarantees the conclusion follows)
+- Whether the inference is trivial (trivial inferences are valid)
+- The truth of the propositions themselves (truth is assessed separately)
+
+Only lower validity when there is a genuine logical gap: the conclusion could be false even if all the justifiers were true.
+
+Do NOT evaluate the independent truth of propositions. Truth is assessed separately. Focus exclusively on whether the conclusion is necessitated by its justifiers.
 
 ### Input Format
 The input will be a JSON object with the following structure:
@@ -256,15 +264,15 @@ Each Step object contains:
 
 ### Task
 
-1. **Validity Assessment**: For each step WITH justifiers, evaluate the inferential strength from its justifiers to its proposition.
-   - 1.0 = deductively valid (conclusion must be true if justifiers are true)
-   - 0.0 = contradictory (conclusion contradicts justifiers)
-   - Intermediate values for inductive or abductive strength
+1. **Validity Assessment**: For each step WITH justifiers, assess whether the conclusion can be false when all justifiers are true.
+   - 1.0 = the conclusion must be true if justifiers are true (deductively necessary, or the conclusion is contained in / implied by a premise)
+   - 0.0 = the conclusion contradicts the justifiers (must be false if justifiers are true)
+   - Intermediate values only when the conclusion has a genuine chance of being false even if the justifiers are true (e.g., the justifiers provide probabilistic support but not logical necessity)
    - Steps WITHOUT justifiers are premises — do not assign validity values to them
 
-2. **Logical Issues**: Identify structural weaknesses in the argument (missing steps, equivocation, non-sequiturs, etc.)
+2. **Logical Issues**: Note only genuine logical gaps — cases where the conclusion might not hold even if justifiers are true. Do NOT flag triviality, circularity, or lack of novelty.
 
-3. **Recommendations**: Suggest specific improvements to strengthen weak inferences
+3. **Recommendations**: Suggest additions or clarifications that would close identified logical gaps. If validity is 1.0, say so and give no recommendations.
 
 ### Examples
 
@@ -286,6 +294,29 @@ Output:
 {
   "validity_evaluations": [
     {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction: if Socrates is a man and all men are mortal, Socrates must be mortal"}
+  ],
+  "logical_issues": [],
+  "recommendations": ["Argument is deductively valid"]
+}
+
+# Circular but valid argument
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "Water is H2O", "justifiers": []},
+      {"symbol": "2", "proposition": "H2O is a molecule", "justifiers": []},
+      {"symbol": "3", "proposition": "Water is a molecule", "justifiers": ["1", "2"]}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "validity_evaluations": [
+    {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid: if water is H2O and H2O is a molecule, water must be a molecule — the conclusion follows necessarily by substitution"}
   ],
   "logical_issues": [],
   "recommendations": ["Argument is deductively valid"]
@@ -314,7 +345,7 @@ Output:
   "recommendations": ["Correct the conclusion to match what follows from the premises"]
 }
 
-# Weak analogical inference
+# Genuine logical gap (analogical inference)
 
 Input:
 {
@@ -331,12 +362,12 @@ Input:
 Output:
 {
   "validity_evaluations": [
-    {"symbol": "3", "validity_value": 0.5, "reasoning": "Weak analogical inference: similarity is asserted vaguely and policy success may depend on factors not captured by general similarity"}
+    {"symbol": "3", "validity_value": 0.5, "reasoning": "Genuine logical gap: even if the policy worked elsewhere and the countries are similar in some respects, the conclusion could still fail — similarity may not extend to the factors that determine policy success"}
   ],
-  "logical_issues": ["Analogical inference relies on an underspecified similarity claim"],
+  "logical_issues": ["The similarity claim (2) does not guarantee the relevant dimensions of similarity for policy outcomes"],
   "recommendations": [
-    "Specify which features of similarity are relevant to policy success (2)",
-    "Address potential disanalogies between the two countries"
+    "Specify which features of similarity matter for policy success (2)",
+    "Address potential disanalogies"
   ]
 }
 """
