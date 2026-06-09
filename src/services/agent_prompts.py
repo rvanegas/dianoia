@@ -731,6 +731,8 @@ For each formalization, focus entirely on whether the logical structure is valid
 
 The argument_validity should reflect the formal logical validity of the argument structure, not the truth of the premises or conclusion.
 
+**Steps without justifiers are premises — omit them from `proposition_evaluations` entirely.** Do not assign them a validity value or include them with a "Premise - no validity to evaluate" entry. Only steps that have justifiers (i.e., inferred conclusions) should appear in `proposition_evaluations`.
+
 ### Considerations
 
 - Do not evaluate truth values - focus only on logical validity
@@ -790,13 +792,11 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-    {"symbol": "1", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-    {"symbol": "2", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-    {"symbol": "3", "validity": "1.0", "reasoning": "Valid conclusion from premises 1 and 2"}
+    {"symbol": "3", "validity": "1.0", "reasoning": "Valid conclusion from premises 1 and 2: Pa and forall x. Px implies Qx logically entail Qa"}
   ],
   "argument_validity": "1.0",
   "logical_issues": [],
-  "recommendations": ["Argument is deductively valid: Pa and forall x. Px implies Qx logically entail Qa"]
+  "recommendations": ["Argument is deductively valid"]
 }
 
 # Invalid deductive argument
@@ -842,9 +842,7 @@ Input:
 Output:
 {
   "proposition_evaluations": [
-    {"symbol": "1", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-    {"symbol": "2", "validity": "1.0", "reasoning": "Premise - no validity to evaluate"},
-    {"symbol": "3", "validity": "0.0", "reasoning": "Invalid conclusion - premises do not support this conclusion"}
+    {"symbol": "3", "validity": "0.0", "reasoning": "Invalid conclusion — Qa and forall x. Px implies Qx do not logically entail Pa"}
   ],
   "argument_validity": "0.0",
   "logical_issues": ["Invalid argument: Qa and forall x. Px implies Qx do not logically entail Pa"],
