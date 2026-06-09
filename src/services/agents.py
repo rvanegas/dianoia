@@ -2,7 +2,7 @@ import json
 from typing import Dict, Any, List
 from dataclasses import dataclass
 
-from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_content, agent_gpt_evaluate_form, agent_gpt_formalize, agent_gpt_improvement
+from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_truth, agent_gpt_evaluate_content_validity, agent_gpt_evaluate_form, agent_gpt_formalize, agent_gpt_improvement
 from services.conversation import gpt_gen_name
 from schemas.agent_input import AgentInput, FilteredAgentInput
 
@@ -30,71 +30,98 @@ class AgentResult:
             self.target_metadata = {}
 
 
-class ContentEvaluationAgent:
-    """Agent that evaluates the truth and validity of argument propositions"""
-    
+class TruthEvaluationAgent:
+    """Agent that evaluates the independent truth of each proposition"""
+
     def __init__(self, coordinator):
         if coordinator is None:
-            raise ValueError("ContentEvaluationAgent requires a coordinator")
-        self.name = "content_evaluator"
+            raise ValueError("TruthEvaluationAgent requires a coordinator")
+        self.name = "truth_evaluator"
         self.coordinator = coordinator
-    
-    def evaluate_propositions(self, agent_input: FilteredAgentInput) -> AgentResult:
-        """Evaluate the truth and validity of argument propositions"""
+
+    def evaluate_truth(self, agent_input: FilteredAgentInput) -> AgentResult:
+        """Evaluate the independent truth of each proposition, without argument structure"""
         try:
-            # logger.info(f"ContentEvaluationAgent starting task for conversation: {agent_input.conversation_id}")
-            # logger.debug(f"ContentEvaluationAgent starting task with data: {agent_input}")
-            
-            # Use direct access for FilteredAgentInput
             file_ids = agent_input.file_ids
             payload = agent_input.model_dump()
             arg_for_result = agent_input.agent_data.argument
             assumptions_for_result = agent_input.agent_data.assumptions
 
-            # Pass the data directly to the agent
-            evaluation_response = agent_gpt_evaluate_content.call(json.dumps(payload), file_ids)
+            evaluation_response = agent_gpt_evaluate_truth.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
-            for key in ("truth_evaluations", "validity_evaluations"):
-                if evaluation_result.get(key):
-                    evaluation_result[key] = _sort_by_symbol(evaluation_result[key])
-            
-            # logger.info(f"ContentEvaluationAgent completed")
-            # if recommendations:
-            #     logger.info(f"ContentEvaluationAgent provided {len(recommendations)} recommendations: {recommendations}")
-            
-            result = AgentResult(
+            if evaluation_result.get("truth_evaluations"):
+                evaluation_result["truth_evaluations"] = _sort_by_symbol(evaluation_result["truth_evaluations"])
+
+            return AgentResult(
                 agent_type=self.name,
-                operation="evaluate_propositions",
+                operation="evaluate_truth",
                 result_content={
                     **evaluation_result,
-                    "evaluation_mode": "content_truth_coherence",
                     "argument": arg_for_result,
                     "assumptions": assumptions_for_result
                 },
-                target_metadata={
-                    'target_type': 'argument'
-                },
+                target_metadata={'target_type': 'argument'},
                 snapshot_id=agent_input.snapshot_id
             )
-            
-            # logger.debug(f"ContentEvaluationAgent task completed successfully. Output: {result}")
-            return result
-            
+
         except Exception as e:
-            logger.error(f"Content evaluator agent error: {e}")
-            result = AgentResult(
+            logger.error(f"Truth evaluator agent error: {e}")
+            return AgentResult(
                 agent_type=self.name,
-                operation="evaluate_propositions",
+                operation="evaluate_truth",
                 result_content={"error": str(e)},
                 confidence=0.0,
-                reasoning=f"Error in content evaluation: {e}",
-                target_metadata={
-                    'target_type': 'argument'
-                },
+                reasoning=f"Error in truth evaluation: {e}",
+                target_metadata={'target_type': 'argument'},
                 snapshot_id=agent_input.snapshot_id
             )
-            # logger.debug(f"ContentEvaluationAgent task failed. Output: {result}")
-            return result
+
+
+class ContentValidityEvaluationAgent:
+    """Agent that evaluates inferential strength between steps and their justifiers"""
+
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("ContentValidityEvaluationAgent requires a coordinator")
+        self.name = "content_validity_evaluator"
+        self.coordinator = coordinator
+
+    def evaluate_content_validity(self, agent_input: FilteredAgentInput) -> AgentResult:
+        """Evaluate how well each conclusion follows from its justifiers"""
+        try:
+            file_ids = agent_input.file_ids
+            payload = agent_input.model_dump()
+            arg_for_result = agent_input.agent_data.argument
+            assumptions_for_result = agent_input.agent_data.assumptions
+
+            evaluation_response = agent_gpt_evaluate_content_validity.call(json.dumps(payload), file_ids)
+            evaluation_result = json.loads(evaluation_response)
+            if evaluation_result.get("validity_evaluations"):
+                evaluation_result["validity_evaluations"] = _sort_by_symbol(evaluation_result["validity_evaluations"])
+
+            return AgentResult(
+                agent_type=self.name,
+                operation="evaluate_content_validity",
+                result_content={
+                    **evaluation_result,
+                    "argument": arg_for_result,
+                    "assumptions": assumptions_for_result
+                },
+                target_metadata={'target_type': 'argument'},
+                snapshot_id=agent_input.snapshot_id
+            )
+
+        except Exception as e:
+            logger.error(f"Content validity evaluator agent error: {e}")
+            return AgentResult(
+                agent_type=self.name,
+                operation="evaluate_content_validity",
+                result_content={"error": str(e)},
+                confidence=0.0,
+                reasoning=f"Error in content validity evaluation: {e}",
+                target_metadata={'target_type': 'argument'},
+                snapshot_id=agent_input.snapshot_id
+            )
 
 
 class FormalEvaluatorAgent:
@@ -325,7 +352,7 @@ class ImprovementAgent:
             
             # Extract evaluation results from latest_results
             latest_results = agent_input.agent_data.latest_results
-            content_evaluations = [r for r in latest_results if r['agent_type'] == 'content_evaluator']
+            content_evaluations = [r for r in latest_results if r['agent_type'] in ('truth_evaluator', 'content_validity_evaluator')]
             formal_evaluations = [r for r in latest_results if r['agent_type'] == 'form_evaluator']
             
             # Check if we have sufficient evaluation data

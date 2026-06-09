@@ -36,19 +36,22 @@ class FilteredAgentInput(AgentInput):
     """Agent input with content filtered based on agent type"""
     
     @classmethod
-    def for_content_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
-        """Create input for content evaluation agent (no formalization data)"""
-        # Create a deep copy of the base input as FilteredAgentInput
+    def for_truth_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
+        """Create input for truth evaluation agent (no formalization data, no justifiers)"""
         filtered_input = cls.model_validate(base_input.model_dump())
-        
-        # Filter out formalization data for content evaluation
-        for step in filtered_input.agent_data.assumptions:
+        for step in filtered_input.agent_data.assumptions + filtered_input.agent_data.argument:
             step.formalization = None
-        for step in filtered_input.agent_data.argument:
-            step.formalization = None
-        
+            step.justifiers = []
         return filtered_input
-    
+
+    @classmethod
+    def for_content_validity_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
+        """Create input for content validity evaluation agent (no formalization data)"""
+        filtered_input = cls.model_validate(base_input.model_dump())
+        for step in filtered_input.agent_data.assumptions + filtered_input.agent_data.argument:
+            step.formalization = None
+        return filtered_input
+
     @classmethod
     def for_formal_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
         """Create input for formal evaluation agent (no content data)"""

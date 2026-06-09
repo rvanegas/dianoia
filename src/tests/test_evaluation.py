@@ -1,49 +1,40 @@
 import pytest
 import json
 from unittest.mock import patch
-from services.agents import ContentEvaluationAgent
+from services.agents import TruthEvaluationAgent, ContentValidityEvaluationAgent
 from services.agent_coordinator import coordinator
 from schemas.agent_input import FilteredAgentInput, AgentData
 from schemas.step import Step
 
 
-class TestEvaluationAgent:
-    """Test the evaluation agent functionality"""
-    
-    def test_content_mode_evaluation(self):
-        """Test that evaluation works correctly in content mode"""
-        agent = ContentEvaluationAgent(coordinator)
-        
-        # Mock the coordinator to return no formalizations (content mode)
-        mock_existing_results = []
-        
-        # Mock the GPT response for content mode
+class TestTruthEvaluationAgent:
+    """Test the truth evaluation agent"""
+
+    def test_evaluates_truth_independently(self):
+        """Truth evaluation assigns scores to all argument steps"""
+        agent = TruthEvaluationAgent(coordinator)
+
         mock_response = {
-            "proposition_evaluations": [
-                {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"},
-                {"proposition": "All men are mortal", "truth_value": 0.95, "reasoning": "Universal biological truth"},
-                {"proposition": "Socrates is mortal", "truth_value": 0.9, "reasoning": "Valid conclusion from premises"}
+            "truth_evaluations": [
+                {"symbol": "1", "truth_value": 0.95, "reasoning": "Historical fact"},
+                {"symbol": "2", "truth_value": 0.98, "reasoning": "Universal biological truth"},
+                {"symbol": "3", "truth_value": 0.95, "reasoning": "Well-established fact"}
             ],
-            "overall_truth_score": 0.95,
-            "truth_issues": [],
-            "recommendations": ["Argument is logically sound and well-structured"]
+            "incoherent_sets": []
         }
-        
-        with patch('services.agents.agent_gpt_evaluate_content') as mock_gpt, \
-             patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results):
-            
+
+        with patch('services.agents.agent_gpt_evaluate_truth') as mock_gpt:
             mock_gpt.call.return_value = json.dumps(mock_response)
-            
-            # Test data - create proper FilteredAgentInput
+
             agent_input = FilteredAgentInput(
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9'),
-                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='0.95', content_validity='0.95', formal_validity='0.95'),
-                        Step(symbol='3', proposition='Socrates is mortal', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score=''),
+                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score=''),
+                        Step(symbol='3', proposition='Socrates is mortal', justifiers=['1', '2'], truth_score=''),
                     ],
                     latest_results=[],
                     target_type='argument',
@@ -51,54 +42,79 @@ class TestEvaluationAgent:
                 ),
                 file_ids=[]
             )
-            
-            # Call the evaluation agent
-            result = agent.evaluate_propositions(agent_input)
-            
-            # Verify the result is in content mode
-            assert result.agent_type == "content_evaluator"
-            assert result.operation == "evaluate_propositions"
-            # Note: evaluation_mode is no longer included in the result data
-    
-    def test_content_evaluator_always_evaluates_content(self):
-        """Test that content evaluator always evaluates content, regardless of formalizations"""
-        agent = ContentEvaluationAgent(coordinator)
-        
-        # Mock the coordinator to return formalizations (but content evaluator ignores them)
-        mock_existing_results = [
-            {
-                'agent_type': 'formalizer',
-                'data': {
-                    'proposition': 'Socrates is a man',
-                    'ascii': 'P(a)',
-                    'reasoning': 'Direct predicate application'
-                }
-            }
-        ]
-        
-        # Mock the GPT response for content evaluation
+
+            filtered = FilteredAgentInput.for_truth_evaluation(agent_input)
+
+            # Justifiers must be stripped before sending
+            for step in filtered.agent_data.argument:
+                assert step.justifiers == []
+
+            result = agent.evaluate_truth(filtered)
+
+            assert result.agent_type == 'truth_evaluator'
+            assert result.operation == 'evaluate_truth'
+            assert len(result.result_content['truth_evaluations']) == 3
+
+    def test_does_not_evaluate_assumptions(self):
+        """Truth evaluator result contains only argument step evaluations"""
+        agent = TruthEvaluationAgent(coordinator)
+
         mock_response = {
-            "proposition_evaluations": [
-                {"proposition": "Socrates is a man", "truth_value": 0.9, "reasoning": "Historical fact"}
+            "truth_evaluations": [
+                {"symbol": "2", "truth_value": 0.0, "reasoning": "False — the sun has no legs"}
             ],
-            "overall_truth_score": 0.9,
-            "truth_issues": [],
-            "recommendations": ["Argument is sound"]
+            "incoherent_sets": []
         }
-        
-        with patch('services.agents.agent_gpt_evaluate_content') as mock_gpt, \
-             patch.object(coordinator, 'get_conversation_results', return_value=mock_existing_results):
-            
+
+        with patch('services.agents.agent_gpt_evaluate_truth') as mock_gpt:
             mock_gpt.call.return_value = json.dumps(mock_response)
-            
-            # Test data - create proper FilteredAgentInput
+
+            agent_input = FilteredAgentInput(
+                conversation_id='test_conversation',
+                snapshot_id='test_snapshot',
+                agent_data=AgentData(
+                    assumptions=[Step(symbol='1', proposition='The sun has four legs', justifiers=[], truth_score='')],
+                    argument=[Step(symbol='2', proposition='The sun has legs', justifiers=[], truth_score='')],
+                    latest_results=[],
+                    target_type='argument',
+                    target_content=None
+                ),
+                file_ids=[]
+            )
+
+            result = agent.evaluate_truth(FilteredAgentInput.for_truth_evaluation(agent_input))
+            assert result.agent_type == 'truth_evaluator'
+            assert len(result.result_content['truth_evaluations']) == 1
+            assert result.result_content['truth_evaluations'][0]['symbol'] == '2'
+
+
+class TestContentValidityEvaluationAgent:
+    """Test the content validity evaluation agent"""
+
+    def test_evaluates_only_steps_with_justifiers(self):
+        """Content validity is only assigned to steps that have justifiers"""
+        agent = ContentValidityEvaluationAgent(coordinator)
+
+        mock_response = {
+            "validity_evaluations": [
+                {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction from 1 and 2"}
+            ],
+            "logical_issues": [],
+            "recommendations": ["Argument is deductively valid"]
+        }
+
+        with patch('services.agents.agent_gpt_evaluate_content_validity') as mock_gpt:
+            mock_gpt.call.return_value = json.dumps(mock_response)
+
             agent_input = FilteredAgentInput(
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
                     assumptions=[],
                     argument=[
-                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
+                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score=''),
+                        Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score=''),
+                        Step(symbol='3', proposition='Socrates is mortal', justifiers=['1', '2'], truth_score=''),
                     ],
                     latest_results=[],
                     target_type='argument',
@@ -106,54 +122,37 @@ class TestEvaluationAgent:
                 ),
                 file_ids=[]
             )
-            
-            # Call the evaluation agent
-            result = agent.evaluate_propositions(agent_input)
-            
-            # Verify the result is always in content mode
-            assert result.agent_type == "content_evaluator"
-            assert result.operation == "evaluate_propositions"
-            # Note: evaluation_mode is no longer included in the result data
-    
-    def test_content_evaluator_ignores_formalizations(self):
-        """Test that content evaluator ignores formalizations and always evaluates content"""
-        agent = ContentEvaluationAgent(coordinator)
-        
-        # Test with formalizations present (content evaluator should ignore them)
-        mock_with_formalizations = [
-            {
-                'agent_type': 'formalizer',
-                'data': {
-                    'proposition': 'Socrates is a man',
-                    'ascii': 'P(a)',
-                    'reasoning': 'Direct predicate application'
-                }
-            }
-        ]
-        
-        with patch.object(coordinator, 'get_conversation_results', return_value=mock_with_formalizations):
-            
-            # Test data - create proper FilteredAgentInput
-            agent_input = FilteredAgentInput(
-                conversation_id='test_conversation',
-                snapshot_id='test_snapshot',
-                agent_data=AgentData(
-                    assumptions=[],
-                    argument=[
-                        Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='0.9', content_validity='0.9', formal_validity='0.9')
-                    ],
-                    latest_results=[],
-                    target_type='argument',
-                    target_content=None
-                ),
-                file_ids=[]
+
+            result = agent.evaluate_content_validity(
+                FilteredAgentInput.for_content_validity_evaluation(agent_input)
             )
-            
-            # The content evaluator should always evaluate content, regardless of formalizations
-            result = agent.evaluate_propositions(agent_input)
-            assert result.agent_type == "content_evaluator"
-            # Note: evaluation_mode is no longer included in the result data
+
+            assert result.agent_type == 'content_validity_evaluator'
+            assert result.operation == 'evaluate_content_validity'
+            assert len(result.result_content['validity_evaluations']) == 1
+            assert result.result_content['validity_evaluations'][0]['symbol'] == '3'
+
+    def test_justifiers_preserved(self):
+        """Content validity filter preserves justifiers"""
+        agent_input = FilteredAgentInput(
+            conversation_id='test_conversation',
+            snapshot_id='test_snapshot',
+            agent_data=AgentData(
+                assumptions=[],
+                argument=[
+                    Step(symbol='1', proposition='P1', justifiers=[], truth_score=''),
+                    Step(symbol='2', proposition='P2', justifiers=['1'], truth_score=''),
+                ],
+                latest_results=[],
+                target_type='argument',
+                target_content=None
+            ),
+            file_ids=[]
+        )
+
+        filtered = FilteredAgentInput.for_content_validity_evaluation(agent_input)
+        assert filtered.agent_data.argument[1].justifiers == ['1']
 
 
 if __name__ == "__main__":
-    pytest.main([__file__]) 
+    pytest.main([__file__])

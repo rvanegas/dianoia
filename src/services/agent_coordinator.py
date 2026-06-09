@@ -8,7 +8,7 @@ from datetime import datetime
 
 from schemas import agent_input
 from core.utils import logger
-from services.agents import ContentEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, ImprovementAgent, NameGenerationAgent
+from services.agents import TruthEvaluationAgent, ContentValidityEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, ImprovementAgent, NameGenerationAgent
 from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 from schemas.arguments import ArgumentData
 
@@ -347,7 +347,8 @@ class AgentCoordinator:
         
         # Create agents with coordinator dependency injected
         self.agents = {
-            'content_evaluator': ContentEvaluationAgent(self),
+            'truth_evaluator': TruthEvaluationAgent(self),
+            'content_validity_evaluator': ContentValidityEvaluationAgent(self),
             'form_evaluator': FormalEvaluatorAgent(self),
             'formalizer': FormalizationAgent(self),
             'improver': ImprovementAgent(self),
@@ -360,7 +361,7 @@ class AgentCoordinator:
     
     def _start_workers(self):
         """Start background worker threads for each agent type"""
-        agent_types = ['content_evaluator', 'form_evaluator', 'formalizer', 'improver', 'name_generator']
+        agent_types = ['truth_evaluator', 'content_validity_evaluator', 'form_evaluator', 'formalizer', 'improver', 'name_generator']
         
         for agent_type in agent_types:
             worker = threading.Thread(
@@ -412,10 +413,12 @@ class AgentCoordinator:
             # Use the agent_input directly from the task
             agent_input = task.agent_input
             
-            if task.agent_type == 'content_evaluator':
-                # Create FilteredAgentInput for content evaluation
-                filtered_input = FilteredAgentInput.for_content_evaluation(agent_input)
-                result = agent.evaluate_propositions(filtered_input)
+            if task.agent_type == 'truth_evaluator':
+                filtered_input = FilteredAgentInput.for_truth_evaluation(agent_input)
+                result = agent.evaluate_truth(filtered_input)
+            elif task.agent_type == 'content_validity_evaluator':
+                filtered_input = FilteredAgentInput.for_content_validity_evaluation(agent_input)
+                result = agent.evaluate_content_validity(filtered_input)
             elif task.agent_type == 'form_evaluator':
                 # Create FilteredAgentInput for form evaluation
                 filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
@@ -519,7 +522,7 @@ class AgentCoordinator:
                 )
 
             # Check if improvement agent should be triggered after this agent completes
-            if result.agent_type in ['content_evaluator', 'form_evaluator']:
+            if result.agent_type in ['truth_evaluator', 'content_validity_evaluator', 'form_evaluator']:
                 # Create argument data for improvement agent check
                 argument_data = ArgumentData(
                     argument=task.agent_input.agent_data.argument,
@@ -768,25 +771,25 @@ class AgentCoordinator:
             agent_input=formalizer_agent_input
         )
 
-        # Queue content evaluator for argument analysis
-        content_evaluator_agent_input = AgentInput(
-            conversation_id=conversation_id,
-            snapshot_id=snapshot_id,
-            agent_data=AgentData(
-                assumptions=argument_data.assumptions,
-                argument=argument_data.argument,
-                latest_results=[],
-                target_type='argument',
-                target_content=None
-            ),
-            file_ids=argument_data.file_ids,
-            triggered_by='user_action',
-            trigger_source='argument_change'
-        )
-        self.queue_task(
-            agent_type='content_evaluator',
-            agent_input=content_evaluator_agent_input
-        )
+        # Queue truth evaluator and content validity evaluator in parallel
+        for agent_type in ('truth_evaluator', 'content_validity_evaluator'):
+            self.queue_task(
+                agent_type=agent_type,
+                agent_input=AgentInput(
+                    conversation_id=conversation_id,
+                    snapshot_id=snapshot_id,
+                    agent_data=AgentData(
+                        assumptions=argument_data.assumptions,
+                        argument=argument_data.argument,
+                        latest_results=[],
+                        target_type='argument',
+                        target_content=None
+                    ),
+                    file_ids=argument_data.file_ids,
+                    triggered_by='user_action',
+                    trigger_source='argument_change'
+                )
+            )
         
         # logger.info(f"Reactively queued agents for argument state change in conversation {conversation_id}")
 
@@ -873,12 +876,16 @@ class AgentCoordinator:
         # Get existing results to understand current state
         existing_results = self.get_conversation_results(conversation_id)
         
-        # Check if content evaluation results are available
-        content_evaluation_results = [
-            result for result in existing_results 
-            if result.agent_type == 'content_evaluator' and 
-               result.snapshot_id == snapshot_id
+        # Check if both content evaluation results are available
+        truth_results = [
+            result for result in existing_results
+            if result.agent_type == 'truth_evaluator' and result.snapshot_id == snapshot_id
         ]
+        content_validity_results = [
+            result for result in existing_results
+            if result.agent_type == 'content_validity_evaluator' and result.snapshot_id == snapshot_id
+        ]
+        content_evaluation_results = truth_results and content_validity_results
         
         # Check if formal evaluation results are available
         formal_evaluation_results = [

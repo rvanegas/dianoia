@@ -76,7 +76,305 @@ agent_gpt_justify = ModelAgent(
     }
 )
 
-# Agent-specific system prompt for content evaluation
+# Agent-specific system prompt for truth evaluation
+agent_evaluate_truth_system_prompt = """
+You are an AI agent working on logical argumentation. Your task is to evaluate the independent truth of each proposition and identify mutually incoherent sets.
+
+Evaluate each proposition entirely on its own merits — empirical evidence, background knowledge, and logical consistency. Do NOT reason about whether propositions support each other or follow from each other; that is a separate task.
+
+### Input Format
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects to evaluate
+- agent_data.assumptions: List of Step objects taken as true by the user (do NOT evaluate these)
+
+Each Step object contains:
+- symbol: String identifier (e.g., "1", "2", "3")
+- proposition: The natural language proposition
+
+### Task
+
+1. **Truth Evaluation**: For each argument step, assess the independent truth of its proposition.
+   - 1.0 = certainly true, 0.0 = certainly false, intermediate values in increments of 0.1
+   - Consider empirical evidence and background knowledge only
+   - Do NOT evaluate assumptions
+
+2. **Coherence Analysis**: Identify sets of propositions that cannot all be true simultaneously.
+   - 1.0 = logical contradiction, lower values for lesser degrees of incoherence
+   - Only report sets where there is genuine incompatibility
+
+### Examples
+
+# Sound argument
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "Socrates is a man"},
+      {"symbol": "2", "proposition": "All men are mortal"},
+      {"symbol": "3", "proposition": "Socrates is mortal"}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "1", "truth_value": 0.95, "reasoning": "Historical fact, well-documented"},
+    {"symbol": "2", "truth_value": 0.98, "reasoning": "Universal biological truth, no known exceptions"},
+    {"symbol": "3", "truth_value": 0.95, "reasoning": "Well-established historical and biological fact"}
+  ],
+  "incoherent_sets": []
+}
+
+# False premise, true conclusion
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "Socrates is a god"},
+      {"symbol": "2", "proposition": "All gods are immortal"},
+      {"symbol": "3", "proposition": "Socrates is mortal"}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "1", "truth_value": 0.0, "reasoning": "Contradicts historical and theological knowledge — Socrates was human"},
+    {"symbol": "2", "truth_value": 0.7, "reasoning": "Common theological assumption across traditions, though contested"},
+    {"symbol": "3", "truth_value": 0.95, "reasoning": "Historical fact — Socrates died in 399 BC"}
+  ],
+  "incoherent_sets": []
+}
+
+# Mutually incoherent propositions
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "All humans are mortal"},
+      {"symbol": "2", "proposition": "Socrates is human"},
+      {"symbol": "3", "proposition": "Socrates is immortal"}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "1", "truth_value": 0.98, "reasoning": "Universal biological truth"},
+    {"symbol": "2", "truth_value": 0.95, "reasoning": "Historical fact"},
+    {"symbol": "3", "truth_value": 0.0, "reasoning": "Contradicts well-established fact — Socrates died in 399 BC"}
+  ],
+  "incoherent_sets": [
+    {"symbols": ["1", "2", "3"], "incoherence_value": 1.0}
+  ]
+}
+
+# Argument with assumptions (do NOT evaluate assumptions)
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "2", "proposition": "The sun has legs"}
+    ],
+    "assumptions": [
+      {"symbol": "1", "proposition": "The sun has four legs"}
+    ]
+  }
+}
+
+Output:
+{
+  "truth_evaluations": [
+    {"symbol": "2", "truth_value": 0.0, "reasoning": "False — the sun is a star and has no legs"}
+  ],
+  "incoherent_sets": []
+}
+"""
+
+agent_gpt_evaluate_truth = ModelAgent(
+    instructions=agent_evaluate_truth_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "truth_evaluations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string"},
+                        "truth_value": {"type": "number"},
+                        "reasoning": {"type": "string"}
+                    },
+                    "required": ["symbol", "truth_value", "reasoning"],
+                    "additionalProperties": False
+                }
+            },
+            "incoherent_sets": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbols": {"type": "array", "items": {"type": "string"}},
+                        "incoherence_value": {"type": "number"}
+                    },
+                    "required": ["symbols", "incoherence_value"],
+                    "additionalProperties": False
+                }
+            }
+        },
+        "required": ["truth_evaluations", "incoherent_sets"],
+        "additionalProperties": False
+    },
+    max_tokens=8192
+)
+
+# Agent-specific system prompt for content validity evaluation
+agent_evaluate_content_validity_system_prompt = """
+You are an AI agent working on logical argumentation. Your task is to evaluate the inferential strength of each conclusion in a natural language argument — that is, how well each proposition follows from its stated justifiers.
+
+Do NOT evaluate the independent truth of propositions. Truth is assessed separately. Focus exclusively on the logical relationship between each step and its justifiers.
+
+### Input Format
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects in the main argument
+- agent_data.assumptions: List of Step objects for background assumptions (taken as true)
+
+Each Step object contains:
+- symbol: String identifier (e.g., "1", "2", "3")
+- proposition: The natural language proposition
+- justifiers: List of symbols that justify this step (empty list = premise, no inference to evaluate)
+
+### Task
+
+1. **Validity Assessment**: For each step WITH justifiers, evaluate the inferential strength from its justifiers to its proposition.
+   - 1.0 = deductively valid (conclusion must be true if justifiers are true)
+   - 0.0 = contradictory (conclusion contradicts justifiers)
+   - Intermediate values for inductive or abductive strength
+   - Steps WITHOUT justifiers are premises — do not assign validity values to them
+
+2. **Logical Issues**: Identify structural weaknesses in the argument (missing steps, equivocation, non-sequiturs, etc.)
+
+3. **Recommendations**: Suggest specific improvements to strengthen weak inferences
+
+### Examples
+
+# Deductively valid argument
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "Socrates is a man", "justifiers": []},
+      {"symbol": "2", "proposition": "All men are mortal", "justifiers": []},
+      {"symbol": "3", "proposition": "Socrates is mortal", "justifiers": ["1", "2"]}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "validity_evaluations": [
+    {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction: if Socrates is a man and all men are mortal, Socrates must be mortal"}
+  ],
+  "logical_issues": [],
+  "recommendations": ["Argument is deductively valid"]
+}
+
+# Contradictory conclusion
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "All humans are mortal", "justifiers": []},
+      {"symbol": "2", "proposition": "Socrates is human", "justifiers": []},
+      {"symbol": "3", "proposition": "Socrates is immortal", "justifiers": ["1", "2"]}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "validity_evaluations": [
+    {"symbol": "3", "validity_value": 0.0, "reasoning": "Contradiction: justifiers 1 and 2 entail Socrates is mortal, the opposite of the stated conclusion"}
+  ],
+  "logical_issues": ["Conclusion contradicts what the premises entail"],
+  "recommendations": ["Correct the conclusion to match what follows from the premises"]
+}
+
+# Weak analogical inference
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "The policy worked in another country", "justifiers": []},
+      {"symbol": "2", "proposition": "Our country is similar", "justifiers": []},
+      {"symbol": "3", "proposition": "The policy will work here", "justifiers": ["1", "2"]}
+    ],
+    "assumptions": []
+  }
+}
+
+Output:
+{
+  "validity_evaluations": [
+    {"symbol": "3", "validity_value": 0.5, "reasoning": "Weak analogical inference: similarity is asserted vaguely and policy success may depend on factors not captured by general similarity"}
+  ],
+  "logical_issues": ["Analogical inference relies on an underspecified similarity claim"],
+  "recommendations": [
+    "Specify which features of similarity are relevant to policy success (2)",
+    "Address potential disanalogies between the two countries"
+  ]
+}
+"""
+
+agent_gpt_evaluate_content_validity = ModelAgent(
+    instructions=agent_evaluate_content_validity_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "validity_evaluations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string"},
+                        "validity_value": {"type": "number"},
+                        "reasoning": {"type": "string"}
+                    },
+                    "required": ["symbol", "validity_value", "reasoning"],
+                    "additionalProperties": False
+                }
+            },
+            "logical_issues": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "recommendations": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        },
+        "required": ["validity_evaluations", "logical_issues", "recommendations"],
+        "additionalProperties": False
+    },
+    max_tokens=8192
+)
+
+# Agent-specific system prompt for content evaluation (removed — replaced by truth_evaluator and content_validity_evaluator)
 agent_evaluate_content_system_prompt = """
 You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, coherence, and identify weak inferences in natural language content.
 
@@ -364,70 +662,6 @@ Output:
   ]
 }
 """
-
-# Create GPT instance for content evaluation
-agent_gpt_evaluate_content = ModelAgent(
-    instructions=agent_evaluate_content_system_prompt,
-    response_format_base={
-        "type": "object",
-        "properties": {
-            "truth_evaluations": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {"type": "string"},
-                        "truth_value": {"type": "number"},
-                        "reasoning": {"type": "string"}
-                    },
-                    "required": ["symbol", "truth_value", "reasoning"],
-                    "additionalProperties": False
-                }
-            },
-            "validity_evaluations": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {"type": "string"},
-                        "validity_value": {"type": "number"},
-                        "reasoning": {"type": "string"}
-                    },
-                    "required": ["symbol", "validity_value", "reasoning"],
-                    "additionalProperties": False
-                }
-            },
-
-
-            "incoherent_sets": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "symbols": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        },
-                        "incoherence_value": {"type": "number"}
-                    },
-                    "required": ["symbols", "incoherence_value"],
-                    "additionalProperties": False
-                }
-            },
-            "logical_issues": {
-                "type": "array",
-                "items": {"type": "string"}
-            },
-            "recommendations": {
-                "type": "array",
-                "items": {"type": "string"}
-            }
-        },
-        "required": ["truth_evaluations", "validity_evaluations", "incoherent_sets", "logical_issues", "recommendations"],
-        "additionalProperties": False
-    },
-    max_tokens=16384
-)
 
 # Agent-specific system prompt for form evaluation
 agent_evaluate_form_system_prompt = """
