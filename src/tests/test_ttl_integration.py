@@ -23,7 +23,6 @@ class TestTTLIntegration:
                 },
                 json={
                     "proposition": "Socrates is mortal",
-                    "assumptions": [],
                     "argument": [],
                     "file_ids": []
                 }

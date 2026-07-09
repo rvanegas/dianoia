@@ -147,7 +147,6 @@ class TestStaleResultsPropagation:
         
         # Create agent data
         agent_data = AgentData(
-            assumptions=[],
             argument=[],
             latest_results=[],
             target_type='proposition',

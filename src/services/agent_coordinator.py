@@ -500,8 +500,7 @@ class AgentCoordinator:
                     for f in result.result_content.get("formalizations", [])
                 }
                 updated_argument = copy.deepcopy(task.agent_input.agent_data.argument)
-                updated_assumptions = copy.deepcopy(task.agent_input.agent_data.assumptions)
-                for step in updated_argument + updated_assumptions:
+                for step in updated_argument:
                     if step.symbol in new_formalizations:
                         f = new_formalizations[step.symbol]
                         step.formalization = Formalization(
@@ -512,7 +511,6 @@ class AgentCoordinator:
 
                 argument_data = ArgumentData(
                     argument=updated_argument,
-                    assumptions=updated_assumptions,
                     file_ids=task.agent_input.file_ids
                 )
                 self.queue_formal_evaluator_if_ready(
@@ -526,10 +524,9 @@ class AgentCoordinator:
                 # Create argument data for improvement agent check
                 argument_data = ArgumentData(
                     argument=task.agent_input.agent_data.argument,
-                    assumptions=task.agent_input.agent_data.assumptions,
                     file_ids=task.agent_input.file_ids
                 )
-                
+
                 # Queue improvement agent if ready
                 self.queue_improvement_agent_if_ready(
                     task.agent_input.conversation_id,
@@ -671,7 +668,6 @@ class AgentCoordinator:
                 
         # Create agent data with evaluation results in latest_results
         agent_data = AgentData(
-            assumptions=argument_data.assumptions,
             argument=argument_data.argument,
             latest_results=evaluation_results,  # All evaluation results together
             target_type='argument',
@@ -740,13 +736,8 @@ class AgentCoordinator:
         """
 
         # Extract all propositions from the argument
-        all_propositions = []
-        argument_propositions = [step.proposition for step in argument_data.argument]
-        assumption_propositions = [step.proposition for step in argument_data.assumptions]
-        
-        all_propositions.extend(argument_propositions)
-        all_propositions.extend(assumption_propositions)
-        
+        all_propositions = [step.proposition for step in argument_data.argument]
+
         # Get existing results to understand current state
         existing_results = self.get_conversation_results(conversation_id)
         
@@ -756,7 +747,6 @@ class AgentCoordinator:
             conversation_id=conversation_id,
             snapshot_id=snapshot_id,
             agent_data=AgentData(
-                assumptions=argument_data.assumptions,
                 argument=argument_data.argument,
                 latest_results=[],
                 target_type='argument',
@@ -779,7 +769,6 @@ class AgentCoordinator:
                     conversation_id=conversation_id,
                     snapshot_id=snapshot_id,
                     agent_data=AgentData(
-                        assumptions=argument_data.assumptions,
                         argument=argument_data.argument,
                         latest_results=[],
                         target_type='argument',
@@ -826,16 +815,15 @@ class AgentCoordinator:
         else:
             logger.debug(f"Improvement agent not ready for conversation {conversation_id}")
     
-    def queue_name_generation_task(self, conversation_id: str, proposition: str, assumptions: list, argument: list, file_ids: list = None):
+    def queue_name_generation_task(self, conversation_id: str, proposition: str, argument: list, file_ids: list = None):
         """Queue a name generation task for a conversation"""
         # logger.info(f"🔤 Queuing name generation task for conversation {conversation_id}")
         # logger.info(f"🔤 Proposition: {proposition}")
-        # logger.info(f"🔤 Assumptions: {len(assumptions)} items, Argument: {len(argument)} items")
-        
+        # logger.info(f"🔤 Argument: {len(argument)} items")
+
         # Create argument data from the parameters
         from schemas.arguments import ArgumentData
         argument_data = ArgumentData(
-            assumptions=assumptions,
             argument=argument
         )
         
@@ -850,18 +838,16 @@ class AgentCoordinator:
             file_ids = []
             
         agent_data = AgentData(
-            assumptions=argument_data.assumptions,
             argument=argument_data.argument,
             target_type="proposition",
             target_content=proposition
         )
-        
+
         return AgentInput(
             conversation_id=conversation_id,
             snapshot_id="0",  # Name generation is not snapshot-specific
             agent_type="name_generator",
             agent_data=agent_data,
-            assumptions=argument_data.assumptions,
             argument=argument_data.argument,
             proposition=proposition,
             file_ids=file_ids
@@ -896,7 +882,7 @@ class AgentCoordinator:
         
         # Check if all propositions have endorsed formalizations
         all_propositions_formalized = True
-        for step in argument_data.argument + argument_data.assumptions:
+        for step in argument_data.argument:
             if not step.formalization or not step.formalization.endorsed:
                 all_propositions_formalized = False
                 break
@@ -935,7 +921,6 @@ class AgentCoordinator:
             conversation_id=conversation_id,
             snapshot_id=snapshot_id,
             agent_data=AgentData(
-                assumptions=argument_data.assumptions,
                 argument=argument_data.argument,
                 latest_results=[],
                 target_type='argument',

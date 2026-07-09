@@ -30,7 +30,6 @@ class TestTruthEvaluationAgent:
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
-                    assumptions=[],
                     argument=[
                         Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score=''),
                         Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score=''),
@@ -55,12 +54,13 @@ class TestTruthEvaluationAgent:
             assert result.operation == 'evaluate_truth'
             assert len(result.result_content['truth_evaluations']) == 3
 
-    def test_does_not_evaluate_assumptions(self):
-        """Truth evaluator result contains only argument step evaluations"""
+    def test_evaluates_every_step_including_former_assumptions(self):
+        """Truth evaluator evaluates every step in the single argument list"""
         agent = TruthEvaluationAgent(coordinator)
 
         mock_response = {
             "truth_evaluations": [
+                {"symbol": "1", "truth_value": 0.0, "reasoning": "False — the sun has no legs"},
                 {"symbol": "2", "truth_value": 0.0, "reasoning": "False — the sun has no legs"}
             ],
             "incoherent_sets": []
@@ -73,8 +73,10 @@ class TestTruthEvaluationAgent:
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
-                    assumptions=[Step(symbol='1', proposition='The sun has four legs', justifiers=[], truth_score='')],
-                    argument=[Step(symbol='2', proposition='The sun has legs', justifiers=[], truth_score='')],
+                    argument=[
+                        Step(symbol='1', proposition='The sun has four legs', justifiers=[], truth_score=''),
+                        Step(symbol='2', proposition='The sun has legs', justifiers=[], truth_score='')
+                    ],
                     latest_results=[],
                     target_type='argument',
                     target_content=None
@@ -84,8 +86,9 @@ class TestTruthEvaluationAgent:
 
             result = agent.evaluate_truth(FilteredAgentInput.for_truth_evaluation(agent_input))
             assert result.agent_type == 'truth_evaluator'
-            assert len(result.result_content['truth_evaluations']) == 1
-            assert result.result_content['truth_evaluations'][0]['symbol'] == '2'
+            assert len(result.result_content['truth_evaluations']) == 2
+            symbols = {e['symbol'] for e in result.result_content['truth_evaluations']}
+            assert symbols == {'1', '2'}
 
 
 class TestContentValidityEvaluationAgent:
@@ -110,7 +113,6 @@ class TestContentValidityEvaluationAgent:
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
-                    assumptions=[],
                     argument=[
                         Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score=''),
                         Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score=''),
@@ -138,7 +140,6 @@ class TestContentValidityEvaluationAgent:
             conversation_id='test_conversation',
             snapshot_id='test_snapshot',
             agent_data=AgentData(
-                assumptions=[],
                 argument=[
                     Step(symbol='1', proposition='P1', justifiers=[], truth_score=''),
                     Step(symbol='2', proposition='P2', justifiers=['1'], truth_score=''),

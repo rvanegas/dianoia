@@ -59,7 +59,6 @@ class TestFormalizationAgent:
             mock_gpt.call.return_value = json.dumps(mock_response)
 
             agent_data = AgentData(
-                assumptions=[],
                 argument=[
                     Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score="", valid=""),
                     Step(symbol="2", proposition="All men are mortal", justifiers=[], truth_score="", valid=""),

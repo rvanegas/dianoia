@@ -46,7 +46,7 @@ class ArgumentService:
     
     def next_symbol(self) -> str:
         """Picks the next available integer step label (as string)"""
-        steps = self.arguments.assumptions + self.arguments.argument
+        steps = self.arguments.argument
         if not steps:
             return '1'
         nums = []
@@ -71,7 +71,6 @@ class ArgumentService:
         new_arg = [s for s in arg if s.symbol in conclusion.justifiers]
         new_arg.append(conclusion)
         props = {
-            "assumptions": [s.model_dump_json() for s in self.arguments.assumptions],
             "argument": [s.model_dump_json() for s in new_arg]
         }
         return props, new_arg
@@ -81,7 +80,6 @@ class ArgumentService:
         # Prepare argument data for the reactive coordinator
         argument_data = ArgumentData(
             argument=self.arguments.argument,
-            assumptions=self.arguments.assumptions,
             file_ids=self.arguments.file_ids
         )
 
@@ -97,7 +95,7 @@ class ArgumentService:
     def gptjson(self) -> str:
         """Arguments json to return to frontend"""
         return self.arguments.model_dump_json(include={
-            "assumptions", "argument", "explanation"})
+            "argument", "explanation"})
 
     def gptjsont(self) -> str:
         """Arguments json to return to frontend used by theses()"""
@@ -120,78 +118,63 @@ class ArgumentStepService(ArgumentService):
     def insert_proposition(self, new_proposition: str) -> Step:
         """Add step and reference to it in indicated justifiers"""
         new_step = self.new_step(new_proposition)
-        conclusion = self.arguments_with_step.arg[self.arguments_with_step.index]
+        conclusion = self.arguments_with_step.argument[self.arguments_with_step.index]
         conclusion.justifiers.append(new_step.symbol)
-        self.arguments_with_step.arg.insert(self.arguments_with_step.index, new_step)
+        self.arguments_with_step.argument.insert(self.arguments_with_step.index, new_step)
         # Queue analysis and discovery for the argument state change
         self.queue_argument_state_change()
         return conclusion
 
     def remove(self) -> str:
         """Remove step and adjust justifiers and evaluations accordingly"""
-        if self.arguments_with_step.loc != "assumptions":
-            # Clean up justifiers for this step
-            step_to_remove = self.arguments_with_step.arg[self.arguments_with_step.index]
-            inferences_to = [s for s in self.arguments_with_step.arg if step_to_remove.symbol in s.justifiers]
-            
-            for step in inferences_to:
-                step.justifiers.remove(step_to_remove.symbol)
-                # Add the removed step's justifiers to the dependent step
-                step.justifiers.extend(step_to_remove.justifiers)
-        
-        del self.arguments_with_step.arg[self.arguments_with_step.index]
-        # Queue analysis and discovery for the argument state change
-        self.queue_argument_state_change()
-        return self.gptjson()
+        # Clean up justifiers for this step
+        step_to_remove = self.arguments_with_step.argument[self.arguments_with_step.index]
+        inferences_to = [s for s in self.arguments_with_step.argument if step_to_remove.symbol in s.justifiers]
 
-    def assume(self) -> str:
-        """Move step into assumptions and adjust evaluations accordingly"""
-        if self.arguments_with_step.loc == "assumptions":
-            raise ValueError("already assumed")
-        if len(self.arguments_with_step.arg[self.arguments_with_step.index].justifiers) != 0:
-            raise ValueError("cannot assume justified proposition")
-        self.arguments_with_step.arg[self.arguments_with_step.index].truth_score = "1.0"
-        self.arguments_with_step.assumptions.append(self.arguments_with_step.arg[self.arguments_with_step.index])
-        del self.arguments_with_step.arg[self.arguments_with_step.index]
+        for step in inferences_to:
+            step.justifiers.remove(step_to_remove.symbol)
+            # Add the removed step's justifiers to the dependent step
+            step.justifiers.extend(step_to_remove.justifiers)
+
+        del self.arguments_with_step.argument[self.arguments_with_step.index]
         # Queue analysis and discovery for the argument state change
         self.queue_argument_state_change()
         return self.gptjson()
 
     def explain(self) -> str:
         """Explain the 'valid' property and formalize the propositions."""
-        assert len(self.arguments_with_step.arg[self.arguments_with_step.index].justifiers) != 0
-        props, new_arg = self.subargument(self.arguments_with_step.arg, self.arguments_with_step.arg[self.arguments_with_step.index])
+        assert len(self.arguments_with_step.argument[self.arguments_with_step.index].justifiers) != 0
+        props, new_arg = self.subargument(self.arguments_with_step.argument, self.arguments_with_step.argument[self.arguments_with_step.index])
         response = gpt_explain.call(json.dumps(props), self.arguments_with_step.file_ids)
         content = json.loads(response)
-        
+
         self.arguments_with_step.explanation = content["explanation"]
         return self.gptjson()
 
     def reject_formalization(self) -> str:
         """Remove formalization from a step and trigger re-formalization"""
         # Remove the formalization from the specified step
-        step = self.arguments_with_step.arg[self.arguments_with_step.index]
+        step = self.arguments_with_step.argument[self.arguments_with_step.index]
         # Set formalization to None instead of deleting the attribute
         step.formalization = None
-        
+
         # Queue analysis and discovery for the argument state change
         # This will automatically trigger the formalization agent
         self.queue_argument_state_change()
-        
+
         return self.gptjson()
 
     def endorse_formalization(self) -> str:
         """Endorse a formalization and potentially trigger formal evaluator"""
         # Update the endorsement status of the formalization
-        step = self.arguments_with_step.arg[self.arguments_with_step.index]
+        step = self.arguments_with_step.argument[self.arguments_with_step.index]
         if step.formalization:
             step.formalization.endorsed = True
-        
+
         # Only trigger formal evaluator check, not other agents
         # Create argument data for formal evaluator check
         argument_data = ArgumentData(
-            argument=self.arguments_with_step.arg,
-            assumptions=self.arguments_with_step.assumptions,
+            argument=self.arguments_with_step.argument,
             file_ids=self.arguments_with_step.file_ids
         )
         
@@ -214,7 +197,7 @@ class ArgumentPropositionService(ArgumentService):
 
     def argue(self) -> str:
         """Add proposition as first argument step"""
-        assert len(self.arguments_with_proposition.arg) == 0
+        assert len(self.arguments_with_proposition.argument) == 0
         new_step = self.new_step(self.arguments_with_proposition.proposition)
         self.arguments_with_proposition.argument.append(new_step)
         logger.debug(f"arg: {self.arguments_with_proposition.argument}")
@@ -238,10 +221,9 @@ class ArgumentStepAndPropositionService(ArgumentStepService, ArgumentProposition
 
     def user_justify(self) -> str:
         """Add step using proposition attr and adjust justifiers and evaluations accordingly"""
-        assert self.arguments_with_step_and_proposition.loc in ["argument"]
         new_step = self.new_step(self.arguments_with_step_and_proposition.proposition)
-        conclusion = self.arguments_with_step_and_proposition.arg[self.arguments_with_step_and_proposition.index]
-        self.arguments_with_step_and_proposition.arg.insert(self.arguments_with_step_and_proposition.index, new_step)
+        conclusion = self.arguments_with_step_and_proposition.argument[self.arguments_with_step_and_proposition.index]
+        self.arguments_with_step_and_proposition.argument.insert(self.arguments_with_step_and_proposition.index, new_step)
         conclusion.justifiers.append(new_step.symbol)
         # Queue analysis and discovery for the argument state change
         self.queue_argument_state_change()

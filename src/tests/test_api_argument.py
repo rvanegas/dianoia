@@ -29,7 +29,6 @@ class TestAPIArgumentEndpoints:
                 },
                 json={
                     "proposition": "Socrates is mortal",
-                    "assumptions": [],
                     "argument": [],
                     "file_ids": []
                 }
@@ -53,7 +52,6 @@ class TestAPIArgumentEndpoints:
                 },
                 json={
                     "proposition": "Socrates is mortal",
-                    "assumptions": [],
                     "argument": [],
                     "file_ids": []
                 }
@@ -72,7 +70,6 @@ class TestAPIArgumentEndpoints:
                     "snapshot_id": "test_snapshot_123"
                 },
                 json={
-                    "assumptions": [],
                     "argument": [
                         {
                             "symbol": "1",
@@ -91,42 +88,7 @@ class TestAPIArgumentEndpoints:
                             "formal_validity": "1.0"
                         }
                     ],
-                    "loc": "argument",
                     "index": 1,
-                    "file_ids": []
-                }
-            )
-            
-            assert response.status_code == 200
-            result = response.json()
-            assert "reply" in result
-            
-            # Verify the coordinator was called
-            mock_queue.assert_called()
-
-    def test_assume_endpoint(self):
-        """Test the /api/argument/assume endpoint"""
-        with patch('services.agent_coordinator.coordinator.queue_task') as mock_queue:
-            response = client.post(
-                "/api/argument/assume",
-                params={
-                    "conversation_id": "test_session_123:1",
-                    "snapshot_id": "test_snapshot_123"
-                },
-                json={
-                    "assumptions": [],
-                    "argument": [
-                        {
-                            "symbol": "1",
-                            "proposition": "Socrates is a man",
-                            "justifiers": [],
-                            "truth_score": "0.8",
-                            "content_validity": "0.9",
-                            "formal_validity": "0.9"
-                        }
-                    ],
-                    "loc": "argument",
-                    "index": 0,
                     "file_ids": []
                 }
             )
@@ -148,7 +110,6 @@ class TestAPIArgumentEndpoints:
                     "snapshot_id": "test_snapshot_123"
                 },
                 json={
-                    "assumptions": [],
                     "argument": [
                         {
                             "symbol": "1",
@@ -159,7 +120,6 @@ class TestAPIArgumentEndpoints:
                             "formal_validity": "0.9"
                         }
                     ],
-                    "loc": "argument",
                     "index": 0,
                     "proposition": "All men are mortal",
                     "file_ids": []
@@ -185,7 +145,6 @@ class TestAPIArgumentEndpoints:
                     "snapshot_id": "test_snapshot_123"
                 },
                 json={
-                    "assumptions": [],
                     "argument": [
                         {
                             "symbol": "1",
@@ -204,7 +163,6 @@ class TestAPIArgumentEndpoints:
                             "formal_validity": "1.0"
                         }
                     ],
-                    "loc": "argument",
                     "index": 1,
                     "file_ids": []
                 }
@@ -243,7 +201,6 @@ class TestAPIArgumentEndpoints:
             "/api/argument/argue",
             json={
                 "proposition": "Socrates is mortal",
-                "assumptions": [],
                 "argument": [],
                 "file_ids": []
             }
@@ -258,7 +215,6 @@ class TestAPIArgumentEndpoints:
             params={"session_id": "test_session_123"},
             json={
                 "proposition": "Socrates is mortal",
-                "assumptions": [],
                 "argument": [],
                 "file_ids": []
             }
@@ -277,7 +233,6 @@ class TestAPIArgumentEndpoints:
             json={
                 "proposition": "Socrates is mortal",
                 # Missing required fields
-                "assumptions": "invalid_type",  # Should be list
                 "argument": "invalid_type"      # Should be list
             }
         )
@@ -298,7 +253,6 @@ class TestAPIErrorHandling:
             },
             json={
                 # Missing required proposition field
-                "assumptions": [],
                 "argument": [],
                 "file_ids": []
             }

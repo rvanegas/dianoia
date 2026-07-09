@@ -27,7 +27,6 @@ class TestDualEvaluators:
             mock_gpt.call.return_value = json.dumps(mock_response)
 
             agent_data = AgentData(
-                assumptions=[],
                 argument=[
                     Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score=""),
                     Step(symbol="2", proposition="All men are mortal", justifiers=[], truth_score=""),
@@ -73,7 +72,6 @@ class TestDualEvaluators:
             mock_gpt.call.return_value = json.dumps(mock_response)
 
             agent_data = AgentData(
-                assumptions=[],
                 argument=[
                     Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score=""),
                     Step(symbol="2", proposition="All men are mortal", justifiers=[], truth_score=""),
@@ -121,7 +119,6 @@ class TestDualEvaluators:
             mock_gpt.call.return_value = json.dumps(mock_response)
 
             agent_data = AgentData(
-                assumptions=[],
                 argument=[
                     Step(symbol="1", proposition="All men are mortal", justifiers=[], truth_score="",
                         formalization=Formalization(ascii="forall x. P(x) implies Q(x)", endorsed=True)),

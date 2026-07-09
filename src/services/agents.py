@@ -45,7 +45,6 @@ class TruthEvaluationAgent:
             file_ids = agent_input.file_ids
             payload = agent_input.model_dump()
             arg_for_result = agent_input.agent_data.argument
-            assumptions_for_result = agent_input.agent_data.assumptions
 
             evaluation_response = agent_gpt_evaluate_truth.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
@@ -57,8 +56,7 @@ class TruthEvaluationAgent:
                 operation="evaluate_truth",
                 result_content={
                     **evaluation_result,
-                    "argument": arg_for_result,
-                    "assumptions": assumptions_for_result
+                    "argument": arg_for_result
                 },
                 target_metadata={'target_type': 'argument'},
                 snapshot_id=agent_input.snapshot_id
@@ -92,7 +90,6 @@ class ContentValidityEvaluationAgent:
             file_ids = agent_input.file_ids
             payload = agent_input.model_dump()
             arg_for_result = agent_input.agent_data.argument
-            assumptions_for_result = agent_input.agent_data.assumptions
 
             evaluation_response = agent_gpt_evaluate_content_validity.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
@@ -104,8 +101,7 @@ class ContentValidityEvaluationAgent:
                 operation="evaluate_content_validity",
                 result_content={
                     **evaluation_result,
-                    "argument": arg_for_result,
-                    "assumptions": assumptions_for_result
+                    "argument": arg_for_result
                 },
                 target_metadata={'target_type': 'argument'},
                 snapshot_id=agent_input.snapshot_id
@@ -144,24 +140,22 @@ class FormalEvaluatorAgent:
             file_ids = filtered_input.file_ids
             payload = filtered_input.model_dump()
             arg_for_result = filtered_input.agent_data.argument
-            assumptions_for_result = filtered_input.agent_data.assumptions
-            
+
             # Pass the data directly to the agent
             evaluation_response = agent_gpt_evaluate_form.call(json.dumps(payload), file_ids)
             evaluation_result = json.loads(evaluation_response)
             if evaluation_result.get("proposition_evaluations"):
                 evaluation_result["proposition_evaluations"] = _sort_by_symbol(evaluation_result["proposition_evaluations"])
-            
+
             # logger.info(f"FormalEvaluatorAgent completed")
-            
+
             result = AgentResult(
                 agent_type=self.name,
                 operation="evaluate_propositions",
                 result_content={
                     **evaluation_result,
                     "evaluation_mode": "formal_validity",
-                    "argument": arg_for_result,
-                    "assumptions": assumptions_for_result
+                    "argument": arg_for_result
                 },
                 target_metadata={
                     'target_type': 'argument'
@@ -224,15 +218,14 @@ class FormalizationAgent:
             file_ids = agent_input.file_ids
             payload = agent_input.model_dump()
             arg_for_result = agent_input.agent_data.argument
-            assumptions_for_result = agent_input.agent_data.assumptions
-            
+
             # Validate that we have argument data to formalize
             if not agent_input.agent_data.argument:
                 raise ValueError("No argument provided for formalization")
-            
+
             # Check if there are any steps that need formalization
             steps_needing_formalization = []
-            for step in agent_input.agent_data.argument + agent_input.agent_data.assumptions:
+            for step in agent_input.agent_data.argument:
                 if not step.formalization or not step.formalization.endorsed:
                     steps_needing_formalization.append(step)
             
@@ -247,8 +240,7 @@ class FormalizationAgent:
                         "confidence": 1.0,
                         "reasoning": "All steps already have endorsed formalizations - no new formalizations needed",
                         "formalization_mode": "proposition_to_logic",
-                        "argument": arg_for_result,
-                        "assumptions": assumptions_for_result
+                        "argument": arg_for_result
                     },
                     confidence=1.0,
                     reasoning="All steps have endorsed formalizations",
@@ -300,8 +292,7 @@ class FormalizationAgent:
                 result_content={
                     **formalization_result,
                     "formalization_mode": "proposition_to_logic",
-                    "argument": arg_for_result,
-                    "assumptions": assumptions_for_result
+                    "argument": arg_for_result
                 },
                 target_metadata={
                     'target_type': 'argument',
@@ -381,7 +372,6 @@ class ImprovementAgent:
                     **improvement_result,
                     "improvement_mode": "evaluation_driven",
                     "argument": agent_input.agent_data.argument,
-                    "assumptions": agent_input.agent_data.assumptions,
                     "evaluation_context": {
                         "content_evaluations_count": len(content_evaluations),
                         "formal_evaluations_count": len(formal_evaluations),
@@ -446,13 +436,11 @@ class NameGenerationAgent:
             proposition = agent_input.agent_data.target_content
             # logger.info(f"🔤 NameGenerationAgent: Starting name generation for conversation {agent_input.conversation_id}")
             # logger.info(f"🔤 NameGenerationAgent: Proposition: {proposition}")
-            # logger.info(f"🔤 NameGenerationAgent: Assumptions: {len(agent_input.agent_data.assumptions)} items")
             # logger.info(f"🔤 NameGenerationAgent: Argument: {len(agent_input.agent_data.argument)} items")
-            
+
             # Create the input format expected by gpt_gen_name
             # Convert Step objects to dictionaries for JSON serialization
             gpt_input = {
-                "assumptions": [step.model_dump() for step in agent_input.agent_data.assumptions],
                 "argument": [step.model_dump() for step in agent_input.agent_data.argument],
                 "proposition": proposition
             }

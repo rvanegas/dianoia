@@ -55,7 +55,6 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 
     try:
         argument_data = ArgumentData(
-            assumptions=[Step(**s) for s in raw.get("assumptions", [])],
             argument=[Step(**s) for s in raw.get("argument", [])],
         )
     except Exception as e:
@@ -64,14 +63,13 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 
     step_symbol = getattr(args, "step", None)
     if step_symbol is not None:
-        all_steps = list(argument_data.assumptions) + list(argument_data.argument)
+        all_steps = list(argument_data.argument)
         target = next((s for s in all_steps if s.symbol == step_symbol), None)
         if target is None:
             print(f"Error: step '{step_symbol}' not found in argument.", file=sys.stderr)
             return 1
         keep = {step_symbol} | set(target.justifiers or [])
         argument_data = ArgumentData(
-            assumptions=[s for s in argument_data.assumptions if s.symbol in keep],
             argument=[s for s in argument_data.argument if s.symbol in keep],
         )
 
@@ -116,7 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_extract = sub.add_parser("extract", help="Extract argument from a text file, print JSON")
     p_extract.add_argument("file", help="Plain text or markdown file to extract from")
     p_extract.add_argument("-m", "--max-props", type=int, default=None, metavar="N",
-                           help="Maximum total number of propositions (assumptions + argument steps)")
+                           help="Maximum total number of propositions in the argument")
 
     p_evaluate = sub.add_parser("evaluate", help="Evaluate an argument JSON file with AI agents")
     p_evaluate.add_argument("file", help="JSON file containing arguments dict")

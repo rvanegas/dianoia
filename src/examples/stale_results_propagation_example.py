@@ -112,7 +112,6 @@ def main():
     
     # Create agent data for a new task
     agent_data = AgentData(
-        assumptions=[],
         argument=[],
         latest_results=[],  # Will be populated by create_agent_input
         target_type='proposition',

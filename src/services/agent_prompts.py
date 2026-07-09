@@ -22,11 +22,10 @@ Your goal is to generate supporting propositions that justify the given proposit
 - proposition: The proposition to justify (inferred from target_loc and target_index)
 - target_loc: Location in argument structure ('argument')
 - target_index: Position in the argument (the proposition is extracted from argument[target_index])
-- argument: Full list of propositions in the main argument
-- assumptions: List of background assumptions (for context only, not justified)
+- argument: Full list of propositions in the argument
 - formalization_context: Optional formal logical representation to guide your justification
 
-Note: The proposition field is inferred from the argument structure at the specified location and index to ensure consistency. Only propositions in 'argument' can be justified - assumptions are foundational premises that are not justified.
+Note: The proposition field is inferred from the argument structure at the specified location and index to ensure consistency.
 
 ### Guidelines
 1. Generate 1-2 supporting propositions that justify the given proposition
@@ -44,7 +43,6 @@ proposition: "Socrates is mortal"
 target_loc: "argument"
 target_index: 2
 argument: ["Socrates is a man", "All men are mortal", "Socrates is mortal"]
-assumptions: []
 
 Output:
 ["All men are mortal.", "Socrates is a man."]
@@ -53,8 +51,7 @@ Input:
 proposition: "The economy will improve"
 target_loc: "argument"
 target_index: 1
-argument: ["Government stimulus measures are effective", "The economy will improve"]
-assumptions: ["Current economic policies are sound"]
+argument: ["Current economic policies are sound", "Government stimulus measures are effective", "The economy will improve"]
 
 Output:
 ["Consumer confidence is increasing.", "Employment rates are rising."]
@@ -85,7 +82,6 @@ Evaluate each proposition entirely on its own merits — empirical evidence, bac
 ### Input Format
 The input will be a JSON object with the following structure:
 - agent_data.argument: List of Step objects to evaluate
-- agent_data.assumptions: List of Step objects taken as true by the user (do NOT evaluate these)
 
 Each Step object contains:
 - symbol: String identifier (e.g., "1", "2", "3")
@@ -93,10 +89,9 @@ Each Step object contains:
 
 ### Task
 
-1. **Truth Evaluation**: For each argument step, assess the independent truth of its proposition.
+1. **Truth Evaluation**: For each step, assess the independent truth of its proposition.
    - 1.0 = certainly true, 0.0 = certainly false, intermediate values in increments of 0.1
    - Consider empirical evidence and background knowledge only
-   - Do NOT evaluate assumptions
 
 2. **Coherence Analysis**: Identify sets of propositions that cannot all be true simultaneously.
    - 1.0 = logical contradiction, lower values for lesser degrees of incoherence
@@ -113,8 +108,7 @@ Input:
       {"symbol": "1", "proposition": "Socrates is a man"},
       {"symbol": "2", "proposition": "All men are mortal"},
       {"symbol": "3", "proposition": "Socrates is mortal"}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -137,8 +131,7 @@ Input:
       {"symbol": "1", "proposition": "Socrates is a god"},
       {"symbol": "2", "proposition": "All gods are immortal"},
       {"symbol": "3", "proposition": "Socrates is mortal"}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -161,8 +154,7 @@ Input:
       {"symbol": "1", "proposition": "All humans are mortal"},
       {"symbol": "2", "proposition": "Socrates is human"},
       {"symbol": "3", "proposition": "Socrates is immortal"}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -178,16 +170,14 @@ Output:
   ]
 }
 
-# Argument with assumptions (do NOT evaluate assumptions)
+# Every step is evaluated
 
 Input:
 {
   "agent_data": {
     "argument": [
+      {"symbol": "1", "proposition": "The sun has four legs"},
       {"symbol": "2", "proposition": "The sun has legs"}
-    ],
-    "assumptions": [
-      {"symbol": "1", "proposition": "The sun has four legs"}
     ]
   }
 }
@@ -195,6 +185,7 @@ Input:
 Output:
 {
   "truth_evaluations": [
+    {"symbol": "1", "truth_value": 0.0, "reasoning": "False — the sun is a star and has no legs"},
     {"symbol": "2", "truth_value": 0.0, "reasoning": "False — the sun is a star and has no legs"}
   ],
   "incoherent_sets": []
@@ -254,8 +245,7 @@ Do NOT evaluate the independent truth of propositions. Truth is assessed separat
 
 ### Input Format
 The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument
-- agent_data.assumptions: List of Step objects for background assumptions (taken as true)
+- agent_data.argument: List of Step objects in the argument
 
 Each Step object contains:
 - symbol: String identifier (e.g., "1", "2", "3")
@@ -285,8 +275,7 @@ Input:
       {"symbol": "1", "proposition": "Socrates is a man", "justifiers": []},
       {"symbol": "2", "proposition": "All men are mortal", "justifiers": []},
       {"symbol": "3", "proposition": "Socrates is mortal", "justifiers": ["1", "2"]}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -308,8 +297,7 @@ Input:
       {"symbol": "1", "proposition": "Water is H2O", "justifiers": []},
       {"symbol": "2", "proposition": "H2O is a molecule", "justifiers": []},
       {"symbol": "3", "proposition": "Water is a molecule", "justifiers": ["1", "2"]}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -331,8 +319,7 @@ Input:
       {"symbol": "1", "proposition": "All humans are mortal", "justifiers": []},
       {"symbol": "2", "proposition": "Socrates is human", "justifiers": []},
       {"symbol": "3", "proposition": "Socrates is immortal", "justifiers": ["1", "2"]}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -354,8 +341,7 @@ Input:
       {"symbol": "1", "proposition": "The policy worked in another country", "justifiers": []},
       {"symbol": "2", "proposition": "Our country is similar", "justifiers": []},
       {"symbol": "3", "proposition": "The policy will work here", "justifiers": ["1", "2"]}
-    ],
-    "assumptions": []
+    ]
   }
 }
 
@@ -405,295 +391,6 @@ agent_gpt_evaluate_content_validity = ModelAgent(
     max_tokens=8192
 )
 
-# Agent-specific system prompt for content evaluation (removed — replaced by truth_evaluator and content_validity_evaluator)
-agent_evaluate_content_system_prompt = """
-You are an AI agent working on logical argumentation. Your task is to evaluate the truth, validity, coherence, and identify weak inferences in natural language content.
-
-For the purposes of this task, we define "valid" to accord with its sense in mathematical logic, not its more general and equivocal sense in debate or rhetoric. Validity is strict formal validity, _not_ soundness. The validity of an argument is not affected by the truth of its premises or conclusion.
-
-### Input Format
-The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument (evaluate these for truth)
-- agent_data.assumptions: List of Step objects for background assumptions (do NOT evaluate these - they are taken as true)
-- agent_data.target_type: Type of content being evaluated (e.g., "argument", "proposition")
-- agent_data.target_content: Specific content being targeted (if applicable)
-
-Each Step object contains:
-- symbol: String identifier (e.g., "1", "2", "3")
-- proposition: The natural language proposition
-- justifiers: List of symbols that justify this step
-- content_validity: Content validity from previous evaluation (optional)
-- formal_validity: Formal validity from previous evaluation (optional)
-- formalization: Formal logic representation (optional)
-
-### Task
-
-You will receive argument data with Step objects containing symbols, propositions, and justifiers. You will evaluate and return comprehensive assessments including:
-
-1. **Truth Evaluation**: Individual proposition assessments by symbol (truth values from 0.0 to 1.0)
-2. **Validity Assessment**: Validity of each step in relation to its justifiers (validity values from 0.0 to 1.0)
-3. **Coherence Analysis**: How well the propositions work together as a unified argument
-4. **Weak Inference Identification**: Steps with the lowest validity scores
-
-### Considerations
-
-**Truth Evaluation**:
-- For each Step in the argument, assess the truth value of its proposition given the assumptions
-- IMPORTANT: Do NOT evaluate assumptions - they are taken as true by the user
-- 1.0 = certainly true, 0.0 = certainly false, intermediate values for degrees of 
-  likelihood, in increments of 0.1
-- Consider empirical evidence, logical consistency, and background knowledge
-- Return truth values indexed by Step symbol (only for argument steps, not assumptions)
-
-**Validity Assessment**:
-- For each Step with justifiers, evaluate the validity of the inference from its justifiers to its proposition
-- 1.0 = deductively valid, 0.0 = contradictory, intermediate values for inductive/abductive strength
-- Consider the logical relationship between the Step's proposition and its justifiers
-- Steps without justifiers (premises/assumptions) should not receive validity values
-- Return validity values indexed by Step symbol (only for steps with justifiers)
-
-**Coherence Analysis**:
-- Evaluate how well the propositions form a unified argument
-- Check for internal consistency and logical flow
-- Identify gaps, contradictions, or redundancies
-- Identify sets of steps that are mutually incoherent
-- Assign incoherence values: 1.0 = logical contradiction, lower values for lesser incoherence
-
-**Weak Inference Identification**:
-- Weak inferences are implicitly identified by low validity scores in validity_evaluations
-- No need to explicitly list them - they can be found by examining the validity values
-- Provide specific recommendations for strengthening weak inferences
-
-### Examples
-
-# Valid but not sound argument
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "1",
-        "proposition": "Socrates is a god",
-        "justifiers": []
-      },
-      {
-        "symbol": "2",
-        "proposition": "All gods are immortal",
-        "justifiers": []
-      },
-      {
-        "symbol": "3",
-        "proposition": "Socrates is immortal",
-        "justifiers": ["1", "2"]
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "truth_evaluations": [
-          {"symbol": "1", "truth_value": "0.0", "reasoning": "Contradicts historical and theological knowledge"},
-      {"symbol": "2", "truth_value": "0.8", "reasoning": "Common theological assumption, though debatable"},
-      {"symbol": "3", "truth_value": "0.0", "reasoning": "False conclusion from false premise"}
-  ],
-  "validity_evaluations": [
-          {"symbol": "3", "validity_value": "1.0", "reasoning": "Valid deduction from 1 and 2, though premises are false"}
-  ],
-
-  "incoherent_sets": [],
-  "logical_issues": ["Argument is valid but unsound due to false premise"],
-  "recommendations": [
-    "Replace false premise 1 with true statement about Socrates",
-    "Provide evidence for theological assumptions in 2 if used"
-  ]
-}
-
-# Argument with assumptions (assumptions are NOT evaluated)
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "2",
-        "proposition": "The sun has legs",
-        "justifiers": []
-      }
-    ],
-    "assumptions": [
-      {
-        "symbol": "1",
-        "proposition": "The sun has four legs",
-        "justifiers": []
-      }
-    ],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "truth_evaluations": [
-          {"symbol": "2", "truth_value": "1.0", "reasoning": "True given the assumption that the sun has four legs"}
-  ],
-  "validity_evaluations": [],
-  "incoherent_sets": [],
-  "logical_issues": [],
-  "recommendations": ["Argument is valid given the assumptions"]
-}
-
-# Coherent and sound argument
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "1",
-        "proposition": "Socrates is a man",
-        "justifiers": []
-      },
-      {
-        "symbol": "2",
-        "proposition": "All men are mortal",
-        "justifiers": []
-      },
-      {
-        "symbol": "3",
-        "proposition": "Socrates is mortal",
-        "justifiers": ["1", "2"]
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "truth_evaluations": [
-          {"symbol": "1", "truth_value": "0.95", "reasoning": "Historical fact, well-documented"},
-      {"symbol": "2", "truth_value": "0.98", "reasoning": "Universal biological truth, no known exceptions"},
-      {"symbol": "3", "truth_value": "0.95", "reasoning": "Valid conclusion from true premises"}
-  ],
-  "validity_evaluations": [
-          {"symbol": "3", "validity_value": "1.0", "reasoning": "Valid deduction from 1 and 2"}
-  ],
-
-  "incoherent_sets": [],
-  "logical_issues": [],
-  "recommendations": ["Argument is logically sound and well-structured"]
-}
-
-# Argument with logical contradiction
-
-Input:
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "1",
-        "proposition": "All humans are mortal",
-        "justifiers": []
-      },
-      {
-        "symbol": "2",
-        "proposition": "Socrates is human",
-        "justifiers": []
-      },
-      {
-        "symbol": "3",
-        "proposition": "Socrates is immortal",
-        "justifiers": ["1", "2"]
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "truth_evaluations": [
-          {"symbol": "1", "truth_value": "0.98", "reasoning": "Universal biological truth"},
-      {"symbol": "2", "truth_value": "0.95", "reasoning": "Historical fact"},
-      {"symbol": "3", "truth_value": "0.0", "reasoning": "Contradicts premises 1 and 2"}
-  ],
-  "validity_evaluations": [
-          {"symbol": "3", "validity_value": "0.0", "reasoning": "Logical contradiction with premises"}
-  ],
-  "incoherent_sets": [
-    {
-      "symbols": ["1", "2", "3"],
-      "incoherence_value": "1.0"
-    }
-  ],
-  "logical_issues": ["Contains logical contradiction"],
-  "recommendations": [
-    "Fix contradiction in 3 - Socrates cannot be both mortal (from 1+2) and immortal"
-  ]
-}
-
-# Argument with weak inferences
-{
-  "agent_data": {
-    "argument": [
-      {
-        "symbol": "1",
-        "proposition": "The policy worked in another country",
-        "justifiers": []
-      },
-      {
-        "symbol": "2",
-        "proposition": "Our country is similar",
-        "justifiers": []
-      },
-      {
-        "symbol": "3",
-        "proposition": "The policy will work here",
-        "justifiers": ["1", "2"]
-      }
-    ],
-    "assumptions": [],
-    "target_type": "argument",
-    "target_content": null
-  }
-}
-
-Output:
-{
-  "truth_evaluations": [
-          {"symbol": "1", "truth_value": "0.7", "reasoning": "Limited evidence, context-dependent"},
-      {"symbol": "2", "truth_value": "0.6", "reasoning": "Vague similarity claim, needs specification"},
-      {"symbol": "3", "truth_value": "0.5", "reasoning": "Weak conclusion from weak premises"}
-  ],
-  "validity_evaluations": [
-          {"symbol": "3", "validity_value": "0.6", "reasoning": "Weak analogical inference from 1 and 2"}
-  ],
-
-  "incoherent_sets": [
-    {
-      "symbols": ["1", "2", "3"],
-      "incoherence_value": "0.7"
-    }
-  ],
-  "logical_issues": ["Relies on weak analogical reasoning"],
-  "recommendations": [
-    "Provide specific evidence of policy success in other country (1)",
-    "Specify relevant similarities and differences between countries (2)",
-    "Strengthen analogical reasoning in 3"
-  ]
-}
-"""
-
 # Agent-specific system prompt for form evaluation
 agent_evaluate_form_system_prompt = """
 You are an AI agent working on logical argumentation. Your task is to evaluate ONLY the logical validity of formalized arguments, ignoring the truth of individual propositions.
@@ -708,8 +405,7 @@ Formalizations use the following ASCII notation. Read this carefully before eval
 
 ### Input Format
 The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument
-- agent_data.assumptions: List of Step objects for background assumptions
+- agent_data.argument: List of Step objects in the argument
 - agent_data.target_type: Type of content being evaluated (e.g., "argument")
 - agent_data.target_content: Specific content being targeted (if applicable)
 
@@ -724,8 +420,6 @@ A step has a formalization when `formalization` is non-null, `formalization.endo
 ### Task
 
 You will receive argument data with Step objects containing formal logic representations. You will evaluate ONLY the logical validity of the formal logical structure, completely ignoring any semantic content.
-
-**IMPORTANT**: The assumptions are additional premises in the argument. Treat assumptions as regular premises for the purposes of formal logical evaluation.
 
 For each formalization, focus entirely on whether the logical structure is valid. Do not evaluate truth values.
 
@@ -748,12 +442,21 @@ The argument_validity should reflect the formal logical validity of the argument
 
 ### Examples
 
-# Valid deductive argument with assumptions
+# Valid deductive argument
 
 Input:
 {
   "agent_data": {
     "argument": [
+      {
+        "symbol": "1",
+        "justifiers": [],
+        "formalization": {
+          "ascii": "forall x. Px implies Qx",
+          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"x\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
+          "endorsed": true
+        }
+      },
       {
         "symbol": "2",
         "justifiers": [],
@@ -769,17 +472,6 @@ Input:
         "formalization": {
           "ascii": "Qa",
           "json_structure": "{\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"constant\", \"name\": \"a\"}]}",
-          "endorsed": true
-        }
-      }
-    ],
-    "assumptions": [
-      {
-        "symbol": "1",
-        "justifiers": [],
-        "formalization": {
-          "ascii": "forall x. Px implies Qx",
-          "json_structure": "{\"type\": \"quantifier\", \"quant\": \"forall\", \"vars\": [{\"type\": \"variable\", \"name\": \"x\"}], \"body\": {\"type\": \"connective\", \"op\": \"implies\", \"args\": [{\"type\": \"predicate\", \"name\": \"P\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}, {\"type\": \"predicate\", \"name\": \"Q\", \"args\": [{\"type\": \"variable\", \"name\": \"x\"}]}]}}",
           "endorsed": true
         }
       }
@@ -833,7 +525,6 @@ Input:
         }
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   }
@@ -897,11 +588,10 @@ You are an AI agent working on logical argumentation. Your task is to formalize 
 
 ### Task: Formalize Arguments
 
-You will receive an argument with multiple propositions that need formalization. Convert **all** propositions — both assumption steps and argument steps — into formal logical representations. **CRITICAL**: Do not skip assumptions.
+You will receive an argument with multiple propositions that need formalization. Convert **every** proposition in the argument — premises and derived steps alike — into a formal logical representation. **CRITICAL**: Do not skip any step.
 
 ### Input Format
-- agent_data.argument: List of Step objects — **must be formalized**
-- agent_data.assumptions: List of Step objects — **must also be formalized**
+- agent_data.argument: List of Step objects — **every step must be formalized**
 
 Each Step contains: symbol, proposition, justifiers, and optionally formalization (with endorsed flag).
 
@@ -933,7 +623,7 @@ Do **not** use abstract single-letter names (P, Q, R, a, b, x) — Python will a
 
 **ENDORSED FORMALIZATIONS**: Steps with `endorsed: true` already have a correct formalization. Copy their `ascii` and `json_structure` fields into your output exactly as given — do not alter or re-derive them.
 
-**COMPLETE RESPONSE**: Your `formalizations` array MUST contain one entry for every step in both `agent_data.argument` and `agent_data.assumptions`, no exceptions. If a step is very abstract, use zero-argument predicates to capture its key claims rather than omitting it.
+**COMPLETE RESPONSE**: Your `formalizations` array MUST contain one entry for every step in `agent_data.argument`, no exceptions. If a step is very abstract, use zero-argument predicates to capture its key claims rather than omitting it.
 
 ### Justification-Aware Formalization
 
@@ -957,11 +647,9 @@ Input:
 {
   "agent_data": {
     "argument": [
+      {"symbol": "1", "proposition": "All men are mortal", "justifiers": []},
       {"symbol": "2", "proposition": "Socrates is a man", "justifiers": []},
       {"symbol": "3", "proposition": "Socrates is mortal", "justifiers": ["1", "2"]}
-    ],
-    "assumptions": [
-      {"symbol": "1", "proposition": "All men are mortal", "justifiers": []}
     ]
   }
 }
@@ -1004,8 +692,7 @@ Input (with endorsed formalization):
         "formalization": {"ascii": "forall x. Px implies Qx", "endorsed": true}
       },
       {"symbol": "2", "proposition": "Mice are small", "justifiers": []}
-    ],
-    "assumptions": []
+    ]
   }
 }
 ```
@@ -1070,8 +757,7 @@ You will receive argument data with evaluation results and generate cohesive rec
 
 ### Input Format
 The input will be a JSON object with the following structure:
-- agent_data.argument: List of Step objects in the main argument
-- agent_data.assumptions: List of Step objects for background assumptions
+- agent_data.argument: List of Step objects in the argument
 - agent_data.target_type: Type of content being improved (e.g., "argument")
 - agent_data.target_content: Specific content being targeted (if applicable)
 - evaluation_results: Content and/or formal evaluation results with truth/validity scores
@@ -1104,7 +790,7 @@ Generate cohesive recommendation sets that work together to strengthen the argum
 5. **Impact Assessment**: Estimate the expected improvement in target proposition scores and overall argument strength
 6. **Detailed Reasoning**: Explain why each improvement is suggested and how it will help strengthen the argument
 7. **Avoid Repetition**: Don't suggest improvements that duplicate existing propositions
-8. **Consider Context**: Use assumptions and existing argument structure to inform recommendations
+8. **Consider Context**: Use the existing argument structure to inform recommendations
 9. **Conclusion Rewrite Prohibition**: NEVER rewrite or modify the concluding proposition under any circumstances. The conclusion must remain exactly as provided.
 10. **Single Proposition Arguments**: When an argument contains only one proposition (the conclusion), recommendations must ONLY suggest new propositions to add as supporting premises. Do not suggest any rewrites or refinements of the existing proposition.
 11. **New Proposition Positioning**: All new propositions must be inserted BEFORE the conclusion in the argument structure and must directly justify the existing conclusion.
@@ -1134,7 +820,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1169,7 +854,6 @@ Output:
           "symbol": null,
           "proposition": "Similar policies have reduced crime by 25% in comparable cities",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Statistical evidence from peer-reviewed studies", "Case studies from similar urban areas"]
         },
@@ -1177,7 +861,6 @@ Output:
           "symbol": null,
           "proposition": "The policy targets root causes of crime through community engagement",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on crime prevention"]
         }
@@ -1206,7 +889,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1241,7 +923,6 @@ Output:
           "symbol": null,
           "proposition": "Economic growth creates new job opportunities in expanding sectors",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "2",
           "justification_suggestions": ["Economic theory on job creation", "Historical data on employment growth"]
         }
@@ -1273,7 +954,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1314,14 +994,12 @@ Output:
           "type": "rewrite",
           "original_symbol": "2",
           "original_proposition": "We should take action",
-          "placement": "argument",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on climate action"]
         },
         {
           "symbol": null,
           "proposition": "Carbon pricing has been effective in reducing emissions in other countries",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "2",
           "justification_suggestions": ["Case studies from European countries", "Economic research on carbon pricing"]
         },
@@ -1329,7 +1007,6 @@ Output:
           "symbol": null,
           "proposition": "Reducing emissions will mitigate the worst effects of climate change",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "2",
           "justification_suggestions": ["Climate science research", "IPCC reports on emission reduction impacts"]
         }
@@ -1361,7 +1038,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1400,7 +1076,6 @@ Output:
           "symbol": null,
           "proposition": "Phase II trials showed 70% effectiveness rate",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Clinical trial reports", "Peer-reviewed medical journals"]
         },
@@ -1408,7 +1083,6 @@ Output:
           "symbol": null,
           "proposition": "Safety profile meets FDA requirements",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Safety analysis reports", "FDA regulatory guidelines"]
         },
@@ -1416,7 +1090,6 @@ Output:
           "symbol": null,
           "proposition": "The drug addresses an unmet medical need",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Medical literature review", "Healthcare provider surveys"]
         }
@@ -1440,7 +1113,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1477,7 +1149,6 @@ CORRECT Output (preserves truth conditions):
           "type": "rewrite",
           "original_symbol": "1",
           "original_proposition": "We should take action on climate change",
-          "placement": "argument",
           "justification_suggestions": ["Policy analysis documents", "Expert testimony on climate action"]
         }
       ]
@@ -1505,7 +1176,6 @@ INCORRECT Output (changes truth conditions - DO NOT DO THIS):
           "type": "rewrite",
           "original_symbol": "1",
           "original_proposition": "We should take action on climate change",
-          "placement": "argument",
           "justification_suggestions": ["Economic analysis", "Policy documents"]
         }
       ]
@@ -1528,7 +1198,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1563,7 +1232,6 @@ Output:
           "symbol": null,
           "proposition": "International markets show strong demand for our products",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Market research reports", "International sales data", "Customer surveys"]
         },
@@ -1571,7 +1239,6 @@ Output:
           "symbol": null,
           "proposition": "Expansion will diversify our revenue streams",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Financial analysis", "Risk assessment reports", "Industry benchmarks"]
         },
@@ -1579,7 +1246,6 @@ Output:
           "symbol": null,
           "proposition": "We have the operational capacity to support international growth",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Capacity analysis", "Resource planning documents", "Expert assessments"]
         },
@@ -1587,7 +1253,6 @@ Output:
           "symbol": null,
           "proposition": "Competitors are already expanding internationally",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Competitive analysis", "Industry reports", "Market intelligence"]
         }
@@ -1627,7 +1292,6 @@ Input:
         "formal_validity": null
       }
     ],
-    "assumptions": [],
     "target_type": "argument",
     "target_content": null
   },
@@ -1664,7 +1328,6 @@ Output:
           "symbol": null,
           "proposition": "Similar policies have reduced congestion by 30% in comparable cities",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Transportation studies", "City planning reports", "Traffic analysis data"]
         },
@@ -1672,7 +1335,6 @@ Output:
           "symbol": null,
           "proposition": "The policy includes specific congestion reduction mechanisms",
           "type": "new",
-          "placement": "argument",
           "justifies_symbol": "1",
           "justification_suggestions": ["Policy documents", "Engineering analysis", "Expert testimony"]
         }
@@ -1717,14 +1379,13 @@ agent_gpt_improvement = ModelAgent(
                                     "type": {"type": "string", "enum": ["new", "rewrite"]},
                                     "original_symbol": {"type": ["string", "null"]},
                                     "original_proposition": {"type": ["string", "null"]},
-                                    "placement": {"type": "string", "enum": ["assumption", "argument"]},
                                     "justifies_symbol": {"type": ["string", "null"]},
                                     "justification_suggestions": {
                                         "type": "array",
                                         "items": {"type": "string"}
                                     }
                                 },
-                                "required": ["symbol","proposition","type","original_symbol","original_proposition","placement","justifies_symbol","justification_suggestions"],
+                                "required": ["symbol","proposition","type","original_symbol","original_proposition","justifies_symbol","justification_suggestions"],
                                 "additionalProperties": False
                             }
                         }

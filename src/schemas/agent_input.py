@@ -10,7 +10,6 @@ from schemas.step import Step
 
 class AgentData(BaseModel):
     """Data that agents actually use for processing"""
-    assumptions: List[Step]
     argument: List[Step]
     latest_results: List[Dict[str, Any]] = []  # Latest agent results for context
     target_type: Literal["argument", "proposition"]
@@ -39,7 +38,7 @@ class FilteredAgentInput(AgentInput):
     def for_truth_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
         """Create input for truth evaluation agent (no formalization data, no justifiers)"""
         filtered_input = cls.model_validate(base_input.model_dump())
-        for step in filtered_input.agent_data.assumptions + filtered_input.agent_data.argument:
+        for step in filtered_input.agent_data.argument:
             step.formalization = None
             step.justifiers = []
         return filtered_input
@@ -48,7 +47,7 @@ class FilteredAgentInput(AgentInput):
     def for_content_validity_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
         """Create input for content validity evaluation agent (no formalization data)"""
         filtered_input = cls.model_validate(base_input.model_dump())
-        for step in filtered_input.agent_data.assumptions + filtered_input.agent_data.argument:
+        for step in filtered_input.agent_data.argument:
             step.formalization = None
         return filtered_input
 
@@ -59,11 +58,9 @@ class FilteredAgentInput(AgentInput):
         filtered_input = cls.model_validate(base_input.model_dump())
         
         # Filter out content data for formal evaluation by setting to empty string
-        for step in filtered_input.agent_data.assumptions:
-            step.proposition = ""
         for step in filtered_input.agent_data.argument:
             step.proposition = ""
-        
+
         return filtered_input
     
     @classmethod

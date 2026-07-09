@@ -27,7 +27,7 @@ class TestImprovementAgent:
     def test_generate_improvements_success(self, mock_gpt_call):
         """Test that improvement agent generates improvements successfully"""
         # Mock the GPT response
-        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "confidence": 0.8, "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": 0.3, "content_validity_improvement": 0.2, "formal_validity_improvement": 0.1, "reasoning": "Test improvement"}, "propositions": [{"symbol": "2", "proposition": "Test proposition", "type": "new", "placement": "argument", "justification_suggestions": ["Test justification"]}]}]}'
+        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "confidence": 0.8, "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": 0.3, "content_validity_improvement": 0.2, "formal_validity_improvement": 0.1, "reasoning": "Test improvement"}, "propositions": [{"symbol": "2", "proposition": "Test proposition", "type": "new", "justification_suggestions": ["Test justification"]}]}]}'
 
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
@@ -47,7 +47,6 @@ class TestImprovementAgent:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[
@@ -103,7 +102,6 @@ class TestImprovementAgent:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[

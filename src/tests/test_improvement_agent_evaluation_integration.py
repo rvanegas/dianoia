@@ -29,7 +29,6 @@ class TestImprovementAgentEvaluationIntegration:
         # Create test argument data
         self.argument_data = ArgumentData(
             argument=[self.test_step],
-            assumptions=[],
             file_ids=[]
         )
 
@@ -133,7 +132,6 @@ class TestImprovementAgentEvaluationIntegration:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[self.test_step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[]  # No evaluation results
@@ -160,7 +158,6 @@ class TestImprovementAgentEvaluationIntegration:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[self.test_step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[]  # Empty evaluation results
@@ -180,7 +177,7 @@ class TestImprovementAgentEvaluationIntegration:
     def test_improvement_agent_processes_evaluation_results_successfully(self, mock_gpt_call):
         """Test that improvement agent successfully processes evaluation results"""
         # Mock the GPT response
-        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": "+0.3", "content_validity_improvement": "+0.2", "formal_validity_improvement": "+0.1"}, "propositions": [{"symbol": null, "proposition": "Test proposition", "type": "new", "placement": "argument", "justifies_symbol": "1", "justification_suggestions": ["Test justification"]}]}]}'
+        mock_gpt_call.return_value = '{"recommendations": [{"id": "rec_001", "reasoning": "Test reasoning", "impact": "high", "target_proposition": "1", "expected_conclusion_improvement": {"truth_score_improvement": "+0.3", "content_validity_improvement": "+0.2", "formal_validity_improvement": "+0.1"}, "propositions": [{"symbol": null, "proposition": "Test proposition", "type": "new", "justifies_symbol": "1", "justification_suggestions": ["Test justification"]}]}]}'
         
         coordinator = Mock()
         agent = ImprovementAgent(coordinator)
@@ -191,7 +188,6 @@ class TestImprovementAgentEvaluationIntegration:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[self.test_step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[
@@ -239,7 +235,6 @@ class TestImprovementAgentEvaluationIntegration:
             snapshot_id="test_snap",
             agent_data=AgentData(
                 argument=[self.test_step],
-                assumptions=[],
                 target_type="argument",
                 target_content=None,
                 latest_results=[]  # No evaluation results

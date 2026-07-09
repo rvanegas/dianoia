@@ -68,10 +68,8 @@ class TestNormalizedAgentInput:
     def test_agent_input_creation(self):
         """Test creating a normalized AgentInput"""
         agent_data = AgentData(
-            assumptions=[
-                Step(symbol="1", proposition="Background assumption", justifiers=[], truth_score="1.0")
-            ],
             argument=[
+                Step(symbol="1", proposition="Background assumption", justifiers=[], truth_score="1.0"),
                 Step(symbol="2", proposition="Main argument", justifiers=["1"], truth_score="0.8")
             ],
             latest_results=[],
@@ -90,8 +88,7 @@ class TestNormalizedAgentInput:
 
         assert agent_input.conversation_id == "conv_123"
         assert agent_input.snapshot_id == "snap_456"
-        assert len(agent_input.agent_data.assumptions) == 1
-        assert len(agent_input.agent_data.argument) == 1
+        assert len(agent_input.agent_data.argument) == 2
         assert len(agent_input.file_ids) == 2
 
     def test_filtered_input_for_content_evaluation(self):
@@ -106,7 +103,6 @@ class TestNormalizedAgentInput:
         )
 
         agent_data = AgentData(
-            assumptions=[step],
             argument=[step],
             latest_results=[],
             target_type="argument",
@@ -123,13 +119,12 @@ class TestNormalizedAgentInput:
         )
 
         # Create filtered input for content evaluation
-        filtered_input = FilteredAgentInput.for_content_evaluation(agent_input)
+        filtered_input = FilteredAgentInput.for_content_validity_evaluation(agent_input)
 
         # Formalization should be excluded
-        assert filtered_input.agent_data.assumptions[0].formalization is None
         assert filtered_input.agent_data.argument[0].formalization is None
         # Content should be preserved
-        assert filtered_input.agent_data.assumptions[0].proposition == "Test proposition"
+        assert filtered_input.agent_data.argument[0].proposition == "Test proposition"
 
     def test_filtered_input_for_formal_evaluation(self):
         """Test creating filtered input for formal evaluation agent"""
@@ -145,7 +140,6 @@ class TestNormalizedAgentInput:
         )
 
         agent_data = AgentData(
-            assumptions=[step],
             argument=[step],
             latest_results=[],
             target_type="argument",
@@ -164,26 +158,23 @@ class TestNormalizedAgentInput:
         # Create filtered input for formal evaluation
         filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
 
-        # All steps should be included (parallel to for_content_evaluation)
-        assert len(filtered_input.agent_data.assumptions) == 1
+        # All steps should be included
         assert len(filtered_input.agent_data.argument) == 1
 
-        # Content should be stripped out (parallel to for_content_evaluation)
-        assert filtered_input.agent_data.assumptions[0].proposition == ""
+        # Content should be stripped out
         assert filtered_input.agent_data.argument[0].proposition == ""
 
         # Other attributes should be preserved
-        assert filtered_input.agent_data.assumptions[0].formalization.ascii == "Test formalization"
-        assert filtered_input.agent_data.assumptions[0].symbol == "1"
-        assert filtered_input.agent_data.assumptions[0].justifiers == ["2"]
-        assert filtered_input.agent_data.assumptions[0].truth_score == "0.9"
+        assert filtered_input.agent_data.argument[0].formalization.ascii == "Test formalization"
+        assert filtered_input.agent_data.argument[0].symbol == "1"
+        assert filtered_input.agent_data.argument[0].justifiers == ["2"]
+        assert filtered_input.agent_data.argument[0].truth_score == "0.9"
 
 
 
     def test_agent_data_proposition_target(self):
         """Test agent data with proposition target"""
         agent_data = AgentData(
-            assumptions=[],
             argument=[],
             latest_results=[],
             target_type="proposition",
@@ -199,8 +190,7 @@ class TestNormalizedAgentInput:
         """Test that FilteredAgentInput properly inherits from AgentInput"""
         # Create a base agent input
         agent_data = AgentData(
-            assumptions=[Step(symbol="1", proposition="Test", justifiers=[], truth_score="1.0")],
-            argument=[],
+            argument=[Step(symbol="1", proposition="Test", justifiers=[], truth_score="1.0")],
             latest_results=[],
             target_type="argument",
             target_content=None
@@ -216,7 +206,7 @@ class TestNormalizedAgentInput:
         )
 
         # Test that FilteredAgentInput is an instance of AgentInput
-        filtered_input = FilteredAgentInput.for_content_evaluation(base_input)
+        filtered_input = FilteredAgentInput.for_content_validity_evaluation(base_input)
         assert isinstance(filtered_input, AgentInput)
         assert isinstance(filtered_input, FilteredAgentInput)
 

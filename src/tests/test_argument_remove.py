@@ -14,13 +14,11 @@ class TestArgumentRemove:
         """Test removing a step that has justifiers and is referenced by other steps"""
         # Create an argument with multiple steps and justifiers
         argument_data = {
-            "assumptions": [],
             "argument": [
                 Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="2", proposition="All men are mortal", justifiers=["1"], truth_score="1.0", valid="1.0"),
                 Step(symbol="3", proposition="Socrates is mortal", justifiers=["2"], truth_score="1.0", valid="1.0")
             ],
-            "loc": "argument",
             "index": 1,  # Remove step 2 (All men are mortal)
             "conversation_id": "test_session:1",
             "snapshot_id": "test_snapshot_123"
@@ -61,13 +59,11 @@ class TestArgumentRemove:
     def test_remove_step_from_argument_without_justifiers(self):
         """Test removing a step that has no justifiers"""
         argument_data = {
-            "assumptions": [],
             "argument": [
                 Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="2", proposition="All men are mortal", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="3", proposition="Socrates is mortal", justifiers=["1"], truth_score="1.0", valid="1.0")
             ],
-            "loc": "argument",
             "index": 1,  # Remove step 2 (All men are mortal)
             "conversation_id": "test_session:1",
             "snapshot_id": "test_snapshot_123"
@@ -92,46 +88,15 @@ class TestArgumentRemove:
             assert "argument" in result_dict
             assert len(result_dict["argument"]) == 2
 
-    def test_remove_step_from_assumptions(self):
-        """Test removing a step from assumptions (should not transfer justifiers)"""
-        argument_data = {
-            "assumptions": [
-                Step(symbol="1", proposition="Socrates is a man", justifiers=[], truth_score="1.0", valid="1.0"),
-                Step(symbol="2", proposition="All men are mortal", justifiers=["1"], truth_score="1.0", valid="1.0")
-            ],
-            "argument": [],
-            "loc": "assumptions",
-            "index": 1,  # Remove step 2 from assumptions
-            "conversation_id": "test_session:1",
-            "snapshot_id": "test_snapshot_123"
-        }
-
-        args = ArgumentsWithStep(**argument_data)
-        service = ArgumentStepService(args, "test_snapshot_123")
-
-        with patch.object(coordinator, 'queue_task') as mock_queue:
-            result = service.remove()
-
-            # Verify the step was removed from assumptions
-            assert len(args.assumptions) == 1
-            assert args.assumptions[0].symbol == "1"
-
-            # Verify the result structure (result is a JSON string)
-            result_dict = json.loads(result)
-            assert "assumptions" in result_dict
-            assert len(result_dict["assumptions"]) == 1
-
     def test_remove_step_with_complex_justifier_transfer(self):
         """Test removing a step with complex justifier relationships"""
         argument_data = {
-            "assumptions": [],
             "argument": [
                 Step(symbol="1", proposition="Premise 1", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="2", proposition="Premise 2", justifiers=["1"], truth_score="1.0", valid="1.0"),
                 Step(symbol="3", proposition="Premise 3", justifiers=["1", "2"], truth_score="1.0", valid="1.0"),
                 Step(symbol="4", proposition="Conclusion", justifiers=["3"], truth_score="1.0", valid="1.0")
             ],
-            "loc": "argument",
             "index": 2,  # Remove step 3 (Premise 3)
             "conversation_id": "test_session:1",
             "snapshot_id": "test_snapshot_123"
@@ -161,12 +126,10 @@ class TestArgumentRemove:
     def test_remove_step_queues_argument_state_change(self):
         """Test that remove() queues argument state change"""
         argument_data = {
-            "assumptions": [],
             "argument": [
                 Step(symbol="1", proposition="Step 1", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="2", proposition="Step 2", justifiers=["1"], truth_score="1.0", valid="1.0")
             ],
-            "loc": "argument",
             "index": 1,
             "conversation_id": "test_session:1",
             "snapshot_id": "test_snapshot_123"
@@ -195,12 +158,10 @@ class TestArgumentRemove:
     def test_remove_step_preserves_other_arguments(self):
         """Test that remove() doesn't affect other arguments"""
         argument_data = {
-            "assumptions": [],
             "argument": [
                 Step(symbol="1", proposition="Step 1", justifiers=[], truth_score="1.0", valid="1.0"),
                 Step(symbol="2", proposition="Step 2", justifiers=[], truth_score="1.0", valid="1.0")
             ],
-            "loc": "argument",
             "index": 1,
             "conversation_id": "test_session:1",
             "snapshot_id": "test_snapshot_123"

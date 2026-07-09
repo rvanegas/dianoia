@@ -29,7 +29,6 @@ class TestImprovementAgentTriggers:
         # Create test argument data
         self.argument_data = ArgumentData(
             argument=[self.test_step],
-            assumptions=[],
             file_ids=[]
         )
 
@@ -70,7 +69,6 @@ class TestImprovementAgentTriggers:
         
         formalized_argument_data = ArgumentData(
             argument=[formalized_step],
-            assumptions=[],
             file_ids=[]
         )
         
@@ -176,7 +174,6 @@ class TestImprovementAgentTriggers:
         mock_task.agent_input.conversation_id = conversation_id
         mock_task.agent_input.snapshot_id = snapshot_id
         mock_task.agent_input.agent_data.argument = [self.test_step]
-        mock_task.agent_input.agent_data.assumptions = []
         mock_task.agent_input.file_ids = []
         
         mock_result = Mock()
@@ -189,7 +186,6 @@ class TestImprovementAgentTriggers:
             if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
-                    assumptions=mock_task.agent_input.agent_data.assumptions,
                     file_ids=mock_task.agent_input.file_ids
                 )
                 
@@ -212,7 +208,6 @@ class TestImprovementAgentTriggers:
         mock_task.agent_input.conversation_id = conversation_id
         mock_task.agent_input.snapshot_id = snapshot_id
         mock_task.agent_input.agent_data.argument = [self.test_step]
-        mock_task.agent_input.agent_data.assumptions = []
         mock_task.agent_input.file_ids = []
         
         mock_result = Mock()
@@ -225,7 +220,6 @@ class TestImprovementAgentTriggers:
             if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
-                    assumptions=mock_task.agent_input.agent_data.assumptions,
                     file_ids=mock_task.agent_input.file_ids
                 )
                 
@@ -248,7 +242,6 @@ class TestImprovementAgentTriggers:
         mock_task.agent_input.conversation_id = conversation_id
         mock_task.agent_input.snapshot_id = snapshot_id
         mock_task.agent_input.agent_data.argument = [self.test_step]
-        mock_task.agent_input.agent_data.assumptions = []
         mock_task.agent_input.file_ids = []
         
         mock_result = Mock()
@@ -261,7 +254,6 @@ class TestImprovementAgentTriggers:
             if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
-                    assumptions=mock_task.agent_input.agent_data.assumptions,
                     file_ids=mock_task.agent_input.file_ids
                 )
                 

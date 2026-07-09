@@ -51,25 +51,15 @@ async def gen_name(args: ArgumentsWithProposition,
     args, snapshot_id = handler(args)
     # logger.info(f"🔤 Received name generation request for conversation {args.conversation_id}")
     # logger.info(f"🔤 Proposition: {args.proposition}")
-    # logger.info(f"🔤 Assumptions count: {len(args.assumptions)}, Argument count: {len(args.argument)}")
-    
+
     coordinator.queue_name_generation_task(
         args.conversation_id,
         args.proposition,
-        args.assumptions,
         args.argument,
         args.file_ids
     )
     # logger.info(f"🔤 Name generation task queued for conversation {args.conversation_id}")
     return {"reply": "{}", "message": "Name generation queued"}
-
-@router.post("/assume")
-async def assume(args: ArgumentsWithStep,
-        handler = Depends(get_conversation_handler("Assume"))):
-    args, snapshot_id = handler(args)
-    service = ArgumentStepService(args, snapshot_id)
-    result = service.assume()
-    return {"reply": result}
 
 @router.post("/remove")
 async def remove(args: ArgumentsWithStep,

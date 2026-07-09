@@ -74,8 +74,7 @@ def example_normalized_agent_input():
     
     # Create context
     context = AgentContext(
-        assumptions=[assumption],
-        argument=[argument_step],
+        argument=[assumption, argument_step],
         file_ids=["philosophy_document.pdf"]
     )
     
@@ -103,7 +102,6 @@ def example_normalized_agent_input():
     
     print(f"Created agent input for conversation: {agent_input.conversation_id}")
     print(f"Snapshot: {agent_input.snapshot_id}")
-    print(f"Assumptions: {len(agent_input.context.assumptions)}")
     print(f"Argument steps: {len(agent_input.context.argument)}")
     print(f"Files: {agent_input.context.file_ids}")
     
@@ -133,8 +131,7 @@ def example_content_filtering():
     )
     
     context = AgentContext(
-        assumptions=[step_with_formalization, step_without_formalization],
-        argument=[step_with_formalization],
+        argument=[step_with_formalization, step_without_formalization],
         file_ids=[]
     )
     
@@ -147,18 +144,15 @@ def example_content_filtering():
     )
     
     # Create filtered input for content evaluation (no formalization data)
-    content_filtered = FilteredAgentInput.for_content_evaluation(agent_input)
+    content_filtered = FilteredAgentInput.for_content_validity_evaluation(agent_input)
     print("Content evaluation input:")
-    print(f"  Assumptions: {len(content_filtered.context.assumptions)}")
     print(f"  Argument steps: {len(content_filtered.context.argument)}")
-    print(f"  First assumption has formalization: {content_filtered.context.assumptions[0].formalization is not None}")
-    
+    print(f"  First step has formalization: {content_filtered.context.argument[0].formalization is not None}")
+
     # Create filtered input for formal evaluation (only formalized steps)
     formal_filtered = FilteredAgentInput.for_formal_evaluation(agent_input)
     print("\nFormal evaluation input:")
-    print(f"  Assumptions: {len(formal_filtered.context.assumptions)}")
     print(f"  Argument steps: {len(formal_filtered.context.argument)}")
-    print(f"  Only includes formalized steps: {len(formal_filtered.context.assumptions) == 1}")
     
 
 

@@ -1,6 +1,6 @@
 """
 Step schema for argument components.
-This defines the data structure for individual steps in arguments and assumptions.
+This defines the data structure for individual steps in an argument.
 """
 
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ class Formalization(BaseModel):
 
 
 class Step(BaseModel):
-    """Steps in arguments or assumptions"""
+    """A step in an argument"""
     symbol: str
     proposition: str
     justifiers: list[str]
@@ -40,7 +40,6 @@ class ImprovementProposition(BaseModel):
     type: str = Field(description="Type of improvement", pattern="^(new|rewrite)$")
     original_symbol: str | None = Field(default=None, description="For rewrites, the symbol of the proposition being rewritten")
     original_proposition: str | None = Field(default=None, description="For rewrites, the original proposition text")
-    placement: str = Field(description="Where to place this proposition", pattern="^(assumption|argument)$")
     justification_suggestions: list[str] = Field(description="Suggested justifications for this proposition")
     justifies_symbol: str | None = Field(default=None, description="For new propositions, the symbol of the existing proposition this new proposition justifies")
 

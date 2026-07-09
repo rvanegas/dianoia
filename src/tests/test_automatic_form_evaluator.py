@@ -61,7 +61,6 @@ class TestAutomaticFormEvaluator:
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
-                    assumptions=[],
                     argument=[
                         Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
                         Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
@@ -112,7 +111,6 @@ class TestAutomaticFormEvaluator:
                 conversation_id='test_conversation',
                 snapshot_id='test_snapshot',
                 agent_data=AgentData(
-                    assumptions=[],
                     argument=[
                         Step(symbol='1', proposition='Socrates is a man', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
                         Step(symbol='2', proposition='All men are mortal', justifiers=[], truth_score='1.0', content_validity='1.0', formal_validity='1.0'),
