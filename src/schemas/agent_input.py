@@ -52,6 +52,15 @@ class FilteredAgentInput(AgentInput):
         return filtered_input
 
     @classmethod
+    def for_phrasing_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
+        """Create input for phrasing evaluation agent (no formalization data, no justifiers)"""
+        filtered_input = cls.model_validate(base_input.model_dump())
+        for step in filtered_input.agent_data.argument:
+            step.formalization = None
+            step.justifiers = []
+        return filtered_input
+
+    @classmethod
     def for_formal_evaluation(cls, base_input: AgentInput) -> "FilteredAgentInput":
         """Create input for formal evaluation agent (no content data)"""
         # Create a deep copy of the base input as FilteredAgentInput

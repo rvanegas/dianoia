@@ -8,7 +8,7 @@ from datetime import datetime
 
 from schemas import agent_input
 from core.utils import logger
-from services.agents import TruthEvaluationAgent, ContentValidityEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, ImprovementAgent, NameGenerationAgent
+from services.agents import TruthEvaluationAgent, ContentValidityEvaluationAgent, PhrasingEvaluationAgent, FormalEvaluatorAgent, FormalizationAgent, ImprovementAgent, NameGenerationAgent
 from schemas.agent_input import AgentInput, AgentData, FilteredAgentInput
 from schemas.arguments import ArgumentData
 
@@ -349,6 +349,7 @@ class AgentCoordinator:
         self.agents = {
             'truth_evaluator': TruthEvaluationAgent(self),
             'content_validity_evaluator': ContentValidityEvaluationAgent(self),
+            'phrasing_evaluator': PhrasingEvaluationAgent(self),
             'form_evaluator': FormalEvaluatorAgent(self),
             'formalizer': FormalizationAgent(self),
             'improver': ImprovementAgent(self),
@@ -361,7 +362,7 @@ class AgentCoordinator:
     
     def _start_workers(self):
         """Start background worker threads for each agent type"""
-        agent_types = ['truth_evaluator', 'content_validity_evaluator', 'form_evaluator', 'formalizer', 'improver', 'name_generator']
+        agent_types = ['truth_evaluator', 'content_validity_evaluator', 'phrasing_evaluator', 'form_evaluator', 'formalizer', 'improver', 'name_generator']
         
         for agent_type in agent_types:
             worker = threading.Thread(
@@ -419,6 +420,9 @@ class AgentCoordinator:
             elif task.agent_type == 'content_validity_evaluator':
                 filtered_input = FilteredAgentInput.for_content_validity_evaluation(agent_input)
                 result = agent.evaluate_content_validity(filtered_input)
+            elif task.agent_type == 'phrasing_evaluator':
+                filtered_input = FilteredAgentInput.for_phrasing_evaluation(agent_input)
+                result = agent.evaluate_phrasing(filtered_input)
             elif task.agent_type == 'form_evaluator':
                 # Create FilteredAgentInput for form evaluation
                 filtered_input = FilteredAgentInput.for_formal_evaluation(agent_input)
@@ -761,8 +765,8 @@ class AgentCoordinator:
             agent_input=formalizer_agent_input
         )
 
-        # Queue truth evaluator and content validity evaluator in parallel
-        for agent_type in ('truth_evaluator', 'content_validity_evaluator'):
+        # Queue truth, content validity, and phrasing evaluators in parallel
+        for agent_type in ('truth_evaluator', 'content_validity_evaluator', 'phrasing_evaluator'):
             self.queue_task(
                 agent_type=agent_type,
                 agent_input=AgentInput(

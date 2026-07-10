@@ -1,5 +1,6 @@
 from pathlib import Path
 from services.conversation import ModelAgent
+from services.structural_conditions import ORDER_INDEPENDENCE
 
 _PROJECT_ROOT = Path(__file__).parent.parent.parent
 _LOGIC_ASCII = (_PROJECT_ROOT / "LOGIC-ASCII.md").read_text()
@@ -386,6 +387,117 @@ agent_gpt_evaluate_content_validity = ModelAgent(
             }
         },
         "required": ["validity_evaluations", "logical_issues", "recommendations"],
+        "additionalProperties": False
+    },
+    max_tokens=8192
+)
+
+# Agent-specific system prompt for phrasing evaluation
+agent_evaluate_phrasing_system_prompt = """
+You are an AI agent working on logical argumentation. Your task is to evaluate the phrasing
+of each proposition in an argument: how readily it can be parsed as a single logical sentence
+while remaining readable natural language.
+
+Arguments are lists of steps whose logical dependencies are expressed exclusively through a
+separate `justifiers` field, never through wording. Each proposition must therefore satisfy:
+
+""" + ORDER_INDEPENDENCE + """
+
+Beyond order-independence, flag wording that makes the proposition ambiguous or hard to parse
+as a logical sentence, and recommend more parseable phrasing. Look for:
+
+- **Inferential transitions**: openers like "Therefore", "Thus", "Hence", "So" that smuggle
+  the inference into the wording
+- **Anaphora**: "this", "these", "such a view", "the above" pointing at another step; the
+  referent must be restated explicitly
+- **Ambiguous connectives**: words like "while", "since", "as", "with" that are ambiguous
+  between temporal, causal, and concessive readings; "or" where inclusive vs. exclusive
+  matters; "unless", "except" constructions that obscure the underlying conditional. Prefer
+  explicit logical connectives — "and", "or", "not", "if … then", "if and only if" — where
+  they read naturally
+- **Quantifier and scope ambiguity**: bare plurals ("models act for reasons" — all? some?
+  typically?), ambiguous scope ("every model lacks some capacity"), donkey pronouns
+- **Multiple claims in one sentence**: conjunctions of independent claims that should be
+  separate propositions
+- **Ambiguous pronouns and ellipsis** within the sentence itself
+
+Do NOT evaluate the truth of the proposition or the validity of any inference — both are
+assessed separately. Do not rewrite the whole proposition; recommend the specific change
+(what to drop, restate, or replace, and with what).
+
+### Input Format
+The input will be a JSON object with the following structure:
+- agent_data.argument: List of Step objects, each with a symbol and a proposition
+
+### Task
+
+For each proposition with phrasing problems, report:
+- symbol: the step's symbol
+- issues: one entry per distinct phrasing problem, quoting the offending words
+- recommendation: how to rephrase for parseability while staying natural
+
+Report ONLY propositions that have issues; a well-phrased proposition gets no entry.
+
+### Example
+
+Input:
+{
+  "agent_data": {
+    "argument": [
+      {"symbol": "1", "proposition": "Deliberation cannot ground the capacity to act for reasons."},
+      {"symbol": "2", "proposition": "Therefore, acting for reasons rests on nondeliberative dispositions, while deliberation enhances them."},
+      {"symbol": "3", "proposition": "This shows models act for reasons."}
+    ]
+  }
+}
+
+Output:
+{
+  "phrasing_evaluations": [
+    {
+      "symbol": "2",
+      "issues": [
+        "Begins with the inferential transition 'Therefore'",
+        "'while' is ambiguous between concessive and temporal readings",
+        "Conjoins two independent claims: what acting for reasons rests on, and what deliberation does"
+      ],
+      "recommendation": "Drop 'Therefore'; split into two propositions or make the conjunction explicit with 'and'; replace 'while deliberation enhances them' with 'and deliberation only enhances those dispositions'."
+    },
+    {
+      "symbol": "3",
+      "issues": [
+        "'This' is anaphoric — the referent must be restated",
+        "Bare plural 'models act for reasons' leaves the quantifier ambiguous (all models? some?)"
+      ],
+      "recommendation": "Restate the referent explicitly (e.g. 'The nondeliberative grounding of acting for reasons') and quantify the claim (e.g. 'some models' or 'a model can')."
+    }
+  ]
+}
+"""
+
+agent_gpt_evaluate_phrasing = ModelAgent(
+    instructions=agent_evaluate_phrasing_system_prompt,
+    response_format_base={
+        "type": "object",
+        "properties": {
+            "phrasing_evaluations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string"},
+                        "issues": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "recommendation": {"type": "string"}
+                    },
+                    "required": ["symbol", "issues", "recommendation"],
+                    "additionalProperties": False
+                }
+            }
+        },
+        "required": ["phrasing_evaluations"],
         "additionalProperties": False
     },
     max_tokens=8192

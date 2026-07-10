@@ -2,7 +2,7 @@ import json
 from typing import Dict, Any, List
 from dataclasses import dataclass
 
-from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_truth, agent_gpt_evaluate_content_validity, agent_gpt_evaluate_form, agent_gpt_formalize, agent_gpt_improvement
+from services.agent_prompts import agent_gpt_justify, agent_gpt_evaluate_truth, agent_gpt_evaluate_content_validity, agent_gpt_evaluate_phrasing, agent_gpt_evaluate_form, agent_gpt_formalize, agent_gpt_improvement
 from services.conversation import gpt_gen_name
 from schemas.agent_input import AgentInput, FilteredAgentInput
 
@@ -115,6 +115,51 @@ class ContentValidityEvaluationAgent:
                 result_content={"error": str(e)},
                 confidence=0.0,
                 reasoning=f"Error in content validity evaluation: {e}",
+                target_metadata={'target_type': 'argument'},
+                snapshot_id=agent_input.snapshot_id
+            )
+
+
+class PhrasingEvaluationAgent:
+    """Agent that evaluates how parseable each proposition is as a logical sentence"""
+
+    def __init__(self, coordinator):
+        if coordinator is None:
+            raise ValueError("PhrasingEvaluationAgent requires a coordinator")
+        self.name = "phrasing_evaluator"
+        self.coordinator = coordinator
+
+    def evaluate_phrasing(self, agent_input: FilteredAgentInput) -> AgentResult:
+        """Flag transitions, anaphora, and ambiguous wording; recommend parseable phrasing"""
+        try:
+            file_ids = agent_input.file_ids
+            payload = agent_input.model_dump()
+            arg_for_result = agent_input.agent_data.argument
+
+            evaluation_response = agent_gpt_evaluate_phrasing.call(json.dumps(payload), file_ids)
+            evaluation_result = json.loads(evaluation_response)
+            if evaluation_result.get("phrasing_evaluations"):
+                evaluation_result["phrasing_evaluations"] = _sort_by_symbol(evaluation_result["phrasing_evaluations"])
+
+            return AgentResult(
+                agent_type=self.name,
+                operation="evaluate_phrasing",
+                result_content={
+                    **evaluation_result,
+                    "argument": arg_for_result
+                },
+                target_metadata={'target_type': 'argument'},
+                snapshot_id=agent_input.snapshot_id
+            )
+
+        except Exception as e:
+            logger.error(f"Phrasing evaluator agent error: {e}")
+            return AgentResult(
+                agent_type=self.name,
+                operation="evaluate_phrasing",
+                result_content={"error": str(e)},
+                confidence=0.0,
+                reasoning=f"Error in phrasing evaluation: {e}",
                 target_metadata={'target_type': 'argument'},
                 snapshot_id=agent_input.snapshot_id
             )
