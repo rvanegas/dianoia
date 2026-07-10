@@ -1,6 +1,7 @@
 """Extract a structured argument from plain text using Claude."""
 
 from services.conversation import ModelAgent
+from services.structural_conditions import STRUCTURAL_CONDITIONS
 
 _EXTRACTION_SYSTEM_PROMPT = """
 You are an expert in logical argumentation. Given a piece of text, identify the argument
@@ -26,10 +27,18 @@ Each proposition is a Step object:
     a premise not derived from any other step in this text)
   - truth_score: Always ""
 
+### Structural requirements
+
+Every extracted argument must satisfy all three of these conditions:
+
+""" + STRUCTURAL_CONDITIONS + """
+
+Before returning, check every step against these three requirements and revise
+any violation.
+
 ### Guidelines
 
 - Keep propositions atomic — one claim per step
-- The last step in `argument` should be the main conclusion
 - Every step — premise or derived — is treated identically by the rest of the system:
   it will be evaluated for truth and (if it has justifiers) content validity. Nothing
   in this text is "given" or exempt from evaluation; do not reason as if some
@@ -51,8 +60,8 @@ Output:
 {
   "argument": [
     {"symbol": "1", "proposition": "Regular exercise strengthens the cardiovascular system.", "justifiers": [], "truth_score": ""},
-    {"symbol": "2", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""},
-    {"symbol": "3", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": ["1"], "truth_score": ""},
+    {"symbol": "2", "proposition": "A strong cardiovascular system leads to longer life expectancy.", "justifiers": [], "truth_score": ""},
+    {"symbol": "3", "proposition": "Exercise reduces stress and improves mental health.", "justifiers": [], "truth_score": ""},
     {"symbol": "4", "proposition": "People who exercise regularly tend to live healthier and longer lives.", "justifiers": ["1", "2", "3"], "truth_score": ""}
   ]
 }
@@ -82,6 +91,7 @@ _RESPONSE_FORMAT = {
 _gpt_extract = ModelAgent(
     instructions=_EXTRACTION_SYSTEM_PROMPT,
     response_format_base=_RESPONSE_FORMAT,
+    max_tokens=8192,
 )
 
 
@@ -101,6 +111,7 @@ def extract_argument(text: str, max_props: int | None = None) -> dict:
         agent = ModelAgent(
             instructions=_EXTRACTION_SYSTEM_PROMPT + extra,
             response_format_base=_RESPONSE_FORMAT,
+            max_tokens=8192,
         )
     else:
         agent = _gpt_extract

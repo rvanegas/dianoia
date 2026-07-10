@@ -34,6 +34,32 @@ def cmd_extract(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_audit(args: argparse.Namespace) -> int:
+    path = Path(args.file)
+    if not path.exists():
+        print(f"Error: '{path}' does not exist.", file=sys.stderr)
+        return 1
+
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"Error: invalid JSON in '{path}': {e}", file=sys.stderr)
+        return 1
+
+    from schemas.step import Step
+    from services.audit import audit_argument
+
+    try:
+        steps = [Step(**s) for s in raw.get("argument", [])]
+    except Exception as e:
+        print(f"Error: could not parse argument data: {e}", file=sys.stderr)
+        return 1
+
+    result = audit_argument(steps)
+    print(json.dumps(result.model_dump(), indent=2))
+    return 0
+
+
 def cmd_evaluate(args: argparse.Namespace) -> int:
     path = Path(args.file)
     if not path.exists():
@@ -116,6 +142,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_extract.add_argument("-m", "--max-props", type=int, default=None, metavar="N",
                            help="Maximum total number of propositions in the argument")
 
+    p_audit = sub.add_parser("audit", help="Audit an argument JSON file against the structural conditions")
+    p_audit.add_argument("file", help="JSON file containing arguments dict")
+
     p_evaluate = sub.add_parser("evaluate", help="Evaluate an argument JSON file with AI agents")
     p_evaluate.add_argument("file", help="JSON file containing arguments dict")
     p_evaluate.add_argument("--timeout", type=int, default=300, metavar="N",
@@ -132,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "extract":
         return cmd_extract(args)
+    if args.command == "audit":
+        return cmd_audit(args)
     if args.command == "evaluate":
         return cmd_evaluate(args)
 

@@ -6,6 +6,8 @@ from schemas.arguments import (
     ArgumentsWithStep,
     ArgumentsWithProposition,
     ArgumentsWithStepAndProposition)
+from schemas.audit import AuditResult
+from services.audit import audit_argument
 from services.argument_service import (
     ArgumentService,
     ArgumentStepService,
@@ -110,6 +112,17 @@ async def endorse_formalization(args: ArgumentsWithStep,
     service = ArgumentStepService(args, snapshot_id)
     result = service.endorse_formalization()
     return {"reply": result}
+
+@router.post("/audit")
+def audit(args: Arguments) -> AuditResult:
+    """Audit the argument's graph structure against the structural conditions.
+
+    Purely deterministic (no LLM) and stateless: unlike sibling routes, this
+    touches no coordinator or snapshot state, so it takes no
+    conversation_id/snapshot_id query params. Returns pointers on how to
+    revise the argument, never a revised argument.
+    """
+    return audit_argument(args.argument)
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
