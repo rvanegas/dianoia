@@ -263,8 +263,6 @@ Each Step object contains:
 
 2. **Logical Issues**: Note only genuine logical gaps — cases where the conclusion might not hold even if justifiers are true. Do NOT flag triviality, circularity, or lack of novelty.
 
-3. **Recommendations**: Suggest additions or clarifications that would close identified logical gaps. If validity is 1.0, say so and give no recommendations.
-
 ### Examples
 
 # Deductively valid argument
@@ -285,8 +283,7 @@ Output:
   "validity_evaluations": [
     {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction: if Socrates is a man and all men are mortal, Socrates must be mortal"}
   ],
-  "logical_issues": [],
-  "recommendations": ["Argument is deductively valid"]
+  "logical_issues": []
 }
 
 # Circular but valid argument
@@ -307,8 +304,7 @@ Output:
   "validity_evaluations": [
     {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid: if water is H2O and H2O is a molecule, water must be a molecule — the conclusion follows necessarily by substitution"}
   ],
-  "logical_issues": [],
-  "recommendations": ["Argument is deductively valid"]
+  "logical_issues": []
 }
 
 # Contradictory conclusion
@@ -329,8 +325,7 @@ Output:
   "validity_evaluations": [
     {"symbol": "3", "validity_value": 0.0, "reasoning": "Contradiction: justifiers 1 and 2 entail Socrates is mortal, the opposite of the stated conclusion"}
   ],
-  "logical_issues": ["Conclusion contradicts what the premises entail"],
-  "recommendations": ["Correct the conclusion to match what follows from the premises"]
+  "logical_issues": ["Conclusion contradicts what the premises entail"]
 }
 
 # Genuine logical gap (analogical inference)
@@ -351,11 +346,7 @@ Output:
   "validity_evaluations": [
     {"symbol": "3", "validity_value": 0.5, "reasoning": "Genuine logical gap: even if the policy worked elsewhere and the countries are similar in some respects, the conclusion could still fail — similarity may not extend to the factors that determine policy success"}
   ],
-  "logical_issues": ["The similarity claim (2) does not guarantee the relevant dimensions of similarity for policy outcomes"],
-  "recommendations": [
-    "Specify which features of similarity matter for policy success (2)",
-    "Address potential disanalogies"
-  ]
+  "logical_issues": ["The similarity claim (2) does not guarantee the relevant dimensions of similarity for policy outcomes"]
 }
 """
 
@@ -380,13 +371,9 @@ agent_gpt_evaluate_content_validity = ModelAgent(
             "logical_issues": {
                 "type": "array",
                 "items": {"type": "string"}
-            },
-            "recommendations": {
-                "type": "array",
-                "items": {"type": "string"}
             }
         },
-        "required": ["validity_evaluations", "logical_issues", "recommendations"],
+        "required": ["validity_evaluations", "logical_issues"],
         "additionalProperties": False
     },
     max_tokens=8192
@@ -599,8 +586,7 @@ Output:
     {"symbol": "3", "validity": "1.0", "reasoning": "Valid conclusion from premises 1 and 2: Pa and forall x. Px implies Qx logically entail Qa"}
   ],
   "argument_validity": "1.0",
-  "logical_issues": [],
-  "recommendations": ["Argument is deductively valid"]
+  "logical_issues": []
 }
 
 # Invalid deductive argument
@@ -648,8 +634,7 @@ Output:
     {"symbol": "3", "validity": "0.0", "reasoning": "Invalid conclusion — Qa and forall x. Px implies Qx do not logically entail Pa"}
   ],
   "argument_validity": "0.0",
-  "logical_issues": ["Invalid argument: Qa and forall x. Px implies Qx do not logically entail Pa"],
-  "recommendations": ["The premises do not logically support the conclusion"]
+  "logical_issues": ["Invalid argument: Qa and forall x. Px implies Qx do not logically entail Pa"]
 }
 
 ### Output Format
@@ -657,7 +642,6 @@ Provide evaluations for:
 - Individual proposition validity assessments
 - Overall argument validity based on logical structure
 - Identified logical issues
-- Recommendations for improvement
 """
 
 # Create GPT instance for form evaluation
@@ -683,13 +667,9 @@ agent_gpt_evaluate_form = ModelAgent(
             "logical_issues": {
                 "type": "array",
                 "items": {"type": "string"}
-            },
-            "recommendations": {
-                "type": "array",
-                "items": {"type": "string"}
             }
         },
-        "required": ["proposition_evaluations", "argument_validity", "logical_issues", "recommendations"],
+        "required": ["proposition_evaluations", "argument_validity", "logical_issues"],
         "additionalProperties": False
     }
 )

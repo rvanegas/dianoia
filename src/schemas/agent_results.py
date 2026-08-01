@@ -47,7 +47,6 @@ class FormalEvalResult(TypedDict):
     proposition_evaluations: list[PropositionEvaluation]
     argument_validity: float
     logical_issues: list[str]
-    recommendations: list[str]
 
 
 # --- Content evaluator ---
@@ -74,7 +73,6 @@ class ContentEvalResult(TypedDict):
     validity_evaluations: list[ContentValidityEvaluation]
     incoherent_sets: list[IncoherentSet]
     logical_issues: list[str]
-    recommendations: list[str]
 
 
 # --- Improver ---

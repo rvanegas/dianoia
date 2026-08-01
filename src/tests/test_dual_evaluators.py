@@ -64,8 +64,7 @@ class TestDualEvaluators:
             "validity_evaluations": [
                 {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction from 1 and 2"}
             ],
-            "logical_issues": [],
-            "recommendations": ["Argument is logically sound and well-structured"]
+            "logical_issues": []
         }
 
         with patch('services.agents.agent_gpt_evaluate_content_validity') as mock_gpt:
@@ -111,8 +110,7 @@ class TestDualEvaluators:
                 {"symbol": "3", "validity": 1.0, "reasoning": "Valid conclusion from premises 1 and 2"}
             ],
             "argument_validity": 1.0,
-            "logical_issues": [],
-            "recommendations": ["Argument is deductively valid: P(a) and forall x. (P(x) implies Q(x)) logically entail Q(a)"]
+            "logical_issues": []
         }
 
         with patch('services.agents.agent_gpt_evaluate_form') as mock_gpt:
@@ -146,7 +144,6 @@ class TestDualEvaluators:
             assert result.result_content["evaluation_mode"] == "formal_validity"
             assert result.result_content["argument_validity"] == 1.0
             assert len(result.result_content["logical_issues"]) == 0
-            assert len(result.result_content["recommendations"]) > 0
 
 
 if __name__ == "__main__":

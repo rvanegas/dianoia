@@ -40,7 +40,7 @@ class StoredAgentResult:
 class AgentTask:
     """Represents a task for an agent to process"""
     id: str
-    agent_type: str  # 'builder', 'content_evaluator', 'form_evaluator', 'formalizer', 'rewriter'
+    agent_type: str  # 'truth_evaluator', 'content_validity_evaluator', 'phrasing_evaluator', 'form_evaluator', 'formalizer', 'improver', 'name_generator'
     agent_input: AgentInput
     status: str = 'pending'  # 'pending', 'running', 'completed', 'failed'
     priority: int = 0
@@ -667,7 +667,7 @@ class AgentCoordinator:
         # Extract all evaluation results together (no need to separate by type initially)
         evaluation_results = []
         for result in snapshot_results:
-            if result.agent_type in ['content_evaluator', 'form_evaluator']:
+            if result.agent_type in ['truth_evaluator', 'content_validity_evaluator', 'form_evaluator']:
                 evaluation_results.append(asdict(result))
                 
         # Create agent data with evaluation results in latest_results

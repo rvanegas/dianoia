@@ -51,7 +51,7 @@ class TestImprovementAgent:
                 target_content=None,
                 latest_results=[
                     {
-                        'agent_type': 'content_evaluator',
+                        'agent_type': 'truth_evaluator',
                         'operation': 'evaluate_propositions',
                         'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,
@@ -106,7 +106,7 @@ class TestImprovementAgent:
                 target_content=None,
                 latest_results=[
                     {
-                        'agent_type': 'content_evaluator',
+                        'agent_type': 'truth_evaluator',
                         'operation': 'evaluate_propositions',
                         'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,

@@ -102,8 +102,7 @@ class TestContentValidityEvaluationAgent:
             "validity_evaluations": [
                 {"symbol": "3", "validity_value": 1.0, "reasoning": "Valid deduction from 1 and 2"}
             ],
-            "logical_issues": [],
-            "recommendations": ["Argument is deductively valid"]
+            "logical_issues": []
         }
 
         with patch('services.agents.agent_gpt_evaluate_content_validity') as mock_gpt:
