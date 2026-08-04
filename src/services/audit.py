@@ -59,22 +59,22 @@ def audit_argument(steps: list[Step]) -> AuditResult:
             pointer="Remove or correct the nonexistent justifier symbols.",
         ))
 
-    # Integrity: self-justification
+    # Circular reasoning: self-justification (a step supports itself)
     self_just = [s.symbol for s in steps if s.symbol in s.justifiers]
     if self_just:
         findings.append(AuditFinding(
-            condition="integrity",
+            condition="circular",
             step_symbols=self_just,
-            issue="Steps cite themselves as justifiers.",
+            issue="A step cites itself as its own justifier — the proposition is used to support itself (circular reasoning).",
             pointer="Remove the self-reference from each step's justifiers.",
         ))
 
-    # Integrity: cycles
+    # Circular reasoning: multi-step justifier cycles
     cycle_members = _find_cycle_members(steps, symbol_set)
     cycle_members = [sym for sym in cycle_members if sym not in self_just]
     if cycle_members:
         findings.append(AuditFinding(
-            condition="integrity",
+            condition="circular",
             step_symbols=cycle_members,
             issue="Justifier references form a cycle; no step in it is independently supported.",
             pointer="Break the cycle by removing or redirecting at least one justifier link.",

@@ -66,19 +66,28 @@ class TestAuditArgument:
         assert any(f.condition == "integrity" and f.step_symbols == ["2"]
                    for f in result.findings)
 
-    def test_self_justification_flagged_as_integrity(self):
+    def test_self_justification_flagged_as_circular(self):
         steps = [step("1"), step("2", justifiers=["1", "2"])]
         result = audit_argument(steps)
-        assert any(f.condition == "integrity" and f.step_symbols == ["2"]
+        assert any(f.condition == "circular" and f.step_symbols == ["2"]
                    for f in result.findings)
 
-    def test_cycle_flagged_as_integrity(self):
+    def test_cycle_flagged_as_circular(self):
         steps = [step("1", justifiers=["2"]), step("2", justifiers=["1"]),
                  step("3", justifiers=["1"])]
         result = audit_argument(steps)
-        cycle = [f for f in result.findings if f.condition == "integrity"]
+        cycle = [f for f in result.findings if f.condition == "circular"]
         assert len(cycle) == 1
         assert set(cycle[0].step_symbols) == {"1", "2"}
+
+    def test_dangling_justifier_stays_integrity(self):
+        # The dangling-reference check keeps its integrity label after the
+        # circular-reasoning findings were split out of integrity.
+        steps = [step("1"), step("2", justifiers=["1", "99"])]
+        result = audit_argument(steps)
+        assert any(f.condition == "integrity" and f.step_symbols == ["2"]
+                   for f in result.findings)
+        assert not any(f.condition == "circular" for f in result.findings)
 
     def test_every_finding_has_a_pointer(self):
         steps = [step("1"), step("2"), step("3", justifiers=["2", "99"])]

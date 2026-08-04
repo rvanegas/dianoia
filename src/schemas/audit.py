@@ -7,7 +7,7 @@ class AuditFinding(BaseModel):
     """A single violation of the structural conditions, with a revision pointer."""
     condition: str = Field(
         description="Violated condition",
-        pattern="^(connectivity|conclusion|integrity)$",
+        pattern="^(connectivity|conclusion|integrity|circular)$",
     )
     step_symbols: list[str] = Field(description="Symbols of the affected steps")
     issue: str = Field(description="What is wrong")
