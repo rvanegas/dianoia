@@ -1,13 +1,19 @@
+import uuid
+
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query, Depends
 
+from api.auth import require_mdc_token
 from core.utils import logger
 from schemas.arguments import (
+    ArgumentData,
     Arguments,
     ArgumentsWithStep,
     ArgumentsWithProposition,
-    ArgumentsWithStepAndProposition)
+    ArgumentsWithStepAndProposition,
+    ExtractionRequest)
 from schemas.audit import AuditResult
 from services.audit import audit_argument
+from services.extraction import extract_argument
 from services.argument_service import (
     ArgumentService,
     ArgumentStepService,
@@ -123,6 +129,26 @@ def audit(args: Arguments) -> AuditResult:
     revise the argument, never a revised argument.
     """
     return audit_argument(args.argument)
+
+@router.post("/extract", dependencies=[Depends(require_mdc_token)])
+def extract(request: ExtractionRequest) -> dict:
+    """Extract a structured argument from plain text (used by mdc)."""
+    try:
+        return extract_argument(request.text, max_props=request.max_props)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@router.post("/evaluate", dependencies=[Depends(require_mdc_token)])
+def evaluate(args: ArgumentData) -> dict:
+    """Start the evaluation agents on a whole argument (used by mdc).
+
+    Returns the ids to poll with GET /api/agents/results until its
+    tasks_complete is true.
+    """
+    conversation_id = f"{uuid.uuid4()}:mdc"
+    snapshot_id = "1"
+    coordinator.react_to_user_argument_change(conversation_id, snapshot_id, args)
+    return {"conversation_id": conversation_id, "snapshot_id": snapshot_id}
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):

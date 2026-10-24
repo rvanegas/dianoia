@@ -20,3 +20,4 @@ if _config_path.exists():
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or _toml.get("anthropic_api_key")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL") or _toml.get("model", "claude-sonnet-4-6")
+MDC_TOKEN = os.getenv("MDC_TOKEN") or _toml.get("mdc_token")

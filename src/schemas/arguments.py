@@ -44,3 +44,9 @@ class ArgumentData(BaseModel):
     """Schema for argument data passed between services and agents"""
     argument: List[Step]
     file_ids: List[str] = []
+
+
+class ExtractionRequest(BaseModel):
+    """Plain text to extract an argument from"""
+    text: str
+    max_props: int | None = None
