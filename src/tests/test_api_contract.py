@@ -41,8 +41,10 @@ def test_the_routes_publish_their_responses():
     spec = client.get("/openapi.json").json()
 
     def published(path, method):
+        # A model used in requests too is published as "<Name>-Output" here.
         content = spec["paths"][path][method]["responses"]["200"]["content"]
-        return content["application/json"]["schema"]["$ref"].rsplit("/", 1)[-1]
+        name = content["application/json"]["schema"]["$ref"].rsplit("/", 1)[-1]
+        return name.removesuffix("-Output")
 
     assert published("/api/agents/results", "get") == "AgentResultsResponse"
     assert published("/api/argument/evaluate", "post") == "EvaluateStarted"

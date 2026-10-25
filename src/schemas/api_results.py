@@ -22,7 +22,9 @@ from schemas.step import ImprovementRecommendation, Step
 
 
 class _Strict(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # Fields with defaults are still always serialized, so they are published
+    # as required; Definition is the one exception.
+    model_config = ConfigDict(extra="forbid", json_schema_serialization_defaults_required=True)
 
 
 # -- result_content, one per agent ---------------------------------------------
@@ -74,6 +76,9 @@ class FormalizationItem(_Strict):
 
 
 class Definition(_Strict):
+    # arity really is absent on constants, so it stays optional in the schema.
+    model_config = ConfigDict(extra="forbid", json_schema_serialization_defaults_required=False)
+
     symbol: str
     value: str
     arity: int | None = Field(default=None, description="Predicates only; absent on constants")

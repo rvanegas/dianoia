@@ -1,13 +1,14 @@
 """Schemas for the argument auditor."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
 class AuditFinding(BaseModel):
     """A single violation of the structural conditions, with a revision pointer."""
-    condition: str = Field(
+    condition: Literal["connectivity", "conclusion", "integrity", "circular"] = Field(
         description="Violated condition",
-        pattern="^(connectivity|conclusion|integrity|circular)$",
     )
     step_symbols: list[str] = Field(description="Symbols of the affected steps")
     issue: str = Field(description="What is wrong")
