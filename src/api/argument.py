@@ -11,6 +11,7 @@ from schemas.arguments import (
     ArgumentsWithProposition,
     ArgumentsWithStepAndProposition,
     ExtractionRequest)
+from schemas.api_results import EvaluateStarted
 from schemas.audit import AuditResult
 from services.audit import audit_argument
 from services.extraction import extract_argument
@@ -130,7 +131,8 @@ def audit(args: Arguments) -> AuditResult:
     """
     return audit_argument(args.argument)
 
-@router.post("/extract", dependencies=[Depends(require_mdc_token)])
+@router.post("/extract", dependencies=[Depends(require_mdc_token)],
+             response_model=None, responses={200: {"model": Arguments}})
 def extract(request: ExtractionRequest) -> dict:
     """Extract a structured argument from plain text (used by mdc)."""
     try:
@@ -138,7 +140,8 @@ def extract(request: ExtractionRequest) -> dict:
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-@router.post("/evaluate", dependencies=[Depends(require_mdc_token)])
+@router.post("/evaluate", dependencies=[Depends(require_mdc_token)],
+             response_model=None, responses={200: {"model": EvaluateStarted}})
 def evaluate(args: ArgumentData) -> dict:
     """Start the evaluation agents on a whole argument (used by mdc).
 

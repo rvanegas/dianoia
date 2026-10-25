@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Dict, Any
 
+from schemas.api_results import AgentResultsResponse
 from services.agent_coordinator import coordinator
 
 
@@ -10,7 +11,8 @@ from core.utils import logger
 
 router = APIRouter()
 
-@router.get("/results")
+# Documented, not enforced: see schemas/api_results.py for why.
+@router.get("/results", response_model=None, responses={200: {"model": AgentResultsResponse}})
 async def get_conversation_results(
     conversation_id: str = Query(..., description="Conversation ID (format: session_id:conversation_id)"),
     snapshot_id: str = Query(..., description="Snapshot ID for filtering results")
