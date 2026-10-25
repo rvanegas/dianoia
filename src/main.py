@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.argument import router as argument_router
 from api.agents import router as agents_router
+from api.health import router as health_router
 
 # Initialize GPT instances at server startup
 from services.startup_init import run_startup_initialization
@@ -22,5 +23,6 @@ app.add_middleware(
 
 app.include_router(argument_router, prefix="/api/argument")
 app.include_router(agents_router, prefix="/api/agents")
+app.include_router(health_router)
 
 logger.info("Server is ready and accepting requests.")

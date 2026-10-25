@@ -52,6 +52,7 @@ Client polls GET /api/agents/results ──────────────�
 
 - `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for mdc, which require `Authorization: Bearer $MDC_TOKEN` (`api/auth.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
+- `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `bin/deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
 - `services/agent_coordinator.py` — Thread-based task queue; `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
 - `services/agent_prompts.py` — All LLM prompt templates

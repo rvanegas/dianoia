@@ -4,9 +4,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    external: true
+    # Loopback only: Caddy on the box is the one public front door
+    # (rvanegas-site's Caddyfile).
+    ports:
+      - "127.0.0.1:8000:8000"

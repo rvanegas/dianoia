@@ -1,6 +1,120 @@
 #!/bin/bash
+#
+# Ships dianoia to the commons box, rebuilds its container, and checks that the
+# commit it sent is the one answering.
+#
+#   bin/deploy              refuses unless the tree is clean
+#   bin/deploy --dirty      ships the working tree as it stands, and says so
+#   bin/deploy --box-only   checks /healthz on the box's loopback only: before
+#                           the cutover, dianoia.rvanegas.co does not reach it
+#
+# Run from the Mac, modelled on thefloor/bin/deploy: rsync rather than a git
+# pull on the box, so the box needs no GitHub credential and what ships is
+# what this checkout holds. The box's .env holds production secrets and is
+# never sent or overwritten.
+#
+# **Commons only.** Ubuntu-3 runs the previous docker-compose.yml, on the
+# external app-network behind noesis's nginx. This one publishes on loopback
+# for Caddy instead, so deploying it to Ubuntu-3 would take dianoia away from
+# nginx and with it every client.
+set -euo pipefail
 
-cd ~/dianoia
-git pull
-docker-compose down
-docker-compose up --build -d
+HOST=${COMMONS_HOST:?set COMMONS_HOST=ubuntu@<commons ip>}
+KEY=${COMMONS_KEY:-~/.ssh/lightsail-ubuntu}
+SSH="ssh -i $KEY -o BatchMode=yes"
+URL=${DIANOIA_URL:-https://dianoia.rvanegas.co}
+
+cd "$(dirname "$0")/.."
+
+allow_dirty=false
+box_only=false
+for arg in "$@"; do
+  case "$arg" in
+    --dirty) allow_dirty=true ;;
+    --box-only) box_only=true ;;
+    -h|--help)
+      awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"
+      exit 0
+      ;;
+    *) echo "unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [ -n "$(git status --porcelain)" ] && ! $allow_dirty; then
+  echo "✗ the tree is dirty; this ships the working tree, not a commit" >&2
+  echo >&2
+  git status --short >&2
+  echo >&2
+  echo "  commit first, or 'bin/deploy --dirty' to ship it as it is" >&2
+  exit 1
+fi
+
+# The route tests only. Five tests elsewhere in the suite (argument removal and
+# the improvement agent's triggers) fail on master as of 2026-10-24, and a gate
+# that can never pass is a gate everybody learns to skip. These are the ones
+# that say whether the API answers as its clients expect.
+echo "→ tests"
+python3 -m pytest -q -p no:logging src/tests/test_api_*.py >/dev/null
+
+SHA=$(git rev-parse --short HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ -n "$(git status --porcelain)" ]; then
+  SHA="$SHA-dirty"
+  echo "⚠ deploying a dirty tree — the box will record $SHA" >&2
+fi
+if [ "$BRANCH" != "master" ]; then
+  echo "⚠ deploying from $BRANCH, not master" >&2
+fi
+
+# Baked into the image with the code it describes (the Dockerfile copies src/),
+# and read by api/health.py. Gitignored, and removed again once sent, so a
+# server run from this checkout goes on reporting "dev".
+printf '{"commit":"%s","branch":"%s","deployedAt":"%s"}\n' \
+  "$SHA" "$BRANCH" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > src/deployed.json
+trap 'rm -f src/deployed.json' EXIT
+
+# --delete leaves excluded paths alone on the box, which is what keeps .env
+# there. The .env pattern is a wildcard so an editor's .env~ is never sent.
+echo "→ sync to $HOST"
+rsync -az --delete -e "$SSH" \
+  --exclude .git --exclude '/.claude/' \
+  --exclude '.env*' \
+  --exclude venv --exclude __pycache__ --exclude '*.egg-info' \
+  --exclude '/dist/' --exclude '/build/' \
+  ./ "$HOST:dianoia/"
+
+echo "→ build and restart"
+$SSH "$HOST" 'set -euo pipefail
+  cd ~/dianoia
+  [ -f .env ] || { echo "✗ no ~/dianoia/.env on the box (PROJECTS.md names what it holds)" >&2; exit 1; }
+  docker compose up --build -d --remove-orphans 2>&1 | tail -3'
+
+# The container takes a few seconds to come up; startup also pre-warms the
+# model clients. A minute is generous.
+echo "→ health on the box"
+got=""
+for _ in $(seq 30); do
+  got=$($SSH "$HOST" 'curl -fsS --max-time 3 http://127.0.0.1:8000/healthz' 2>/dev/null \
+    | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' || true)
+  [ "$got" = "$SHA" ] && break
+  sleep 2
+done
+if [ "$got" != "$SHA" ]; then
+  echo "✗ the box answers ${got:-nothing}, not $SHA" >&2
+  echo "  $SSH $HOST 'cd ~/dianoia && docker compose logs --tail 50'" >&2
+  exit 1
+fi
+echo "  127.0.0.1:8000 runs $SHA"
+
+if $box_only; then
+  echo "✓ deployed $SHA (box only; $URL not checked)"
+  exit 0
+fi
+
+echo "→ health at $URL"
+got=$(curl -fsS --max-time 10 "$URL/healthz" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' || true)
+if [ "$got" != "$SHA" ]; then
+  echo "✗ $URL/healthz answers ${got:-nothing}, not $SHA" >&2
+  exit 1
+fi
+echo "✓ deployed $SHA, answering at $URL"
