@@ -1,10 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
+
+from conftest import MDC_AUTH
 from main import app
 from services.agent_coordinator import coordinator, TargetMetadata
 import time
 
-client = TestClient(app)
+client = TestClient(app, headers=MDC_AUTH)
 
 
 class TestAgentsAPIWithStaleResults:

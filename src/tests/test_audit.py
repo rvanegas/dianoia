@@ -7,11 +7,13 @@ import json
 
 from fastapi.testclient import TestClient
 
+from conftest import MDC_AUTH
+
 from main import app
 from schemas.step import Step
 from services.audit import audit_argument
 
-client = TestClient(app)
+client = TestClient(app, headers=MDC_AUTH)
 
 
 def step(symbol, proposition="A proposition.", justifiers=None):

@@ -5,13 +5,15 @@ These tests ensure the full request → schema → service → response flow wor
 
 import pytest
 from fastapi.testclient import TestClient
+
+from conftest import MDC_AUTH
 from unittest.mock import patch, MagicMock
 
 from main import app
 from schemas.step import Step
 from services.agent_coordinator import coordinator
 
-client = TestClient(app)
+client = TestClient(app, headers=MDC_AUTH)
 
 
 class TestAPIArgumentEndpoints:

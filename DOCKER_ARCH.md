@@ -26,8 +26,9 @@ every service on the box are in `~/src/rvanegas-site/PROJECTS.md`.
 
 - **Image:** built from `Dockerfile` (Python 3.13, uvicorn), on the box.
 - **Published:** `127.0.0.1:8000` — reachable by Caddy, never from outside.
-- **Config:** `~/dianoia/.env` on the box (`ANTHROPIC_API_KEY`, `MDC_TOKEN`),
-  never in the repo and never sent by a deploy.
+- **Config:** `~/dianoia/.env` on the box (`ANTHROPIC_API_KEY`, `MDC_TOKEN`,
+  `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_IDS`, `CORS_ORIGINS`; CLAUDE.md
+  says what each is), never in the repo and never sent by a deploy.
 - **Health:** `GET /healthz` returns `{"ok": true, "commit": …}`, the commit
   stamped into `src/deployed.json` by `bin/deploy`.
 

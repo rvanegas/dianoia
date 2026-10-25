@@ -50,7 +50,8 @@ Client polls GET /api/agents/results ──────────────�
 
 ### Backend Structure
 
-- `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for mdc, which require `Authorization: Bearer $MDC_TOKEN` (`api/auth.py`)
+- `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for mdc, which require `Authorization: Bearer $MDC_TOKEN`
+- `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): mdc's `MDC_TOKEN`, or a Cognito ID token from Roxana's user pool (Roxana and noesis send one), verified against the pool's JWKS — issuer, `aud` in `COGNITO_CLIENT_IDS`, expiry, `token_use == "id"`. `extract` and `evaluate` additionally require mdc's token (`require_mdc_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as mdc (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
 - `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `bin/deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
@@ -96,3 +97,16 @@ model = "claude-sonnet-4-6"
 ```
 
 Or via environment variables: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`.
+
+Callers and browsers (`api/auth.py`, `main.py`), as `config.toml` keys or
+environment variables:
+
+| key | env | meaning |
+|---|---|---|
+| `mdc_token` | `MDC_TOKEN` | mdc's service token |
+| `cognito_user_pool_id` | `COGNITO_USER_POOL_ID` | Roxana's user pool (`us-west-2_JBus4am8w`); unset, no user token is accepted |
+| `cognito_client_ids` | `COGNITO_CLIENT_IDS` (comma-separated) | the app clients ID tokens may be issued to: Roxana's web client and noesis's |
+| `cors_origins` | `CORS_ORIGINS` (comma-separated) | browser origins allowed; unset, none |
+
+For local development against the browser apps, add their dev origins (for
+example `http://localhost:3000`) to `CORS_ORIGINS`.

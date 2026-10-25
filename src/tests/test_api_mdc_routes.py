@@ -42,9 +42,11 @@ class TestMdcToken:
         assert response.status_code == 401
 
     def test_unconfigured_token_refuses_everyone(self):
+        # Refused by the route-wide caller check before extract's own, which
+        # would answer 503: with no token configured nobody is mdc.
         with patch("config.MDC_TOKEN", None):
             response = client.post("/api/argument/extract", json={"text": "x"}, headers=AUTH)
-        assert response.status_code == 503
+        assert response.status_code == 401
 
 
 class TestExtractEndpoint:
@@ -95,6 +97,7 @@ class TestEvaluateEndpoint:
     def test_results_route_reports_completion(self):
         """mdc polls GET /api/agents/results until tasks_complete; it must be present"""
         response = client.get("/api/agents/results",
-                              params={"conversation_id": "nothing-here:mdc", "snapshot_id": "1"})
+                              params={"conversation_id": "nothing-here:mdc", "snapshot_id": "1"},
+                              headers=AUTH)
         assert response.status_code == 200
         assert response.json()["tasks_complete"] is True
