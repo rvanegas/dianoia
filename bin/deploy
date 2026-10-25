@@ -5,21 +5,16 @@
 #
 #   bin/deploy              refuses unless the tree is clean
 #   bin/deploy --dirty      ships the working tree as it stands, and says so
-#   bin/deploy --box-only   checks /healthz on the box's loopback only: before
-#                           the cutover, dianoia.rvanegas.co does not reach it
 #
 # Run from the Mac, modelled on thefloor/bin/deploy: rsync rather than a git
 # pull on the box, so the box needs no GitHub credential and what ships is
 # what this checkout holds. The box's .env holds production secrets and is
 # never sent or overwritten.
 #
-# **Commons only.** Ubuntu-3 runs the previous docker-compose.yml, on the
-# external app-network behind noesis's nginx. This one publishes on loopback
-# for Caddy instead, so deploying it to Ubuntu-3 would take dianoia away from
-# nginx and with it every client.
+# The box is commons (~/src/rvanegas-site/PROJECTS.md); COMMONS_HOST overrides.
 set -euo pipefail
 
-HOST=${COMMONS_HOST:?set COMMONS_HOST=ubuntu@<commons ip>}
+HOST=${COMMONS_HOST:-ubuntu@32.190.173.222}
 KEY=${COMMONS_KEY:-~/.ssh/lightsail-ubuntu}
 SSH="ssh -i $KEY -o BatchMode=yes"
 URL=${DIANOIA_URL:-https://dianoia.rvanegas.co}
@@ -27,11 +22,9 @@ URL=${DIANOIA_URL:-https://dianoia.rvanegas.co}
 cd "$(dirname "$0")/.."
 
 allow_dirty=false
-box_only=false
 for arg in "$@"; do
   case "$arg" in
     --dirty) allow_dirty=true ;;
-    --box-only) box_only=true ;;
     -h|--help)
       awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"
       exit 0
@@ -105,11 +98,6 @@ if [ "$got" != "$SHA" ]; then
   exit 1
 fi
 echo "  127.0.0.1:8000 runs $SHA"
-
-if $box_only; then
-  echo "✓ deployed $SHA (box only; $URL not checked)"
-  exit 0
-fi
 
 echo "→ health at $URL"
 got=$(curl -fsS --max-time 10 "$URL/healthz" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' || true)

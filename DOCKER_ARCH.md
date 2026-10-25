@@ -13,7 +13,7 @@ Internet
 [Caddy]  ports 80/443, certificates renewed by Caddy itself
    │  dianoia.rvanegas.co        → 127.0.0.1:8000 (everything)
    │  noesis.rvanegas.co /api/*  → 127.0.0.1:8000
-   │  dianoia.rvanegas.com       → as noesis, until its clients move
+   │  dianoia.rvanegas.com       → as noesis (the old name)
    ▼
 [dianoia-backend-1]  uvicorn, published on 127.0.0.1:8000 only
 ```
@@ -36,16 +36,18 @@ every service on the box are in `~/src/rvanegas-site/PROJECTS.md`.
 From the Mac:
 
 ```bash
-COMMONS_HOST=ubuntu@<commons ip> bin/deploy             # checks dianoia.rvanegas.co
-COMMONS_HOST=ubuntu@<commons ip> bin/deploy --box-only  # before the DNS cutover
+bin/deploy
 ```
 
-It rsyncs the checkout to `~/dianoia`, runs `docker compose up --build -d`,
-and waits for `/healthz` to report the commit it sent. See the script's header.
+It rsyncs the checkout to `~/dianoia` on commons (32.190.173.222;
+`COMMONS_HOST` overrides), runs `docker compose up --build -d`, and waits for
+`/healthz` to report the commit it sent, on the box and at
+`https://dianoia.rvanegas.co`. See the script's header.
 
 The box itself is provisioned by `~/src/rvanegas-site/bin/provision-commons`.
 
 ## External clients
 
-Roxana (in the browser) and mdc call `https://dianoia.rvanegas.com/api/` until
-they move to `https://dianoia.rvanegas.co/api/`; Caddy serves both.
+Roxana (in the browser) and mdc call `https://dianoia.rvanegas.co/api/`.
+`https://dianoia.rvanegas.com` still serves noesis with dianoia under `/api/`,
+for anything holding the old name.
