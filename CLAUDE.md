@@ -55,7 +55,7 @@ Client polls GET /api/agents/results ──────────────�
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
 - `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `bin/deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
-- `services/agent_coordinator.py` — Thread-based task queue; `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
+- `services/agent_coordinator.py` — Thread-based task queue: one worker thread per agent type, each waiting on the `task_available` condition (never polling; `tests/test_agent_workers.py` checks idle CPU); `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
 - `services/agent_prompts.py` — All LLM prompt templates
 - `services/argument_service.py` — Core argument manipulation (`next_symbol()`, `new_step()`, `clean_citations()`)
 - `services/conversation.py` — `Gpt` wrapper class for name generation and explanations; uses `client.messages.create()` with `output_config` for structured JSON

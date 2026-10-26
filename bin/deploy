@@ -42,12 +42,14 @@ if [ -n "$(git status --porcelain)" ] && ! $allow_dirty; then
   exit 1
 fi
 
-# The route tests only. Five tests elsewhere in the suite (argument removal and
+# The route tests, and one more. Five tests elsewhere in the suite (argument removal and
 # the improvement agent's triggers) fail on master as of 2026-10-24, and a gate
 # that can never pass is a gate everybody learns to skip. These are the ones
-# that say whether the API answers as its clients expect.
+# that say whether the API answers as its clients expect, plus the one that says
+# the agent workers wait rather than spin (they held a core of the box at idle
+# until 2026-10-26).
 echo "→ tests"
-python3 -m pytest -q -p no:logging src/tests/test_api_*.py >/dev/null
+python3 -m pytest -q -p no:logging src/tests/test_api_*.py src/tests/test_agent_workers.py >/dev/null
 
 SHA=$(git rev-parse --short HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)

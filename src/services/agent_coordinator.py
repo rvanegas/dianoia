@@ -336,8 +336,12 @@ class AgentCoordinator:
     """Manages background agent tasks using threading"""
     
     def __init__(self):
-        self.task_queue = []  # Simple list instead of Queue
+        self.task_queue = []  # A list, not a Queue: workers take tasks by agent type and priority
         self.task_queue_lock = threading.Lock()  # Thread safety for list operations
+        # Idle workers wait here rather than spin; signalled when a task is queued
+        # or the coordinator stops. Shares the lock, so `with task_queue_lock`
+        # elsewhere still excludes them.
+        self.task_available = threading.Condition(self.task_queue_lock)
         self.workers = []
         self.running = True
         self.result_manager = AgentResultManager()  # Use the new result manager
@@ -381,16 +385,12 @@ class AgentCoordinator:
         
         while self.running:
             try:
-                # Get task from queue with prioritization
-                task = self._get_next_task_for_agent(agent_type)
-                
+                task = self._wait_for_task(agent_type)
                 if task:
                     # logger.info(f"Worker {agent_type} processing task {task.id}")
                     self._process_task(task)
-                    
-            except Exception as e:
-                # Queue timeout or other error, continue
-                continue
+            except Exception:
+                logger.exception(f"Worker {agent_type} failed; continuing")
         
         # logger.info(f"Worker {agent_type} stopped")
     
@@ -554,29 +554,51 @@ class AgentCoordinator:
         """Update task in history"""
         self.task_history[task.id] = task
     
+    # How long an idle worker waits before checking `running` again, so stop()
+    # ends it even if a notification is missed.
+    IDLE_WAIT_SECONDS = 1.0
+
+    def _wait_for_task(self, agent_type: str) -> Optional[AgentTask]:
+        """Block until a task for agent_type is queued; None once stopping.
+
+        Until 2026-10-26 the workers polled _get_next_task_for_agent in a loop
+        with nothing to block on, and seven of them held a core at idle.
+        """
+        with self.task_available:
+            while self.running:
+                task = self._take_task_locked(agent_type)
+                if task:
+                    return task
+                self.task_available.wait(timeout=self.IDLE_WAIT_SECONDS)
+            return None
+
     def _get_next_task_for_agent(self, agent_type: str) -> Optional[AgentTask]:
         """Get next task for specific agent type with snapshot-based prioritization"""
         with self.task_queue_lock:
-            if not self.task_queue:
-                return None
-            
-            # Try to find a task for the most recent conversation/snapshot first
-            if self.most_recent_conversation and self.most_recent_snapshot:
-                for task in self.task_queue:
-                    is_most_recent = (task.agent_type == agent_type and
-                        task.agent_input.conversation_id == self.most_recent_conversation and
-                        int(task.agent_input.snapshot_id) == self.most_recent_snapshot)
-                    if is_most_recent:
-                        self.task_queue.remove(task)
-                        return task
-            
-            # Otherwise return any task of the right type
+            return self._take_task_locked(agent_type)
+
+    def _take_task_locked(self, agent_type: str) -> Optional[AgentTask]:
+        """_get_next_task_for_agent's body; the caller holds task_queue_lock."""
+        if not self.task_queue:
+            return None
+
+        # Try to find a task for the most recent conversation/snapshot first
+        if self.most_recent_conversation and self.most_recent_snapshot:
             for task in self.task_queue:
-                if task.agent_type == agent_type:
+                is_most_recent = (task.agent_type == agent_type and
+                    task.agent_input.conversation_id == self.most_recent_conversation and
+                    int(task.agent_input.snapshot_id) == self.most_recent_snapshot)
+                if is_most_recent:
                     self.task_queue.remove(task)
                     return task
-            
-            return None
+
+        # Otherwise return any task of the right type
+        for task in self.task_queue:
+            if task.agent_type == agent_type:
+                self.task_queue.remove(task)
+                return task
+
+        return None
     
     def queue_task(self, agent_type: str, agent_input: AgentInput, priority: int = 0) -> str:
         """Queue a new task for processing"""
@@ -589,9 +611,11 @@ class AgentCoordinator:
             priority=priority
         )
         
-        with self.task_queue_lock:
-            self.task_queue.append(task)
         self.task_history[task_id] = task
+        with self.task_available:
+            self.task_queue.append(task)
+            # Every worker wakes, since only the one for this agent type takes it
+            self.task_available.notify_all()
         
         # logger.info(f"Queued task {task_id} for {agent_type} agent in conversation {agent_input.conversation_id}")
         return task_id
@@ -943,7 +967,9 @@ class AgentCoordinator:
     
     def stop(self):
         """Stop all workers"""
-        self.running = False
+        with self.task_available:
+            self.running = False
+            self.task_available.notify_all()
         logger.info("AgentCoordinator stopping all workers")
     
 
