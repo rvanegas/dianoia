@@ -1,12 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import MDC_AUTH
+from conftest import NOESIS_AUTH
 from unittest.mock import patch, MagicMock
 
 from main import app
 
-client = TestClient(app, headers=MDC_AUTH)
+client = TestClient(app, headers=NOESIS_AUTH)
 
 
 class TestTTLIntegration:

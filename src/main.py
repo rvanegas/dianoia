@@ -16,7 +16,7 @@ run_startup_initialization()
 
 app = FastAPI()
 
-# Only the browser apps' own origins (CORS_ORIGINS); mdc is not a browser.
+# Only the browser apps' own origins (CORS_ORIGINS); noesis is not a browser.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,

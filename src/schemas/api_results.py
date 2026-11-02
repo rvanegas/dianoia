@@ -2,7 +2,7 @@
 The response of GET /api/agents/results, as published in /openapi.json.
 
 This is dianoia's contract with its clients: Roxana generates its TypeScript
-types from it and mdc parses what it describes. Each agent's result_content is
+types from it and noesis parses what it describes. Each agent's result_content is
 typed by its agent_type, a discriminated union, so a client can narrow on it.
 
 Declared on the route as its documented response rather than enforced as its

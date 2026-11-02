@@ -3,7 +3,7 @@ The published contract (schemas/api_results.py) against what dianoia really
 returns.
 
 fixtures/agents_results.json is a real GET /api/agents/results response,
-recorded 2026-10-25 through mdc for a three-proposition argument (every agent
+recorded 2026-10-25 through noesis for a three-proposition argument (every agent
 but name_generator, which only gen-name runs). The models forbid undeclared
 fields, so an agent whose output changes fails here until the model and the
 fixture are updated together — re-record by running one evaluation and saving
@@ -34,7 +34,7 @@ def test_a_recorded_response_matches_the_contract():
 
 
 def test_evaluate_answers_with_the_ids_to_poll():
-    EvaluateStarted.model_validate({"conversation_id": "x:mdc", "snapshot_id": "1"})
+    EvaluateStarted.model_validate({"conversation_id": "x:noesis", "snapshot_id": "1"})
 
 
 def test_the_routes_publish_their_responses():

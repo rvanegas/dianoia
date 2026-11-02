@@ -1,10 +1,10 @@
 """Bearer-token checks.
 
-Two kinds of caller hold a token. mdc, a service, holds a static one
-(`MDC_TOKEN`). People, through Roxana and noesis, hold a Cognito ID token from
+Two kinds of caller hold a token. noesis, a service, holds a static one
+(`NOESIS_TOKEN`). People, through Roxana and noesis, hold a Cognito ID token from
 Roxana's user pool, verified here against the pool's published signing keys.
 Every /api route requires one or the other; extract and evaluate, which spend
-the most per call and only mdc uses, require mdc's.
+the most per call and only noesis uses, require noesis's.
 """
 
 import hmac
@@ -19,8 +19,8 @@ import config
 
 @dataclass(frozen=True)
 class Caller:
-    kind: str  # "mdc" or "user"
-    name: str  # "mdc", or the Cognito username
+    kind: str  # "noesis" or "user"
+    name: str  # "noesis", or the Cognito username
 
 
 def _bearer(authorization: str | None) -> str:
@@ -30,15 +30,15 @@ def _bearer(authorization: str | None) -> str:
     return token
 
 
-def _is_mdc_token(token: str) -> bool:
-    return bool(config.MDC_TOKEN) and hmac.compare_digest(token, config.MDC_TOKEN)
+def _is_noesis_token(token: str) -> bool:
+    return bool(config.NOESIS_TOKEN) and hmac.compare_digest(token, config.NOESIS_TOKEN)
 
 
-def require_mdc_token(authorization: str | None = Header(default=None)) -> None:
-    """Reject requests that don't carry mdc's service token."""
-    if not config.MDC_TOKEN:
-        raise HTTPException(status_code=503, detail="MDC_TOKEN is not configured")
-    if not _is_mdc_token(_bearer(authorization)):
+def require_noesis_token(authorization: str | None = Header(default=None)) -> None:
+    """Reject requests that don't carry noesis's service token."""
+    if not config.NOESIS_TOKEN:
+        raise HTTPException(status_code=503, detail="NOESIS_TOKEN is not configured")
+    if not _is_noesis_token(_bearer(authorization)):
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
 
 
@@ -72,10 +72,10 @@ def verify_cognito_id_token(token: str) -> str:
 
 
 def require_caller(authorization: str | None = Header(default=None)) -> Caller:
-    """Accept mdc's token or a Cognito ID token from Roxana's user pool."""
+    """Accept noesis's token or a Cognito ID token from Roxana's user pool."""
     token = _bearer(authorization)
-    if _is_mdc_token(token):
-        return Caller(kind="mdc", name="mdc")
+    if _is_noesis_token(token):
+        return Caller(kind="noesis", name="noesis")
     if not (config.COGNITO_USER_POOL_ID and config.COGNITO_CLIENT_IDS):
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
     try:

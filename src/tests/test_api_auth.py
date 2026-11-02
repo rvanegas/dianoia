@@ -1,5 +1,5 @@
 """
-Tests for the caller check every /api route has (api/auth.py): mdc's token, or a
+Tests for the caller check every /api route has (api/auth.py): noesis's token, or a
 Cognito ID token from Roxana's user pool; and for CORS, which only the browser
 apps' origins pass.
 """
@@ -12,7 +12,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from conftest import MDC_AUTH
+from conftest import NOESIS_AUTH
 from main import app
 
 client = TestClient(app)
@@ -76,8 +76,8 @@ class TestCallers:
     def test_no_token_is_refused(self):
         assert audit().status_code == 401
 
-    def test_mdc_token_is_accepted(self):
-        assert audit(MDC_AUTH).status_code == 200
+    def test_noesis_token_is_accepted(self):
+        assert audit(NOESIS_AUTH).status_code == 200
 
     def test_roxana_id_token_is_accepted(self):
         assert audit(bearer(id_token())).status_code == 200
@@ -108,7 +108,7 @@ class TestRefusedTokens:
         monkeypatch.setattr(config, "COGNITO_USER_POOL_ID", None)
         assert audit(bearer(id_token())).status_code == 401
 
-    def test_user_tokens_cannot_reach_mdc_only_routes(self):
+    def test_user_tokens_cannot_reach_noesis_only_routes(self):
         response = client.post("/api/argument/extract", json={"text": "x"}, headers=bearer(id_token()))
         assert response.status_code == 401
 

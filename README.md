@@ -9,7 +9,7 @@ Python · FastAPI · Anthropic API
 
 Dianoia is a backend service for extracting, formalizing, and evaluating arguments from free-form text. Given a piece of argumentative prose, it returns a structured sequence of propositions with assessments of each step's content validity, formal validity, and logical strength — along with suggestions for improvement.
 
-It is the analytical engine underlying [mdc](https://github.com/rvanegas/mdc) and [Noesis](https://github.com/rvanegas/noesis).
+It is the analytical engine underlying [noesis](https://github.com/rvanegas/noesis) and [Noesis](https://github.com/rvanegas/noesis).
 
 ---
 
@@ -66,5 +66,5 @@ In Platonic epistemology, *dianoia* is discursive reasoning — the analytical, 
 
 ## Related projects
 
-- [mdc](https://github.com/rvanegas/mdc) — terminal LLM research platform that uses Dianoia for argument analysis
+- [noesis](https://github.com/rvanegas/noesis) — terminal LLM research platform that uses Dianoia for argument analysis
 - [Noesis](https://github.com/rvanegas/noesis) — React frontend for interactive argument evaluation via Dianoia

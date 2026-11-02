@@ -30,6 +30,6 @@ class TestHealthz:
         assert response.json() == {"ok": True, "commit": "dev"}
 
     def test_needs_no_token(self):
-        with patch("config.MDC_TOKEN", "test-mdc-token"):
+        with patch("config.NOESIS_TOKEN", "test-noesis-token"):
             response = client.get("/healthz")
         assert response.status_code == 200

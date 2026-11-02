@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query, Depends
 
-from api.auth import require_mdc_token
+from api.auth import require_noesis_token
 from core.utils import logger
 from schemas.arguments import (
     ArgumentData,
@@ -131,24 +131,24 @@ def audit(args: Arguments) -> AuditResult:
     """
     return audit_argument(args.argument)
 
-@router.post("/extract", dependencies=[Depends(require_mdc_token)],
+@router.post("/extract", dependencies=[Depends(require_noesis_token)],
              response_model=None, responses={200: {"model": Arguments}})
 def extract(request: ExtractionRequest) -> dict:
-    """Extract a structured argument from plain text (used by mdc)."""
+    """Extract a structured argument from plain text (used by noesis)."""
     try:
         return extract_argument(request.text, max_props=request.max_props)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-@router.post("/evaluate", dependencies=[Depends(require_mdc_token)],
+@router.post("/evaluate", dependencies=[Depends(require_noesis_token)],
              response_model=None, responses={200: {"model": EvaluateStarted}})
 def evaluate(args: ArgumentData) -> dict:
-    """Start the evaluation agents on a whole argument (used by mdc).
+    """Start the evaluation agents on a whole argument (used by noesis).
 
     Returns the ids to poll with GET /api/agents/results until its
     tasks_complete is true.
     """
-    conversation_id = f"{uuid.uuid4()}:mdc"
+    conversation_id = f"{uuid.uuid4()}:noesis"
     snapshot_id = "1"
     coordinator.react_to_user_argument_change(conversation_id, snapshot_id, args)
     return {"conversation_id": conversation_id, "snapshot_id": snapshot_id}

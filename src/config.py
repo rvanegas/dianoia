@@ -20,7 +20,7 @@ if _config_path.exists():
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or _toml.get("anthropic_api_key")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL") or _toml.get("model", "claude-sonnet-4-6")
-MDC_TOKEN = os.getenv("MDC_TOKEN") or _toml.get("mdc_token")
+NOESIS_TOKEN = os.getenv("NOESIS_TOKEN") or _toml.get("noesis_token")
 
 
 def _list(env: str, key: str) -> list[str]:
