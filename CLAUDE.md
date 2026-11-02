@@ -51,7 +51,7 @@ Client polls GET /api/agents/results ──────────────�
 ### Backend Structure
 
 - `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`
-- `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a Cognito ID token from Roxana's user pool (Roxana and noesis send one), verified against the pool's JWKS — issuer, `aud` in `COGNITO_CLIENT_IDS`, expiry, `token_use == "id"`. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
+- `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from noesis's OAuth server (Roxana sends one), checked by asking `NOESIS_URL`'s `/me`, which must name a user and a client in `NOESIS_CLIENT_IDS`; the answer is kept a minute, and noesis not answering is a 503, not a 401. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
 - `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `bin/deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
@@ -105,8 +105,8 @@ environment variables:
 | key | env | meaning |
 |---|---|---|
 | `noesis_token` | `NOESIS_TOKEN` | noesis's service token |
-| `cognito_user_pool_id` | `COGNITO_USER_POOL_ID` | Roxana's user pool (`us-west-2_JBus4am8w`); unset, no user token is accepted |
-| `cognito_client_ids` | `COGNITO_CLIENT_IDS` (comma-separated) | the app clients ID tokens may be issued to: Roxana's web client and noesis's |
+| `noesis_url` | `NOESIS_URL` | noesis, whose `/me` checks a person's token (`https://noesis.rvanegas.co`); unset, no user token is accepted |
+| `noesis_client_ids` | `NOESIS_CLIENT_IDS` (comma-separated) | the noesis OAuth clients a person's token may be issued to: `roxana` |
 | `cors_origins` | `CORS_ORIGINS` (comma-separated) | browser origins allowed; unset, none |
 
 For local development against the browser apps, add their dev origins (for

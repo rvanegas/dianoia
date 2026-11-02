@@ -1,29 +1,21 @@
 """
 Tests for the caller check every /api route has (api/auth.py): noesis's token, or a
-Cognito ID token from Roxana's user pool; and for CORS, which only the browser
-apps' origins pass.
+person's noesis access token issued to Roxana, checked by asking noesis's /me; and
+for CORS, which only the browser apps' origins pass.
 """
 
-import time
 from unittest.mock import patch
 
-import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
+from api import auth
 from conftest import NOESIS_AUTH
 from main import app
 
 client = TestClient(app)
 
-POOL = "us-west-2_TESTPOOL"
-ISSUER = f"https://cognito-idp.us-west-2.amazonaws.com/{POOL}"
-ROXANA_CLIENT = "roxana-client"
-NOESIS_CLIENT = "noesis-client"
-
-SIGNING_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+ROXANA_CLIENT = "roxana"
 
 ARGUMENT = [
     {"symbol": "1", "proposition": "All humans are mortal.", "justifiers": [], "truth_score": "1.0"},
@@ -31,36 +23,22 @@ ARGUMENT = [
     {"symbol": "3", "proposition": "Socrates is mortal.", "justifiers": ["1", "2"], "truth_score": "1.0"},
 ]
 
-
-class _Keys:
-    """Stands in for PyJWKClient: always hands back the pool's public key."""
-
-    def get_signing_key_from_jwt(self, token):
-        class _Key:
-            key = SIGNING_KEY.public_key()
-        return _Key()
-
-
-def id_token(key=SIGNING_KEY, **overrides):
-    claims = {
-        "sub": "a1b2c3",
-        "cognito:username": "rodvandur",
-        "token_use": "id",
-        "aud": ROXANA_CLIENT,
-        "iss": ISSUER,
-        "exp": int(time.time()) + 3600,
-    }
-    claims.update(overrides)
-    return jwt.encode(claims, key, algorithm="RS256", headers={"kid": "test"})
+# What noesis's /me answers, by token; a token it does not know gets None (its 401).
+ME = {
+    "roxana-token": {"user": "rodvandur", "client": ROXANA_CLIENT},
+    "thefloor-token": {"user": "rodvandur", "client": "thefloor"},
+    "nobody-token": {"user": "", "client": ROXANA_CLIENT},
+}
 
 
 @pytest.fixture(autouse=True)
-def cognito_configured(monkeypatch):
+def noesis_configured(monkeypatch):
     import config
-    monkeypatch.setattr(config, "COGNITO_USER_POOL_ID", POOL)
-    monkeypatch.setattr(config, "COGNITO_CLIENT_IDS", [ROXANA_CLIENT, NOESIS_CLIENT])
-    with patch("api.auth._signing_keys", return_value=_Keys()):
-        yield
+    monkeypatch.setattr(config, "NOESIS_URL", "https://noesis.example")
+    monkeypatch.setattr(config, "NOESIS_CLIENT_IDS", [ROXANA_CLIENT])
+    auth._me_cache.clear()
+    with patch("api.auth._ask_noesis", side_effect=lambda token: ME.get(token)) as asked:
+        yield asked
 
 
 def audit(headers=None):
@@ -79,37 +57,38 @@ class TestCallers:
     def test_noesis_token_is_accepted(self):
         assert audit(NOESIS_AUTH).status_code == 200
 
-    def test_roxana_id_token_is_accepted(self):
-        assert audit(bearer(id_token())).status_code == 200
+    def test_a_roxana_users_token_is_accepted(self):
+        assert audit(bearer("roxana-token")).status_code == 200
+        assert auth.require_caller("Bearer roxana-token") == auth.Caller(kind="user", name="rodvandur")
 
-    def test_noesis_id_token_is_accepted(self):
-        assert audit(bearer(id_token(aud=NOESIS_CLIENT))).status_code == 200
+    def test_noesis_is_asked_once_a_minute(self, noesis_configured):
+        audit(bearer("roxana-token"))
+        audit(bearer("roxana-token"))
+        assert noesis_configured.call_count == 1
 
     def test_agents_routes_need_a_caller_too(self):
         query = "conversation_id=s:c&snapshot_id=1"
         assert client.get(f"/api/agents/results?{query}").status_code == 401
-        assert client.get(f"/api/agents/results?{query}", headers=bearer(id_token())).status_code == 200
+        assert client.get(f"/api/agents/results?{query}", headers=bearer("roxana-token")).status_code == 200
 
 
 class TestRefusedTokens:
-    @pytest.mark.parametrize("token", [
-        id_token(exp=int(time.time()) - 60),
-        id_token(aud="some-other-client"),
-        id_token(iss="https://cognito-idp.us-west-2.amazonaws.com/us-west-2_OTHER"),
-        id_token(token_use="access"),
-        id_token(key=OTHER_KEY),
-        "not-a-jwt",
-    ], ids=["expired", "other client", "other pool", "access token", "forged signature", "garbage"])
+    @pytest.mark.parametrize("token", ["thefloor-token", "nobody-token", "unknown-token"],
+                             ids=["another client's", "no user", "unknown to noesis"])
     def test_is_refused(self, token):
         assert audit(bearer(token)).status_code == 401
 
-    def test_user_tokens_refused_when_cognito_is_unconfigured(self, monkeypatch):
+    def test_user_tokens_refused_when_noesis_is_unconfigured(self, monkeypatch):
         import config
-        monkeypatch.setattr(config, "COGNITO_USER_POOL_ID", None)
-        assert audit(bearer(id_token())).status_code == 401
+        monkeypatch.setattr(config, "NOESIS_URL", "")
+        assert audit(bearer("roxana-token")).status_code == 401
+
+    def test_noesis_down_is_not_a_bad_token(self, noesis_configured):
+        noesis_configured.side_effect = auth.NoesisUnavailable("down")
+        assert audit(bearer("roxana-token")).status_code == 503
 
     def test_user_tokens_cannot_reach_noesis_only_routes(self):
-        response = client.post("/api/argument/extract", json={"text": "x"}, headers=bearer(id_token()))
+        response = client.post("/api/argument/extract", json={"text": "x"}, headers=bearer("roxana-token"))
         assert response.status_code == 401
 
 

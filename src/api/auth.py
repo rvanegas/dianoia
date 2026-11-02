@@ -1,26 +1,33 @@
 """Bearer-token checks.
 
 Two kinds of caller hold a token. noesis, a service, holds a static one
-(`NOESIS_TOKEN`). People, through Roxana and noesis, hold a Cognito ID token from
-Roxana's user pool, verified here against the pool's published signing keys.
-Every /api route requires one or the other; extract and evaluate, which spend
-the most per call and only noesis uses, require noesis's.
+(`NOESIS_TOKEN`). People, through Roxana, hold an access token from noesis's
+OAuth server, issued to Roxana's client; it is opaque, so it is checked by
+asking noesis's /me, whose answer is kept for a minute. Every /api route
+requires one or the other; extract and evaluate, which spend the most per call
+and only noesis uses, require noesis's.
 """
 
+import hashlib
 import hmac
+import json
+import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
-from functools import lru_cache
 
-import jwt
 from fastapi import Header, HTTPException
 
 import config
+
+ME_TTL = 60
+_me_cache: dict[str, tuple[float, str]] = {}
 
 
 @dataclass(frozen=True)
 class Caller:
     kind: str  # "noesis" or "user"
-    name: str  # "noesis", or the Cognito username
+    name: str  # "noesis", or the noesis user name
 
 
 def _bearer(authorization: str | None) -> str:
@@ -42,43 +49,51 @@ def require_noesis_token(authorization: str | None = Header(default=None)) -> No
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
 
 
-def _issuer() -> str:
-    region = config.COGNITO_USER_POOL_ID.split("_", 1)[0]
-    return f"https://cognito-idp.{region}.amazonaws.com/{config.COGNITO_USER_POOL_ID}"
+class NoesisUnavailable(Exception):
+    pass
 
 
-@lru_cache(maxsize=1)
-def _signing_keys() -> jwt.PyJWKClient:
-    # Fetched once and cached; a token signed with a key it has not seen makes
-    # it fetch again, which is how Cognito's key rotation is picked up.
-    return jwt.PyJWKClient(f"{_issuer()}/.well-known/jwks.json", cache_keys=True)
+def _ask_noesis(token: str) -> dict | None:
+    """noesis's /me for this token: None if noesis refuses it."""
+    request = urllib.request.Request(f"{config.NOESIS_URL}/me", headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            return None
+        raise NoesisUnavailable(f"noesis /me answered {exc.code}") from None
+    except (OSError, ValueError) as exc:
+        raise NoesisUnavailable(str(exc)) from None
 
 
-def verify_cognito_id_token(token: str) -> str:
-    """Return the username an ID token was issued to, or raise jwt.PyJWTError."""
-    key = _signing_keys().get_signing_key_from_jwt(token).key
-    claims = jwt.decode(
-        token,
-        key,
-        algorithms=["RS256"],
-        audience=config.COGNITO_CLIENT_IDS,
-        issuer=_issuer(),
-        options={"require": ["exp", "iss", "aud", "token_use"]},
-    )
-    # An access token is signed by the same keys; only an ID token says who.
-    if claims["token_use"] != "id":
-        raise jwt.InvalidTokenError("not an ID token")
-    return claims.get("cognito:username") or claims["sub"]
+def user_for_noesis_token(token: str) -> str | None:
+    """The noesis user an access token belongs to, if issued to one of NOESIS_CLIENT_IDS."""
+    key = hashlib.sha256(token.encode()).hexdigest()
+    now = time.monotonic()
+    cached = _me_cache.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+    me = _ask_noesis(token)
+    if not me or me.get("client") not in config.NOESIS_CLIENT_IDS or not me.get("user"):
+        return None
+    if len(_me_cache) > 1000:
+        _me_cache.clear()
+    _me_cache[key] = (now + ME_TTL, me["user"])
+    return me["user"]
 
 
 def require_caller(authorization: str | None = Header(default=None)) -> Caller:
-    """Accept noesis's token or a Cognito ID token from Roxana's user pool."""
+    """Accept noesis's token or a person's noesis access token issued to Roxana."""
     token = _bearer(authorization)
     if _is_noesis_token(token):
         return Caller(kind="noesis", name="noesis")
-    if not (config.COGNITO_USER_POOL_ID and config.COGNITO_CLIENT_IDS):
+    if not (config.NOESIS_URL and config.NOESIS_CLIENT_IDS):
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
     try:
-        return Caller(kind="user", name=verify_cognito_id_token(token))
-    except jwt.PyJWTError:
+        user = user_for_noesis_token(token)
+    except NoesisUnavailable:
+        raise HTTPException(status_code=503, detail="noesis, which checks this token, did not answer")
+    if user is None:
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
+    return Caller(kind="user", name=user)

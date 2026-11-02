@@ -29,10 +29,10 @@ def _list(env: str, key: str) -> list[str]:
     return [v.strip() for v in values if v.strip()]
 
 
-# Roxana's Cognito user pool, whose ID tokens Roxana and noesis send, and the
-# app clients those tokens may be issued to (their `aud`). Unset, no user token
-# is accepted.
-COGNITO_USER_POOL_ID = os.getenv("COGNITO_USER_POOL_ID") or _toml.get("cognito_user_pool_id")
-COGNITO_CLIENT_IDS = _list("COGNITO_CLIENT_IDS", "cognito_client_ids")
+# noesis's OAuth server, which signs Roxana's people in: a person's access token
+# is checked by asking noesis's /me, which says whose it is and which client it
+# was issued to, one of NOESIS_CLIENT_IDS. Unset, no user token is accepted.
+NOESIS_URL = (os.getenv("NOESIS_URL") or _toml.get("noesis_url") or "").rstrip("/")
+NOESIS_CLIENT_IDS = _list("NOESIS_CLIENT_IDS", "noesis_client_ids")
 # Browser origins allowed to call the API. Unset, no browser may.
 CORS_ORIGINS = _list("CORS_ORIGINS", "cors_origins")
