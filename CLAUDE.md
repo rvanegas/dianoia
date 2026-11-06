@@ -20,7 +20,7 @@ The practices this project shares with others are technosophia's (`~/src/technos
 # Dev server
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # or:
-./bin/backend-dev
+ts backend-dev
 
 # Tests
 pytest                        # all tests
@@ -36,7 +36,7 @@ black --check .
 ### Full stack (with Docker)
 
 ```bash
-./bin/dev-docker     # Docker Compose (backend + PostgreSQL)
+ts dev-docker        # Docker Compose (backend + PostgreSQL)
 docker-compose up --build
 ```
 
