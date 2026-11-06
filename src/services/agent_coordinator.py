@@ -180,11 +180,16 @@ class AgentResultManager:
                 filtered_results.append(result)
         all_results = filtered_results
         
-        # Group results by agent type and keep only the latest for each type
+        # Group results by agent type and keep only the latest for each type:
+        # the latest snapshot, and within it the latest processed. Time alone
+        # let an earlier snapshot's result win a tie on the clock.
+        def recency(r: StoredAgentResult):
+            return (int(r.snapshot_id), r.processed_at)
+
         latest_results = {}
         for result in all_results:
             agent_type = result.agent_type
-            if agent_type not in latest_results or result.processed_at > latest_results[agent_type].processed_at:
+            if agent_type not in latest_results or recency(result) > recency(latest_results[agent_type]):
                 latest_results[agent_type] = result
         
         return list(latest_results.values())
