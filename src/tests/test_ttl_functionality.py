@@ -78,7 +78,7 @@ class TestTTLFunctionality:
         
         # Add a test result
         test_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'proposition': 'Test proposition'},
             confidence=0.85,
@@ -140,7 +140,7 @@ class TestTTLFunctionality:
         
         # Add a test result
         test_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'proposition': 'Test proposition'},
             confidence=0.85,

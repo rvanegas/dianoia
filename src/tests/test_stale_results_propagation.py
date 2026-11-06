@@ -15,7 +15,7 @@ class TestStaleResultsPropagation:
         
         # Add multiple results for the same agent type
         old_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'old': 'result'},
             confidence=0.5,
@@ -26,7 +26,7 @@ class TestStaleResultsPropagation:
         )
         
         new_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'new': 'result'},
             confidence=0.9,
@@ -92,7 +92,7 @@ class TestStaleResultsPropagation:
         
         # Add results with different target types
         argument_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'argument': 'evaluation'},
             confidence=0.8,
@@ -203,7 +203,7 @@ class TestStaleResultsPropagation:
         # Add a result through the coordinator
         target_metadata = TargetMetadata(target_type='argument', target_content='')
         result = coordinator.create_agent_result(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'evaluation': 'test'},
             confidence=0.8,
@@ -217,7 +217,7 @@ class TestStaleResultsPropagation:
         # Get latest results through coordinator
         latest_results = coordinator.get_latest_results(conversation_id, '1')
         assert len(latest_results) == 1
-        assert latest_results[0].agent_type == 'content_evaluator'
+        assert latest_results[0].agent_type == 'content_validity_evaluator'
     
     def test_coordinator_get_results_by_target_type(self):
         """Test coordinator's get_results_by_target_type method"""
@@ -225,7 +225,7 @@ class TestStaleResultsPropagation:
         
         # Add results with different target types
         argument_result = coordinator.create_agent_result(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'evaluation': 'argument'},
             confidence=0.8,

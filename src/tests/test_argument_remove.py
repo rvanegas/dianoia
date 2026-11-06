@@ -53,7 +53,7 @@ class TestArgumentRemove:
             # Verify the calls were made with correct parameters
             calls = mock_queue.call_args_list
             agent_types = [call[1]['agent_type'] for call in calls]
-            assert 'content_evaluator' in agent_types
+            assert 'content_validity_evaluator' in agent_types
             assert 'formalizer' in agent_types
 
     def test_remove_step_from_argument_without_justifiers(self):
@@ -147,7 +147,7 @@ class TestArgumentRemove:
             # Verify the calls were made with correct parameters
             calls = mock_queue.call_args_list
             agent_types = [call[1]['agent_type'] for call in calls]
-            assert 'content_evaluator' in agent_types
+            assert 'content_validity_evaluator' in agent_types
             assert 'formalizer' in agent_types
 
             # Verify conversation_id was passed correctly in AgentInput objects

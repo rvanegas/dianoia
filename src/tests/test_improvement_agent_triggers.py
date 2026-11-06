@@ -37,11 +37,15 @@ class TestImprovementAgentTriggers:
         conversation_id = "test_conv"
         snapshot_id = "test_snap"
 
-        r = Mock()
-        r.agent_type = 'content_evaluator'
-        r.snapshot_id = snapshot_id
-        r.result_content = {'truth_evaluations': []}
-        mock_results = [r]
+        # Both content evaluations, as the improver waits for since the split
+        # of content_evaluator into truth and content validity.
+        mock_results = []
+        for agent_type in ('truth_evaluator', 'content_validity_evaluator'):
+            r = Mock()
+            r.agent_type = agent_type
+            r.snapshot_id = snapshot_id
+            r.result_content = {}
+            mock_results.append(r)
 
         with patch.object(self.coordinator, 'get_conversation_results', return_value=mock_results):
             should_trigger = self.coordinator._should_queue_improvement_agent(
@@ -109,7 +113,7 @@ class TestImprovementAgentTriggers:
         snapshot_id = "test_snap"
         
         r1 = Mock()
-        r1.agent_type = 'content_evaluator'
+        r1.agent_type = 'content_validity_evaluator'
         r1.snapshot_id = snapshot_id
         r1.result_content = {'truth_evaluations': []}
         r2 = Mock()
@@ -177,13 +181,13 @@ class TestImprovementAgentTriggers:
         mock_task.agent_input.file_ids = []
         
         mock_result = Mock()
-        mock_result.agent_type = 'content_evaluator'
+        mock_result.agent_type = 'content_validity_evaluator'
         mock_result.snapshot_id = snapshot_id
         
         # Mock the queue_improvement_agent_if_ready method
         with patch.object(self.coordinator, 'queue_improvement_agent_if_ready') as mock_queue_improver:
             # Call the logic that would be executed after task completion
-            if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
+            if mock_result.agent_type in ['content_validity_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
                     file_ids=mock_task.agent_input.file_ids
@@ -217,7 +221,7 @@ class TestImprovementAgentTriggers:
         # Mock the queue_improvement_agent_if_ready method
         with patch.object(self.coordinator, 'queue_improvement_agent_if_ready') as mock_queue_improver:
             # Call the logic that would be executed after task completion
-            if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
+            if mock_result.agent_type in ['content_validity_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
                     file_ids=mock_task.agent_input.file_ids
@@ -251,7 +255,7 @@ class TestImprovementAgentTriggers:
         # Mock the queue_improvement_agent_if_ready method
         with patch.object(self.coordinator, 'queue_improvement_agent_if_ready') as mock_queue_improver:
             # Call the logic that would be executed after task completion
-            if mock_result.agent_type in ['content_evaluator', 'form_evaluator']:
+            if mock_result.agent_type in ['content_validity_evaluator', 'form_evaluator']:
                 argument_data = ArgumentData(
                     argument=mock_task.agent_input.agent_data.argument,
                     file_ids=mock_task.agent_input.file_ids

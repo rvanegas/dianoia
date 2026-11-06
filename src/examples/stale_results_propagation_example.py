@@ -42,7 +42,7 @@ def main():
     
     # Snapshot 2: Content evaluation
     content_eval = coordinator.create_agent_result(
-        agent_type='content_evaluator',
+        agent_type='content_validity_evaluator',
         operation='evaluate_propositions',
         result_content={
             'evaluation': {

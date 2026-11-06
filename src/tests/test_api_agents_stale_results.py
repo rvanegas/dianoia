@@ -31,7 +31,7 @@ class TestAgentsAPIWithStaleResults:
         coordinator.result_manager.add_result(self.conversation_id, result_1)
         
         result_2 = coordinator.create_agent_result(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={'evaluation': {'argument_validity': 0.95}},
             confidence=0.95,
@@ -68,7 +68,7 @@ class TestAgentsAPIWithStaleResults:
         
         # Should have both agent types
         assert "formalizer" in data["results_by_agent"]
-        assert "content_evaluator" in data["results_by_agent"]
+        assert "content_validity_evaluator" in data["results_by_agent"]
         
         # Verify the formalizer result is from snapshot 1
         formalizer_result = data["results_by_agent"]["formalizer"][0]
@@ -117,7 +117,7 @@ class TestAgentsAPIWithStaleResults:
         # Should get latest results per agent type (2 total: formalizer + content_evaluator)
         assert data["total_count"] == 2
         assert "formalizer" in data["results_by_agent"]
-        assert "content_evaluator" in data["results_by_agent"]
+        assert "content_validity_evaluator" in data["results_by_agent"]
         
         # Should get the formalizer result from snapshot 1 (only one we have)
         formalizer_result = data["results_by_agent"]["formalizer"][0]

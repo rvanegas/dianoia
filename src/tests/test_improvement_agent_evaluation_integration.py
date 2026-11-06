@@ -41,7 +41,7 @@ class TestImprovementAgentEvaluationIntegration:
         target = TargetMetadata(target_type='argument', target_content='test')
         mock_results = [
             StoredAgentResult(
-                agent_type='content_evaluator',
+                agent_type='content_validity_evaluator',
                 operation='evaluate_propositions',
                 result_content={'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                 confidence=0.8,
@@ -69,18 +69,18 @@ class TestImprovementAgentEvaluationIntegration:
             
             # Verify evaluation results are included in latest_results
             assert len(agent_input.agent_data.latest_results) == 2  # content + formal evaluation
-            assert any(r['agent_type'] == 'content_evaluator' for r in agent_input.agent_data.latest_results)
+            assert any(r['agent_type'] == 'content_validity_evaluator' for r in agent_input.agent_data.latest_results)
             assert any(r['agent_type'] == 'form_evaluator' for r in agent_input.agent_data.latest_results)
             
             # Verify that latest_results is also populated with evaluation data (following existing pattern)
             assert len(agent_input.agent_data.latest_results) == 2  # content + formal evaluation
-            assert any(r['agent_type'] == 'content_evaluator' for r in agent_input.agent_data.latest_results)
+            assert any(r['agent_type'] == 'content_validity_evaluator' for r in agent_input.agent_data.latest_results)
             assert any(r['agent_type'] == 'form_evaluator' for r in agent_input.agent_data.latest_results)
             
             # Verify content evaluations
-            content_evaluations = [r for r in agent_input.agent_data.latest_results if r['agent_type'] == 'content_evaluator']
+            content_evaluations = [r for r in agent_input.agent_data.latest_results if r['agent_type'] == 'content_validity_evaluator']
             assert len(content_evaluations) == 1
-            assert content_evaluations[0]['agent_type'] == 'content_evaluator'
+            assert content_evaluations[0]['agent_type'] == 'content_validity_evaluator'
             assert content_evaluations[0]['result_content']['truth_evaluations'][0]['symbol'] == '1'
             
             # Verify formal evaluations
@@ -192,7 +192,7 @@ class TestImprovementAgentEvaluationIntegration:
                 target_content=None,
                 latest_results=[
                     {
-                        'agent_type': 'content_evaluator',
+                        'agent_type': 'content_validity_evaluator',
                         'operation': 'evaluate_propositions',
                         'result_content': {'truth_evaluations': [{'symbol': '1', 'truth_value': '0.5'}]},
                         'confidence': 0.8,
@@ -222,7 +222,7 @@ class TestImprovementAgentEvaluationIntegration:
         call_data = json.loads(call_args)  # Convert string back to dict
         assert 'agent_data' in call_data
         assert 'latest_results' in call_data['agent_data']
-        assert call_data['agent_data']['latest_results'][0]['agent_type'] == 'content_evaluator'
+        assert call_data['agent_data']['latest_results'][0]['agent_type'] == 'content_validity_evaluator'
 
     def test_improvement_agent_error_handling_with_specific_error_types(self):
         """Test that improvement agent provides specific error information for evaluation issues"""

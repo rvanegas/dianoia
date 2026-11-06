@@ -157,7 +157,7 @@ class TestResultManager:
         
         # Add a content evaluator result
         content_evaluator_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
@@ -181,12 +181,12 @@ class TestResultManager:
         
         # Verify the content evaluator result was added
         results = result_manager.get_results(conversation_id)
-        content_evaluator_results = [r for r in results if r.agent_type == 'content_evaluator']
+        content_evaluator_results = [r for r in results if r.agent_type == 'content_validity_evaluator']
         assert len(content_evaluator_results) == 1
         
         # Add another content evaluator result (should replace the first)
         new_content_evaluator_result = StoredAgentResult(
-            agent_type='content_evaluator',
+            agent_type='content_validity_evaluator',
             operation='evaluate_propositions',
             result_content={
                 'argument': ['Socrates is a man', 'All men are mortal', 'Socrates is mortal'],
@@ -210,7 +210,7 @@ class TestResultManager:
         
         # Verify only one content evaluator result remains
         results = result_manager.get_results(conversation_id)
-        content_evaluator_results = [r for r in results if r.agent_type == 'content_evaluator']
+        content_evaluator_results = [r for r in results if r.agent_type == 'content_validity_evaluator']
         assert len(content_evaluator_results) == 1
         assert content_evaluator_results[0].result_content['evaluation']['argument_validity'] == 0.85
 
