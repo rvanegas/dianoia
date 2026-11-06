@@ -108,7 +108,7 @@ class AgentResultManager:
             # Formalizer targets a specific proposition
             return f"formalizer:{target_type}:{target_content}:{snapshot_id}"
         
-        elif agent_type in ['content_evaluator', 'form_evaluator']:
+        elif agent_type in ['truth_evaluator', 'content_validity_evaluator', 'form_evaluator']:
             # Evaluators target the entire argument as a whole
             return f"{agent_type}:{target_type}:{snapshot_id}"
         
