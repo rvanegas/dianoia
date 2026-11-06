@@ -7,3 +7,6 @@ dist/
 
 # Stamped by ts deploy, read by api/health.py
 src/deployed.json
+
+# git worktrees, inside the repo so they are easy to find
+.claude/worktrees/

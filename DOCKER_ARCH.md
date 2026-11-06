@@ -41,8 +41,7 @@ ts deploy
 ```
 
 technosophia's shared deploy, with dianoia's settings in `bin/ts.env` and its
-own steps in `bin/hooks/`: the route tests first (`deploy-pre`, which says why
-not the whole suite), then an rsync of the checkout to `~/dianoia` on commons
+own steps in `bin/hooks/`: the whole test suite first (`deploy-pre`), then an rsync of the checkout to `~/dianoia` on commons
 (the `commons` ssh alias), `docker compose up --build -d` (`deploy-remote`),
 and a wait for `/healthz` to report the commit it sent, on the box and at
 `https://dianoia.rvanegas.co`. Each deploy is recorded on the box; `ts deploys`
