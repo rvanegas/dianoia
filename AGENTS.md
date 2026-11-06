@@ -4,6 +4,10 @@
 
 The practices this project shares with others are technosophia's (`~/src/technosophia`). `CLAUDE.md` imports its `WORKING.md`, which says when to read the rest; an agent that does not follow `@` imports reads `WORKING.md` first. Scripts run as `ts <name>`: this project's `bin/` first (`backend-dev`, `dev-docker`), then the shared ones (`deploy`, `deploys`, `health`, …), which read `bin/ts.env`, never ship what `bin/ts.rsync` excludes, and run this project's steps from `bin/hooks/`.
 
+## `planning/`
+
+Laid out as technosophia's `PLANNING.md` says: `task/`, `backlog/` and `decision/`, one file per item; a verb and a quoted title is a reference to a file, resolved with `ts note find`. Read it before filing or resolving one. `planning/README.md` lists the standing documents, `DOCKER_ARCH.md` among them; `decision/archive/` is the old `notes/`.
+
 ## Project Overview
 
 **Dianoia** is the server for an AI-powered argumentation platform. Users build structured logical arguments (thesis + assumptions → conclusion) and receive AI-generated evaluations and improvement recommendations via background agents. The companion UI is **Noesis** (`~/src/noesis`).
@@ -55,7 +59,7 @@ Client polls GET /api/agents/results ──────────────�
 - `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`
 - `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from noesis's OAuth server (Roxana sends one), checked by asking `NOESIS_URL`'s `/me`, which must name a user and a client in `NOESIS_CLIENT_IDS`; the answer is kept a minute, and noesis not answering is a 503, not a 401. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
-- `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `ts deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
+- `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `ts deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `planning/DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
 - `services/agent_coordinator.py` — Thread-based task queue: one worker thread per agent type, each waiting on the `task_available` condition (never polling; `tests/test_agent_workers.py` checks idle CPU); `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
 - `services/agent_prompts.py` — All LLM prompt templates
