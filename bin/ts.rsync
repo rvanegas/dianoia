@@ -1,0 +1,15 @@
+# What `ts deploy` never ships and never deletes on the box (an rsync filter
+# file: first match wins).
+#
+# Worktrees live inside the repository; none of them is the tree being shipped.
+- /.claude/
+# The box's .env holds production secrets and is never sent or overwritten. A
+# wildcard, so an editor's .env~ is never sent either.
+- .env*
+- venv
+- __pycache__
+- .mypy_cache
+- .pytest_cache
+- *.egg-info
+- /dist/
+- /build/

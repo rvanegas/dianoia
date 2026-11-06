@@ -1,5 +1,5 @@
 """
-Tests for GET /healthz, which reports the commit bin/deploy stamped.
+Tests for GET /healthz, which reports the commit ts deploy stamped.
 """
 
 import json

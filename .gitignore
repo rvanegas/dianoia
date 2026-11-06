@@ -5,5 +5,5 @@ dist/
 
 .env
 
-# Stamped by bin/deploy, read by api/health.py
+# Stamped by ts deploy, read by api/health.py
 src/deployed.json

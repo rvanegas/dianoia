@@ -1,6 +1,12 @@
 # CLAUDE.md
 
+@~/src/technosophia/WORKING.md
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Practices
+
+The practices this project shares with others are technosophia's (`~/src/technosophia`), imported above as `WORKING.md`, which says when to read the rest. Scripts run as `ts <name>`: this project's `bin/` first (`backend-dev`, `dev-docker`), then the shared ones (`deploy`, `deploys`, `health`, …), which read `bin/ts.env`, never ship what `bin/ts.rsync` excludes, and run this project's steps from `bin/hooks/`.
 
 ## Project Overview
 
@@ -53,7 +59,7 @@ Client polls GET /api/agents/results ──────────────�
 - `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`
 - `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from noesis's OAuth server (Roxana sends one), checked by asking `NOESIS_URL`'s `/me`, which must name a user and a client in `NOESIS_CLIENT_IDS`; the answer is kept a minute, and noesis not answering is a 503, not a 401. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
-- `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `bin/deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
+- `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `ts deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
 - `services/agent_coordinator.py` — Thread-based task queue: one worker thread per agent type, each waiting on the `task_available` condition (never polling; `tests/test_agent_workers.py` checks idle CPU); `AgentResultManager` stores results keyed by `(conversation_id, snapshot_id)`; handles TTL cleanup and cooldown periods
 - `services/agent_prompts.py` — All LLM prompt templates

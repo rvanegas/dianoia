@@ -1,0 +1,9 @@
+#!/bin/bash
+# After `ts deploy` syncs: rebuild and restart the container. The stamp is
+# baked into the image with the code it describes (the Dockerfile copies
+# src/). Startup also pre-warms the model clients, so the health check waits.
+set -euo pipefail
+ssh -o BatchMode=yes "$HOST" 'set -euo pipefail
+  cd ~/dianoia
+  [ -f .env ] || { echo "✗ no ~/dianoia/.env on the box (PROJECTS.md names what it holds)" >&2; exit 1; }
+  docker compose up --build -d --remove-orphans 2>&1 | tail -3'

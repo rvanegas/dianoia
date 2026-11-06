@@ -1,4 +1,4 @@
-"""GET /healthz — what is deployed, for bin/deploy and anyone checking."""
+"""GET /healthz — what is deployed, for ts deploy and anyone checking."""
 
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-# Written by bin/deploy into src/ before the image is built, so it is baked in
+# Written by ts deploy into src/ before the image is built, so it is baked in
 # with the code it describes. Absent in a checkout, where the answer is "dev".
 _DEPLOYED = Path(__file__).resolve().parent.parent / "deployed.json"
 

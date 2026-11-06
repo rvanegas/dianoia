@@ -30,20 +30,23 @@ every service on the box are in `~/src/rvanegas-site/PROJECTS.md`.
   `NOESIS_URL`, `NOESIS_CLIENT_IDS`, `CORS_ORIGINS`; CLAUDE.md
   says what each is), never in the repo and never sent by a deploy.
 - **Health:** `GET /healthz` returns `{"ok": true, "commit": …}`, the commit
-  stamped into `src/deployed.json` by `bin/deploy`.
+  stamped into `src/deployed.json` by `ts deploy`.
 
 ## Deploying
 
 From the Mac:
 
 ```bash
-bin/deploy
+ts deploy
 ```
 
-It rsyncs the checkout to `~/dianoia` on commons (32.190.173.222;
-`COMMONS_HOST` overrides), runs `docker compose up --build -d`, and waits for
-`/healthz` to report the commit it sent, on the box and at
-`https://dianoia.rvanegas.co`. See the script's header.
+technosophia's shared deploy, with dianoia's settings in `bin/ts.env` and its
+own steps in `bin/hooks/`: the route tests first (`deploy-pre`, which says why
+not the whole suite), then an rsync of the checkout to `~/dianoia` on commons
+(the `commons` ssh alias), `docker compose up --build -d` (`deploy-remote`),
+and a wait for `/healthz` to report the commit it sent, on the box and at
+`https://dianoia.rvanegas.co`. Each deploy is recorded on the box; `ts deploys`
+reads them.
 
 The box itself is provisioned by `~/src/rvanegas-site/bin/provision-commons`.
 
