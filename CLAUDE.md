@@ -2,6 +2,8 @@
 
 # Working on Dianoia
 
+**This file is 10,113 bytes, under technosophia's cap of 20,000.** Read technosophia's `INSTRUCTIONS.md` before adding to it, and correct the figure in the same commit.
+
 ## Practices
 
 The practices this project shares with others are technosophia's (`~/src/technosophia`). This file imports its `WORKING.md`, which says when to read the rest. Scripts run as `ts <name>`: this project's `bin/` first (`backend-dev`, `dev-docker`), then the shared ones (`deploy`, `deploys`, `health`, …), which read `bin/ts.env`, never ship what `bin/ts.rsync` excludes, and run this project's steps from `bin/hooks/`.
