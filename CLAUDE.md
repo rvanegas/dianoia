@@ -2,7 +2,7 @@
 
 # Working on Dianoia
 
-**This file is 10,113 bytes, under technosophia's cap of 20,000.** Read technosophia's `INSTRUCTIONS.md` before adding to it, and correct the figure in the same commit.
+**This file is capped at technosophia's 20,000 bytes**, which `ts instructions check` measures in the tests. Read technosophia's `INSTRUCTIONS.md` before adding to it.
 
 ## Practices
 
