@@ -33,3 +33,13 @@ rejecting a premise, or reject the inference while accepting every
 proposition in it. So each step also carries `inference_accepted` and
 `inference_rejected`, with the same rules, and both are empty for a step with
 no justifiers.
+
+## Content, not attribution
+
+Found on 2026-11-09 in Roxana discussion 5e48, exported from a channel's
+chat: steps came out as "Rodrigo holds that a belief is irrational only if…"
+and "Daniel Jensen holds that…". Both participants accept such reports, so the
+stances fell on the attribution while the disagreement, which was about the
+content, vanished. The prompt now says a proposition states content and never
+who holds it, the stance lists saying that; the same goes for a text that is
+itself a report naming who thinks what, as a channel's document is.

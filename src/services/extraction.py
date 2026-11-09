@@ -108,6 +108,15 @@ Each step also lists, by the names above exactly as given:
 
 A step without justifiers has empty inference lists. A participant who takes no
 stance is in neither list of a pair. Never infer a stance the text does not show.
+
+**A proposition states content, never who holds it.** Who holds it is what the
+stance lists say. Never write a step as "Ann holds that P", "Ann's position is
+that P", "according to Bob, P" or "Ann and Bob disagree about P": every
+participant would accept such a report as true, and the disagreement, which is
+about P, would vanish from the argument. Write P itself, with Ann in its
+accepted list and whoever denies it in its rejected list. The same holds where
+the text is itself a report of the conversation that names who thinks what:
+extract what they think, not that they think it.
 """
 
 
