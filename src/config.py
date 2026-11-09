@@ -29,10 +29,11 @@ def _list(env: str, key: str) -> list[str]:
     return [v.strip() for v in values if v.strip()]
 
 
-# noesis's OAuth server, which signs Roxana's people in: a person's access token
-# is checked by asking noesis's /me, which says whose it is and which client it
-# was issued to, one of NOESIS_CLIENT_IDS. Unset, no user token is accepted.
-NOESIS_URL = (os.getenv("NOESIS_URL") or _toml.get("noesis_url") or "").rstrip("/")
-NOESIS_CLIENT_IDS = _list("NOESIS_CLIENT_IDS", "noesis_client_ids")
+# auth, which signs Roxana's people in (auth.rvanegas.co): a person's access
+# token is a JWT checked against auth's published keys, which says whose it is
+# and which client it was issued to, one of AUTH_CLIENT_IDS. Unset, no user
+# token is accepted.
+AUTH_URL = (os.getenv("AUTH_URL") or _toml.get("auth_url") or "").rstrip("/")
+AUTH_CLIENT_IDS = _list("AUTH_CLIENT_IDS", "auth_client_ids")
 # Browser origins allowed to call the API. Unset, no browser may.
 CORS_ORIGINS = _list("CORS_ORIGINS", "cors_origins")

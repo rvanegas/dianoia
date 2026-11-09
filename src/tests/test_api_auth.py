@@ -1,12 +1,14 @@
 """
 Tests for the caller check every /api route has (api/auth.py): noesis's token, or a
-person's noesis access token issued to Roxana, checked by asking noesis's /me; and
-for CORS, which only the browser apps' origins pass.
+person's access token from auth issued to Roxana, a JWT checked against auth's
+published keys; and for CORS, which only the browser apps' origins pass.
 """
 
-from unittest.mock import patch
+import time
 
+import jwt
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 
 from api import auth
@@ -15,7 +17,10 @@ from main import app
 
 client = TestClient(app)
 
+AUTH = "https://auth.example"
 ROXANA_CLIENT = "roxana"
+KEY = Ed25519PrivateKey.generate()
+STRANGER = Ed25519PrivateKey.generate()
 
 ARGUMENT = [
     {"symbol": "1", "proposition": "All humans are mortal.", "justifiers": [], "truth_score": "1.0"},
@@ -23,22 +28,22 @@ ARGUMENT = [
     {"symbol": "3", "proposition": "Socrates is mortal.", "justifiers": ["1", "2"], "truth_score": "1.0"},
 ]
 
-# What noesis's /me answers, by token; a token it does not know gets None (its 401).
-ME = {
-    "roxana-token": {"user": "rodvandur", "client": ROXANA_CLIENT},
-    "thefloor-token": {"user": "rodvandur", "client": "thefloor"},
-    "nobody-token": {"user": "", "client": ROXANA_CLIENT},
-}
+
+def token(user="rodvandur", client_id=ROXANA_CLIENT, aud=AUTH, ttl=900, key=KEY, issuer=AUTH, kid="k1"):
+    now = int(time.time())
+    return jwt.encode({"iss": issuer, "sub": user, "aud": aud, "client_id": client_id, "scope": "identity",
+                       "iat": now, "exp": now + ttl}, key, algorithm="EdDSA", headers={"kid": kid})
 
 
 @pytest.fixture(autouse=True)
-def noesis_configured(monkeypatch):
+def auth_configured(monkeypatch):
     import config
-    monkeypatch.setattr(config, "NOESIS_URL", "https://noesis.example")
-    monkeypatch.setattr(config, "NOESIS_CLIENT_IDS", [ROXANA_CLIENT])
-    auth._me_cache.clear()
-    with patch("api.auth._ask_noesis", side_effect=lambda token: ME.get(token)) as asked:
-        yield asked
+    monkeypatch.setattr(config, "AUTH_URL", AUTH)
+    monkeypatch.setattr(config, "AUTH_CLIENT_IDS", [ROXANA_CLIENT])
+    fetched = []
+    monkeypatch.setattr(auth, "_fetch_keys", lambda: fetched.append(1) or {"k1": KEY.public_key()})
+    monkeypatch.setattr(auth, "_jwks", {"keys": {}, "fetched": 0.0, "tried": -auth.JWKS_RETRY})
+    return fetched
 
 
 def audit(headers=None):
@@ -46,8 +51,8 @@ def audit(headers=None):
     return client.post("/api/argument/audit", json={"argument": ARGUMENT}, headers=headers or {})
 
 
-def bearer(token):
-    return {"Authorization": f"Bearer {token}"}
+def bearer(value):
+    return {"Authorization": f"Bearer {value}"}
 
 
 class TestCallers:
@@ -58,37 +63,47 @@ class TestCallers:
         assert audit(NOESIS_AUTH).status_code == 200
 
     def test_a_roxana_users_token_is_accepted(self):
-        assert audit(bearer("roxana-token")).status_code == 200
-        assert auth.require_caller("Bearer roxana-token") == auth.Caller(kind="user", name="rodvandur")
+        assert audit(bearer(token())).status_code == 200
+        assert auth.require_caller(f"Bearer {token()}") == auth.Caller(kind="user", name="rodvandur")
 
-    def test_noesis_is_asked_once_a_minute(self, noesis_configured):
-        audit(bearer("roxana-token"))
-        audit(bearer("roxana-token"))
-        assert noesis_configured.call_count == 1
+    def test_auths_keys_are_fetched_once_for_many_calls(self, auth_configured):
+        audit(bearer(token()))
+        audit(bearer(token()))
+        assert len(auth_configured) == 1
 
     def test_agents_routes_need_a_caller_too(self):
         query = "conversation_id=s:c&snapshot_id=1"
         assert client.get(f"/api/agents/results?{query}").status_code == 401
-        assert client.get(f"/api/agents/results?{query}", headers=bearer("roxana-token")).status_code == 200
+        assert client.get(f"/api/agents/results?{query}", headers=bearer(token())).status_code == 200
 
 
 class TestRefusedTokens:
-    @pytest.mark.parametrize("token", ["thefloor-token", "nobody-token", "unknown-token"],
-                             ids=["another client's", "no user", "unknown to noesis"])
-    def test_is_refused(self, token):
-        assert audit(bearer(token)).status_code == 401
+    @pytest.mark.parametrize("value", [
+        token(client_id="thefloor"), token(user=""), token(ttl=-60), token(key=STRANGER),
+        token(issuer="https://elsewhere.example"), token(aud="https://noesis.example/mcp"),
+        token(kid="unknown"), "not-a-token"],
+        ids=["another client's", "no user", "expired", "not auth's key", "not auth", "for noesis",
+             "an unknown key", "not a JWT"])
+    def test_is_refused(self, value):
+        assert audit(bearer(value)).status_code == 401
 
-    def test_user_tokens_refused_when_noesis_is_unconfigured(self, monkeypatch):
+    def test_user_tokens_refused_when_auth_is_unconfigured(self, monkeypatch):
         import config
-        monkeypatch.setattr(config, "NOESIS_URL", "")
-        assert audit(bearer("roxana-token")).status_code == 401
+        monkeypatch.setattr(config, "AUTH_URL", "")
+        assert audit(bearer(token())).status_code == 401
 
-    def test_noesis_down_is_not_a_bad_token(self, noesis_configured):
-        noesis_configured.side_effect = auth.NoesisUnavailable("down")
-        assert audit(bearer("roxana-token")).status_code == 503
+    def test_auth_down_still_verifies_with_the_keys_known(self, monkeypatch):
+        assert audit(bearer(token())).status_code == 200
+
+        def down():
+            raise OSError("auth is down")
+        monkeypatch.setattr(auth, "_fetch_keys", down)
+        auth._jwks["fetched"] -= auth.JWKS_TTL + 1
+        auth._jwks["tried"] -= auth.JWKS_RETRY
+        assert audit(bearer(token())).status_code == 200
 
     def test_user_tokens_cannot_reach_noesis_only_routes(self):
-        response = client.post("/api/argument/extract", json={"text": "x"}, headers=bearer("roxana-token"))
+        response = client.post("/api/argument/extract", json={"text": "x"}, headers=bearer(token()))
         assert response.status_code == 401
 
 

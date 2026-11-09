@@ -1,33 +1,35 @@
 """Bearer-token checks.
 
 Two kinds of caller hold a token. noesis, a service, holds a static one
-(`NOESIS_TOKEN`). People, through Roxana, hold an access token from noesis's
-OAuth server, issued to Roxana's client; it is opaque, so it is checked by
-asking noesis's /me, whose answer is kept for a minute. Every /api route
-requires one or the other; extract and evaluate, which spend the most per call
-and only noesis uses, require noesis's.
+(`NOESIS_TOKEN`). People, through Roxana, hold an access token from auth
+(`auth.rvanegas.co`, which signs people in for every project), issued to
+Roxana's client: a JWT, checked against auth's published keys (kept a few
+minutes, asked again for a key not known) by issuer, audience and expiry.
+Every /api route requires one or the other; extract and evaluate, which spend
+the most per call and only noesis uses, require noesis's.
 """
 
-import hashlib
 import hmac
 import json
 import time
-import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
+import jwt
 from fastapi import Header, HTTPException
 
 import config
 
-ME_TTL = 60
-_me_cache: dict[str, tuple[float, str]] = {}
+JWKS_TTL = 5 * 60
+# However often an unknown key is shown, auth is asked again at most this often.
+JWKS_RETRY = 30
+_jwks: dict = {"keys": {}, "fetched": 0.0, "tried": -JWKS_RETRY}
 
 
 @dataclass(frozen=True)
 class Caller:
     kind: str  # "noesis" or "user"
-    name: str  # "noesis", or the noesis user name
+    name: str  # "noesis", or the user name
 
 
 def _bearer(authorization: str | None) -> str:
@@ -49,51 +51,50 @@ def require_noesis_token(authorization: str | None = Header(default=None)) -> No
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
 
 
-class NoesisUnavailable(Exception):
-    pass
+def _fetch_keys() -> dict:
+    with urllib.request.urlopen(f"{config.AUTH_URL}/.well-known/jwks.json", timeout=10) as response:
+        found = json.loads(response.read())
+    return {k["kid"]: jwt.PyJWK.from_dict(k).key for k in found.get("keys", []) if k.get("kid")}
 
 
-def _ask_noesis(token: str) -> dict | None:
-    """noesis's /me for this token: None if noesis refuses it."""
-    request = urllib.request.Request(f"{config.NOESIS_URL}/me", headers={"Authorization": f"Bearer {token}"})
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            return json.loads(response.read())
-    except urllib.error.HTTPError as exc:
-        if exc.code == 401:
-            return None
-        raise NoesisUnavailable(f"noesis /me answered {exc.code}") from None
-    except (OSError, ValueError) as exc:
-        raise NoesisUnavailable(str(exc)) from None
-
-
-def user_for_noesis_token(token: str) -> str | None:
-    """The noesis user an access token belongs to, if issued to one of NOESIS_CLIENT_IDS."""
-    key = hashlib.sha256(token.encode()).hexdigest()
+def _key(kid: str):
     now = time.monotonic()
-    cached = _me_cache.get(key)
-    if cached and cached[0] > now:
-        return cached[1]
-    me = _ask_noesis(token)
-    if not me or me.get("client") not in config.NOESIS_CLIENT_IDS or not me.get("user"):
+    stale = now - _jwks["fetched"] > JWKS_TTL
+    if (stale or kid not in _jwks["keys"]) and now - _jwks["tried"] >= JWKS_RETRY:
+        _jwks["tried"] = now
+        try:
+            _jwks["keys"], _jwks["fetched"] = _fetch_keys(), now
+        except (OSError, ValueError):
+            pass  # auth unreachable: the keys already known still verify
+    return _jwks["keys"].get(kid)
+
+
+def user_for_auth_token(token: str) -> str | None:
+    """The user an access token from auth belongs to, if issued to one of AUTH_CLIENT_IDS."""
+    try:
+        kid = jwt.get_unverified_header(token).get("kid")
+    except jwt.PyJWTError:
         return None
-    if len(_me_cache) > 1000:
-        _me_cache.clear()
-    _me_cache[key] = (now + ME_TTL, me["user"])
-    return me["user"]
+    key = _key(kid) if kid else None
+    if key is None:
+        return None
+    try:
+        claims = jwt.decode(token, key, algorithms=["EdDSA"], issuer=config.AUTH_URL, audience=config.AUTH_URL)
+    except jwt.PyJWTError:
+        return None
+    if claims.get("client_id") not in config.AUTH_CLIENT_IDS or not claims.get("sub"):
+        return None
+    return claims["sub"]
 
 
 def require_caller(authorization: str | None = Header(default=None)) -> Caller:
-    """Accept noesis's token or a person's noesis access token issued to Roxana."""
+    """Accept noesis's token or a person's access token from auth issued to Roxana."""
     token = _bearer(authorization)
     if _is_noesis_token(token):
         return Caller(kind="noesis", name="noesis")
-    if not (config.NOESIS_URL and config.NOESIS_CLIENT_IDS):
+    if not (config.AUTH_URL and config.AUTH_CLIENT_IDS):
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
-    try:
-        user = user_for_noesis_token(token)
-    except NoesisUnavailable:
-        raise HTTPException(status_code=503, detail="noesis, which checks this token, did not answer")
+    user = user_for_auth_token(token)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
     return Caller(kind="user", name=user)
