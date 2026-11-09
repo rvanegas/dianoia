@@ -23,3 +23,13 @@ toggles start where the conversation left them.
   kept as separate steps rather than one side being chosen. A participant
   who takes no stance is in neither list, and no stance is inferred that the
   text does not show.
+
+## Inferences too
+
+Added later on 2026-11-09, at noesis's prompt. A step with justifiers is also
+an inference, and Roxana keeps stances on arguments as it does on
+propositions. A participant may accept that a conclusion follows while
+rejecting a premise, or reject the inference while accepting every
+proposition in it. So each step also carries `inference_accepted` and
+`inference_rejected`, with the same rules, and both are empty for a step with
+no justifiers.

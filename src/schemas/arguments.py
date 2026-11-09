@@ -56,9 +56,12 @@ class ExtractionRequest(BaseModel):
 
 
 class ExtractedStep(Step):
-    """An extracted step, with the participants who accept and who reject it"""
+    """An extracted step, with the participants who accept and who reject it,
+    and, for a step with justifiers, its inference from them"""
     accepted: List[str] = []
     rejected: List[str] = []
+    inference_accepted: List[str] = []
+    inference_rejected: List[str] = []
 
 
 class ExtractedArguments(BaseModel):

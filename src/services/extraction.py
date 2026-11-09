@@ -99,12 +99,21 @@ disagree, keep the competing propositions as separate steps rather than choosing
 between them.
 
 Each step also lists, by the names above exactly as given:
-  - accepted: the participants who assert or agree with it in the text
-  - rejected: the participants who deny or dispute it in the text
+  - accepted: the participants who assert or agree with its proposition in the text
+  - rejected: the participants who deny or dispute its proposition in the text
+  - inference_accepted: for a step with justifiers, the participants who hold
+    that it follows from them, whether or not they accept the premises
+  - inference_rejected: for a step with justifiers, the participants who deny
+    that it follows from them, even if they accept both premises and conclusion
 
-A participant who takes no stance on a step is in neither list. Never infer a
-stance the text does not show.
+A step without justifiers has empty inference lists. A participant who takes no
+stance is in neither list of a pair. Never infer a stance the text does not show.
 """
+
+
+# Each pair: who accepts and who rejects the step's proposition, then its inference.
+_STANCE_PAIRS = (("accepted", "rejected"), ("inference_accepted", "inference_rejected"))
+_STANCES_OF_A_STEP = tuple(stance for pair in _STANCE_PAIRS for stance in pair)
 
 
 def _response_format(participants: list[str]) -> dict:
@@ -114,8 +123,8 @@ def _response_format(participants: list[str]) -> dict:
     names = {"type": "array", "items": {"type": "string", "enum": participants}}
     step = {
         **_STEP_SCHEMA,
-        "properties": {**_STEP_SCHEMA["properties"], "accepted": names, "rejected": names},
-        "required": [*_STEP_SCHEMA["required"], "accepted", "rejected"],
+        "properties": {**_STEP_SCHEMA["properties"], **{stance: names for stance in _STANCES_OF_A_STEP}},
+        "required": [*_STEP_SCHEMA["required"], *_STANCES_OF_A_STEP],
     }
     return {**_RESPONSE_FORMAT, "properties": {"argument": {"type": "array", "items": step}}}
 
@@ -131,7 +140,8 @@ def extract_argument(text: str, max_props: int | None = None, participants: list
     """Extract a structured argument from plain text.
 
     With participants, the names a conversation's people go by, each step
-    also lists those who accept it and those who reject it.
+    also lists those who accept it and those who reject it, and, for a step
+    with justifiers, those who accept and reject its inference.
 
     Returns an Arguments-compatible dict with an 'argument' key.
     Raises ValueError if extraction fails or produces an empty argument.
@@ -162,10 +172,17 @@ def extract_argument(text: str, max_props: int | None = None, participants: list
     if not result.get("argument"):
         raise ValueError("extraction produced no argument steps")
 
-    # Only the names given, each once, never in both lists.
+    # Only the names given, each once, never in both lists of a pair, and no
+    # inference where there are no justifiers.
     for step in result["argument"] if participants else ():
-        accepted = [n for n in dict.fromkeys(step.get("accepted") or []) if n in participants]
-        step["accepted"] = accepted
-        step["rejected"] = [n for n in dict.fromkeys(step.get("rejected") or []) if n in participants and n not in accepted]
+        for accepting, rejecting in _STANCE_PAIRS:
+            inferred = accepting.startswith("inference")
+            if inferred and not step.get("justifiers"):
+                step[accepting], step[rejecting] = [], []
+                continue
+            accepted = [n for n in dict.fromkeys(step.get(accepting) or []) if n in participants]
+            step[accepting] = accepted
+            step[rejecting] = [n for n in dict.fromkeys(step.get(rejecting) or [])
+                               if n in participants and n not in accepted]
 
     return result
