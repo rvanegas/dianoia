@@ -37,7 +37,8 @@ def test_participants_are_asked_for_their_stances_and_kept_to_the_names_given():
     assert {"accepted", "rejected", "inference_accepted", "inference_rejected"} <= set(step["required"])
     assert "inference_accepted: for a step with justifiers" in seen["instructions"]
     # Who holds a proposition is its stances, never part of what it says.
-    assert "A proposition states content, never who holds it." in seen["instructions"]
+    assert "A proposition never names a participant." in seen["instructions"]
+    assert "general" in seen["instructions"] and "judged flat-earth belief" in seen["instructions"]
 
 
 def test_without_participants_extraction_is_as_it_was():

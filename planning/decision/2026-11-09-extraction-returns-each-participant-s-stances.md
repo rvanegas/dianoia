@@ -43,3 +43,13 @@ stances fell on the attribution while the disagreement, which was about the
 content, vanished. The prompt now says a proposition states content and never
 who holds it, the stance lists saying that; the same goes for a text that is
 itself a report naming who thinks what, as a channel's document is.
+
+Not enough, found the same day in discussion d4r4, extracted again under that
+rule: "holds that" was gone, but "Rodrigo's rationality standard would
+permit…", "Rodrigo himself judged flat-earth belief stupid…" and "Rodrigo's own
+evaluative practice applies…" carried the attribution instead. So a
+proposition now never names a participant: a standard is written by what it
+says, and an argument from a participant's own judgments or practice becomes
+the general proposition they express, accepted by that participant, where the
+inconsistency it points at shows in their stances. noesis's `argue` warns of
+any proposition that still names one.

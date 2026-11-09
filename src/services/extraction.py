@@ -109,13 +109,27 @@ Each step also lists, by the names above exactly as given:
 A step without justifiers has empty inference lists. A participant who takes no
 stance is in neither list of a pair. Never infer a stance the text does not show.
 
-**A proposition states content, never who holds it.** Who holds it is what the
-stance lists say. Never write a step as "Ann holds that P", "Ann's position is
-that P", "according to Bob, P" or "Ann and Bob disagree about P": every
-participant would accept such a report as true, and the disagreement, which is
-about P, would vanish from the argument. Write P itself, with Ann in its
-accepted list and whoever denies it in its rejected list. The same holds where
-the text is itself a report of the conversation that names who thinks what:
+**A proposition never names a participant.** It states content; who holds it
+is what the stance lists say. Never write a step as "Ann holds that P", "Ann's
+position is that P", "according to Bob, P", "Ann and Bob disagree about P",
+"Ann's standard would permit Q", "Ann herself judged R" or "Ann's own practice
+assumes S": every participant would accept such a report as true, and the
+disagreement, which is about P, would vanish from the argument.
+
+- A view is written as itself: P, with Ann in its accepted list and whoever
+  denies it in its rejected list.
+- A standard or principle is written by what it says, not whose it is: "a
+  standard on which a belief is irrational only if it entails a contradiction
+  would permit Q", not "Ann's standard would permit Q".
+- An argument from a participant's own judgments or practice (that they are
+  inconsistent, or already concede the point) is written as the general
+  proposition that judgment or practice expresses, with that participant in its
+  accepted list: "flat-earth belief is irrational though it entails no
+  contradiction", accepted by Ann, not "Ann judged flat-earth belief
+  irrational". Her accepting it beside rejecting a proposition it supports is
+  how the argument shows the inconsistency.
+
+The same holds where the text is itself a report that names who thinks what:
 extract what they think, not that they think it.
 """
 
