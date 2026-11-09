@@ -47,6 +47,20 @@ class ArgumentData(BaseModel):
 
 
 class ExtractionRequest(BaseModel):
-    """Plain text to extract an argument from"""
+    """Plain text to extract an argument from, and the names its people go by"""
     text: str
     max_props: int | None = None
+    # A conversation's participants (noesis, for a channel of The Floor): each
+    # extracted step then says which of them accept it and which reject it.
+    participants: List[str] = []
+
+
+class ExtractedStep(Step):
+    """An extracted step, with the participants who accept and who reject it"""
+    accepted: List[str] = []
+    rejected: List[str] = []
+
+
+class ExtractedArguments(BaseModel):
+    """What extraction returns: Arguments whose steps carry stances"""
+    argument: List[ExtractedStep]

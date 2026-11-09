@@ -61,7 +61,17 @@ class TestExtractEndpoint:
                                    headers=AUTH)
         assert response.status_code == 200
         assert response.json() == extracted
-        mock_extract.assert_called_once_with("Socrates is mortal because…", max_props=5)
+        mock_extract.assert_called_once_with("Socrates is mortal because…", max_props=5, participants=[])
+
+    def test_passes_a_conversation_s_participants(self):
+        extracted = {"argument": [{**ARGUMENT[0], "accepted": ["Ann"], "rejected": ["Bob"]}]}
+        with patch("config.NOESIS_TOKEN", TOKEN), \
+             patch("api.argument.extract_argument", return_value=extracted) as mock_extract:
+            response = client.post("/api/argument/extract",
+                                   json={"text": "Ann: p. Bob: not p.", "participants": ["Ann", "Bob"]},
+                                   headers=AUTH)
+        assert response.status_code == 200 and response.json() == extracted
+        mock_extract.assert_called_once_with("Ann: p. Bob: not p.", max_props=None, participants=["Ann", "Bob"])
 
     def test_failed_extraction_is_422(self):
         with patch("config.NOESIS_TOKEN", TOKEN), \

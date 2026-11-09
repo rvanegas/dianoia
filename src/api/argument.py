@@ -10,6 +10,7 @@ from schemas.arguments import (
     ArgumentsWithStep,
     ArgumentsWithProposition,
     ArgumentsWithStepAndProposition,
+    ExtractedArguments,
     ExtractionRequest)
 from schemas.api_results import EvaluateStarted
 from schemas.audit import AuditResult
@@ -132,11 +133,13 @@ def audit(args: Arguments) -> AuditResult:
     return audit_argument(args.argument)
 
 @router.post("/extract", dependencies=[Depends(require_noesis_token)],
-             response_model=None, responses={200: {"model": Arguments}})
+             response_model=None, responses={200: {"model": ExtractedArguments}})
 def extract(request: ExtractionRequest) -> dict:
-    """Extract a structured argument from plain text (used by noesis)."""
+    """Extract a structured argument from plain text (used by noesis), with
+    each participant's stances when the request names them."""
     try:
-        return extract_argument(request.text, max_props=request.max_props)
+        return extract_argument(request.text, max_props=request.max_props,
+                                participants=request.participants)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 

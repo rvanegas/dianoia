@@ -88,6 +88,38 @@ _RESPONSE_FORMAT = {
     "additionalProperties": False,
 }
 
+_STANCES = """
+
+### Participants and their stances
+
+The text is a conversation among these participants: {names}. Extract the one
+argument they all took part in: a proposition one participant rejects is still
+part of it, in the form the participant who asserted it gave it. Where they
+disagree, keep the competing propositions as separate steps rather than choosing
+between them.
+
+Each step also lists, by the names above exactly as given:
+  - accepted: the participants who assert or agree with it in the text
+  - rejected: the participants who deny or dispute it in the text
+
+A participant who takes no stance on a step is in neither list. Never infer a
+stance the text does not show.
+"""
+
+
+def _response_format(participants: list[str]) -> dict:
+    """The response schema, its steps carrying stances when there are participants."""
+    if not participants:
+        return _RESPONSE_FORMAT
+    names = {"type": "array", "items": {"type": "string", "enum": participants}}
+    step = {
+        **_STEP_SCHEMA,
+        "properties": {**_STEP_SCHEMA["properties"], "accepted": names, "rejected": names},
+        "required": [*_STEP_SCHEMA["required"], "accepted", "rejected"],
+    }
+    return {**_RESPONSE_FORMAT, "properties": {"argument": {"type": "array", "items": step}}}
+
+
 _gpt_extract = ModelAgent(
     instructions=_EXTRACTION_SYSTEM_PROMPT,
     response_format_base=_RESPONSE_FORMAT,
@@ -95,31 +127,45 @@ _gpt_extract = ModelAgent(
 )
 
 
-def extract_argument(text: str, max_props: int | None = None) -> dict:
+def extract_argument(text: str, max_props: int | None = None, participants: list[str] | None = None) -> dict:
     """Extract a structured argument from plain text.
+
+    With participants, the names a conversation's people go by, each step
+    also lists those who accept it and those who reject it.
 
     Returns an Arguments-compatible dict with an 'argument' key.
     Raises ValueError if extraction fails or produces an empty argument.
     """
     import json
 
+    participants = list(dict.fromkeys(p for p in participants or [] if p.strip()))
+    instructions = _EXTRACTION_SYSTEM_PROMPT
     if max_props is not None:
-        extra = (
+        instructions += (
             f"\n- Use at most {max_props} propositions in total; merge or drop minor"
             " claims to stay within this limit"
         )
+    if participants:
+        instructions += _STANCES.format(names=", ".join(participants))
+    if instructions == _EXTRACTION_SYSTEM_PROMPT:
+        agent = _gpt_extract
+    else:
         agent = ModelAgent(
-            instructions=_EXTRACTION_SYSTEM_PROMPT + extra,
-            response_format_base=_RESPONSE_FORMAT,
+            instructions=instructions,
+            response_format_base=_response_format(participants),
             max_tokens=8192,
         )
-    else:
-        agent = _gpt_extract
 
     raw = agent.call(text, file_ids=None)
     result = json.loads(raw)
 
     if not result.get("argument"):
         raise ValueError("extraction produced no argument steps")
+
+    # Only the names given, each once, never in both lists.
+    for step in result["argument"] if participants else ():
+        accepted = [n for n in dict.fromkeys(step.get("accepted") or []) if n in participants]
+        step["accepted"] = accepted
+        step["rejected"] = [n for n in dict.fromkeys(step.get("rejected") or []) if n in participants and n not in accepted]
 
     return result

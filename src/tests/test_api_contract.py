@@ -48,5 +48,5 @@ def test_the_routes_publish_their_responses():
 
     assert published("/api/agents/results", "get") == "AgentResultsResponse"
     assert published("/api/argument/evaluate", "post") == "EvaluateStarted"
-    assert published("/api/argument/extract", "post") == "Arguments"
+    assert published("/api/argument/extract", "post") == "ExtractedArguments"
     assert published("/api/argument/audit", "post") == "AuditResult"

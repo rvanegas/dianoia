@@ -60,7 +60,7 @@ Client polls GET /api/agents/results ──────────────�
 
 ### Backend Structure
 
-- `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`
+- `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`; `extract` given `participants` (a channel's members) returns each step's `accepted` and `rejected` by those names alone (`ExtractedArguments`)
 - `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from auth (`AUTH_URL`, `auth.rvanegas.co`; Roxana sends one), a JWT checked against auth's published keys (kept five minutes; auth not answering leaves the known keys working) by issuer, audience (auth) and expiry, whose `client_id` must be in `AUTH_CLIENT_IDS`. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
 - `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `ts deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `planning/DOCKER_ARCH.md`
