@@ -8,5 +8,8 @@ dist/
 # Stamped by ts deploy, read by api/health.py
 src/deployed.json
 
-# git worktrees, inside the repo so they are easy to find
+# Claude Code's, per project (technosophia LANDING.md § Worktrees). A worktree
+# holds its own .git file, which `git add -A` in the main checkout would stage
+# as an embedded repository; settings.local.json is one person's permissions.
 .claude/worktrees/
+.claude/settings.local.json
