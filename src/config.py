@@ -35,8 +35,8 @@ def _list(env: str, key: str) -> list[str]:
 # token is accepted.
 AUTH_URL = (os.getenv("AUTH_URL") or _toml.get("auth_url") or "").rstrip("/")
 # auth's other names, whose tokens are good too: auth.rvanegas.co during the
-# move to twohands.co. COMPATIBILITY: goes no sooner than two weeks after the
-# commons cutover (rvanegas-site's move-everything-from-rvanegas-co-to-twohands-co.md, step 8).
+# move to twohands.co. COMPATIBILITY: goes no sooner than 2027-01-23, two
+# months after the commons cutover (rvanegas-site's move-everything-from-rvanegas-co-to-twohands-co.md, step 8).
 AUTH_ALSO_URLS = [u.rstrip("/") for u in _list("AUTH_ALSO_URLS", "auth_also_urls")]
 
 

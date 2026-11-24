@@ -116,7 +116,7 @@ environment variables:
 |---|---|---|
 | `noesis_token` | `NOESIS_TOKEN` | noesis's service token |
 | `auth_url` | `AUTH_URL` | auth, which issues a person's token and publishes the keys it is checked by (`https://auth.twohands.co`); unset, no user token is accepted |
-| `auth_also_urls` | `AUTH_ALSO_URLS` (comma-separated) | auth's other names, whose tokens are good too as issuer and audience: `https://auth.rvanegas.co` during the move to twohands.co (compatibility, gone two weeks after the cutover at the soonest) |
+| `auth_also_urls` | `AUTH_ALSO_URLS` (comma-separated) | auth's other names, whose tokens are good too as issuer and audience: `https://auth.rvanegas.co` during the move to twohands.co (compatibility, gone on 2027-01-23 at the soonest) |
 | `auth_client_ids` | `AUTH_CLIENT_IDS` (comma-separated) | the auth clients a person's token may be issued to: `roxana` |
 | `cors_origins` | `CORS_ORIGINS` (comma-separated) | browser origins allowed; unset, none |
 
