@@ -18,6 +18,7 @@ from main import app
 client = TestClient(app)
 
 AUTH = "https://auth.example"
+OLD_AUTH = "https://auth.old.example"
 ROXANA_CLIENT = "roxana"
 KEY = Ed25519PrivateKey.generate()
 STRANGER = Ed25519PrivateKey.generate()
@@ -39,6 +40,7 @@ def token(user="rodvandur", client_id=ROXANA_CLIENT, aud=AUTH, ttl=900, key=KEY,
 def auth_configured(monkeypatch):
     import config
     monkeypatch.setattr(config, "AUTH_URL", AUTH)
+    monkeypatch.setattr(config, "AUTH_ALSO_URLS", [OLD_AUTH])
     monkeypatch.setattr(config, "AUTH_CLIENT_IDS", [ROXANA_CLIENT])
     fetched = []
     monkeypatch.setattr(auth, "_fetch_keys", lambda: fetched.append(1) or {"k1": KEY.public_key()})
@@ -58,6 +60,11 @@ def bearer(value):
 class TestCallers:
     def test_no_token_is_refused(self):
         assert audit().status_code == 401
+
+    def test_a_token_from_auths_old_name_is_good_during_the_move(self):
+        # COMPATIBILITY: goes with config.AUTH_ALSO_URLS.
+        assert audit(bearer(token(issuer=OLD_AUTH, aud=OLD_AUTH))).status_code == 200
+        assert audit(bearer(token(issuer=OLD_AUTH, aud="https://elsewhere.example"))).status_code == 401
 
     def test_noesis_token_is_accepted(self):
         assert audit(NOESIS_AUTH).status_code == 200

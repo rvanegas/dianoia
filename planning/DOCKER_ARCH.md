@@ -11,7 +11,8 @@ Internet
    │
    ▼
 [Caddy]  ports 80/443, certificates renewed by Caddy itself
-   │  dianoia.rvanegas.co        → 127.0.0.1:8000 (everything)
+   │  dianoia.twohands.co        → 127.0.0.1:8000 (everything)
+   │  dianoia.rvanegas.co        → the same, during the move's overlap
    │  noesis.rvanegas.co /api/*  → 127.0.0.1:8000
    │  dianoia.rvanegas.com       → as noesis (the old name)
    ▼

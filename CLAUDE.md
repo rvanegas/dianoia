@@ -61,7 +61,7 @@ Client polls GET /api/agents/results ──────────────�
 ### Backend Structure
 
 - `api/argument.py` — Routes: `argue`, `assume`, `remove`, `replace`, `user-justify`, `explain`, `reject-formalization`, `endorse-formalization`, `upload`, `gen-name`, `audit`; plus `extract` and `evaluate` for noesis, which require `Authorization: Bearer $NOESIS_TOKEN`; `extract` given `participants` (a channel's members) returns each step's `accepted` and `rejected`, and for a step with justifiers its `inference_accepted` and `inference_rejected`, by those names alone (`ExtractedArguments`)
-- `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from auth (`AUTH_URL`, `auth.rvanegas.co`; Roxana sends one), a JWT checked against auth's published keys (kept five minutes; auth not answering leaves the known keys working) by issuer, audience (auth) and expiry, whose `client_id` must be in `AUTH_CLIENT_IDS`. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
+- `api/auth.py` — **every `/api` route requires a caller** (`require_caller`, applied to both routers in `main.py`): noesis's `NOESIS_TOKEN`, or a person's access token from auth (`AUTH_URL`, `auth.twohands.co`, or during the move `AUTH_ALSO_URLS`; Roxana sends one), a JWT checked against auth's published keys (kept five minutes; auth not answering leaves the known keys working) by issuer, audience (auth) and expiry, whose `client_id` must be in `AUTH_CLIENT_IDS`. `extract` and `evaluate` additionally require noesis's token (`require_noesis_token`). `/healthz`, `/openapi.json` and `/docs` stay open. CORS allows only `CORS_ORIGINS`. Tests call as noesis (`src/tests/conftest.py`)
 - `api/agents.py` — Routes: `GET /api/agents/results` (grouped by type, filtered by snapshot), `GET /api/agents/active`
 - `api/health.py` — `GET /healthz` (unauthenticated, outside `/api`): the commit `ts deploy` stamped into `src/deployed.json`, or `"dev"`. Deployment is in `planning/DOCKER_ARCH.md`
 - `services/agents.py` — Agent implementations: `ContentEvaluationAgent`, `FormalEvaluatorAgent`, `FormalizationAgent`, `ImprovementAgent`, `NameGenerationAgent`
@@ -115,7 +115,8 @@ environment variables:
 | key | env | meaning |
 |---|---|---|
 | `noesis_token` | `NOESIS_TOKEN` | noesis's service token |
-| `auth_url` | `AUTH_URL` | auth, which issues a person's token and publishes the keys it is checked by (`https://auth.rvanegas.co`); unset, no user token is accepted |
+| `auth_url` | `AUTH_URL` | auth, which issues a person's token and publishes the keys it is checked by (`https://auth.twohands.co`); unset, no user token is accepted |
+| `auth_also_urls` | `AUTH_ALSO_URLS` (comma-separated) | auth's other names, whose tokens are good too as issuer and audience: `https://auth.rvanegas.co` during the move to twohands.co (compatibility, gone two weeks after the cutover at the soonest) |
 | `auth_client_ids` | `AUTH_CLIENT_IDS` (comma-separated) | the auth clients a person's token may be issued to: `roxana` |
 | `cors_origins` | `CORS_ORIGINS` (comma-separated) | browser origins allowed; unset, none |
 

@@ -2,9 +2,11 @@
 
 Two kinds of caller hold a token. noesis, a service, holds a static one
 (`NOESIS_TOKEN`). People, through Roxana, hold an access token from auth
-(`auth.rvanegas.co`, which signs people in for every project), issued to
+(`auth.twohands.co`, which signs people in for every project), issued to
 Roxana's client: a JWT, checked against auth's published keys (kept a few
 minutes, asked again for a key not known) by issuer, audience and expiry.
+Any of auth's names is the issuer, and the audience, it may name
+(config.auth_issuers: its old name too during the move to twohands.co).
 Every /api route requires one or the other; extract and evaluate, which spend
 the most per call and only noesis uses, require noesis's.
 """
@@ -79,7 +81,8 @@ def user_for_auth_token(token: str) -> str | None:
     if key is None:
         return None
     try:
-        claims = jwt.decode(token, key, algorithms=["EdDSA"], issuer=config.AUTH_URL, audience=config.AUTH_URL)
+        issuers = config.auth_issuers()
+        claims = jwt.decode(token, key, algorithms=["EdDSA"], issuer=issuers, audience=issuers)
     except jwt.PyJWTError:
         return None
     if claims.get("client_id") not in config.AUTH_CLIENT_IDS or not claims.get("sub"):
